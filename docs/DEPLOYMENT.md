@@ -72,7 +72,7 @@ check and every environment variable, so most of this is already done.
 
 **1.** On render.com: **New → Blueprint** → pick this repository → **Apply**.
 
-**2.** Render asks for the values the blueprint marks `sync: false`:
+**2.** Render asks for the values the blueprint marks `sync: false`. Everything it provisions is on the free tier:
 
 | Variable | What to put |
 | --- | --- |
@@ -100,19 +100,39 @@ successful deploy.
 **delete `ADMIN_PASSWORD`** from the Render environment; it is never read
 again once a staff account exists.
 
-### Two things about the plan
+### What the free tier costs you instead
 
-The blueprint asks for `plan: starter`, not free, for two reasons:
+Everything in the blueprint is free. Nothing in this repository asks for a
+paid instance, a disk or an add-on, and SMS sends nothing until you add
+gateway credentials.
 
-- **The disk.** SQLite is a file. Without a persistent disk at `/data`,
-  every order, receipt and cash-book line is destroyed on each deploy.
-- **Sleeping.** Free services sleep after about 15 minutes idle. The first
-  request then takes the best part of a minute, and the Socket.IO
-  connection drops — so the cashier's screen stops updating live, which is
-  the one thing the system is for.
+The price of that is **the database does not survive**. A free Render
+service has no persistent disk, and the API keeps its data in a SQLite
+file inside the container. The file is wiped:
 
-To try it free first, delete the `disk:` block, set `plan: free`, and
-treat the data as disposable.
+- on every deploy, including every push to `main`
+- on every restart
+- when the service wakes from sleep — free services sleep after roughly
+  15 minutes without traffic, and wake into a fresh container
+
+Orders, receipts, the cash book and the staff accounts go with it. The
+service recovers on its own — `db:bootstrap` rebuilds the tables and the
+manager account from `ADMIN_PHONE` / `ADMIN_PASSWORD`, which is why those
+stay set — but yesterday's orders are gone.
+
+That is **fine for a demo**, for showing the client, and for testing the
+whole flow end to end. It is **not fine for a shop taking real money**.
+
+Sleeping has a second cost: the first request after a nap takes the best
+part of a minute, and the Socket.IO connection drops, so the cashier's
+screen stops updating live until someone reloads.
+
+### Two free ways to keep the data
+
+| Option | What it takes |
+| --- | --- |
+| **Hosted Postgres** — Supabase or Neon, both free | A code change: port `backend/src/db/index.js` from `node:sqlite` to `pg`, and translate `schema.sql` (237 lines) to Postgres. Around 215 query call sites go through that one module, so they mostly come along unchanged. The concept paper proposes Supabase anyway. |
+| **A paid Render instance with a 1 GB disk** | No code change: set `plan: starter`, add the `disk:` block back, and set `DB_FILE=/data/alhadeed.db`. |
 
 ---
 
