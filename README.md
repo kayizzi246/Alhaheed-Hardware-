@@ -23,16 +23,26 @@ Built to the MVP scope in the concept paper (Annex 1).
 
 | User / Side | Mobile App | Web |
 | --- | --- | --- |
-| Customer (Individual / Company & its staff) | Yes | No — app only |
+| Customer | Yes | No — app only |
 | Cashier | Yes | Yes |
 | Accounts | Yes | Yes |
 | Store Manager | Yes | No — app only |
-| Manager | Yes | No — app only |
+| Manager | Yes | Yes |
 
-This matches the concept paper exactly. The web panel is the **Cashier and
-Accounts desks only** — the two desks that work at a counter with a keyboard.
-Everyone else is on the mobile app, and the web panel has no pages, no sign-in
-and no navigation for them.
+**The back end is the WordPress plugin** in [wordpress/](wordpress/). The
+phone app and the web panel both talk to it, so there is one database and
+one set of rules. It runs on hosting the shop already pays for: always on,
+nothing that sleeps, no database that expires.
+
+```
+   FlutterFlow app -+
+   Next.js panel  --+--> WordPress plugin --> WooCommerce + MySQL
+   wp-admin desks --+        (REST API)
+```
+
+The Node API in [backend/](backend/) is the original build. It still works
+and its tests still pass, but it is no longer the thing to deploy — kept
+until the WordPress deployment has been proven on the live site.
 
 ---
 

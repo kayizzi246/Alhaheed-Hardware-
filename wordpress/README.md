@@ -103,6 +103,14 @@ so neither client needed changing beyond its base URL. Reachable at
 | `GET /POST /api/accounts/cash-book` | the cash book |
 | `GET /api/store/queue`, `POST /api/store/orders/{id}/release` | the store desk |
 | `GET /api/manager/dashboard` | the manager's overview |
+| `GET /api/cashier/receipts`, `/cashier/receipts/{no}`, `/cashier/end-of-day` | receipts and the till hand-over |
+| `GET /api/accounts/reconciliation` | collected vs verified vs the cash book |
+| `GET /api/reports/sales`, `best-sellers`, `stock-movement`, `orders-by-stage`, `staff-activity` | reports |
+| `GET /api/reports/export/{report}.csv` | the same, as a spreadsheet |
+| `GET /api/notifications`, `POST /api/notifications/read-all` | the alert badge |
+| `GET /api/orders` | the order register, filterable |
+| `GET /api/manager/staff`, `/manager/customers`, `/manager/audit` | the manager's lists |
+| `GET`/`POST /api/manager/products`, `POST /api/manager/products/{id}` | the catalogue |
 
 Errors come back as `{"error": "in plain words"}`, which is what both
 clients already show the user.

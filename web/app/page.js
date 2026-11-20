@@ -43,7 +43,7 @@ export default function LoginPage() {
     <div className="login-wrap">
       <div className="login-card">
         <h1>Al Hadeed Hardware</h1>
-        <div className="tag">Cashier &amp; Accounts Panel</div>
+        <div className="tag">Staff Panel</div>
 
         <Alert>{error}</Alert>
 
@@ -77,12 +77,12 @@ export default function LoginPage() {
           </button>
 
           <div className="hint">
-            Cashier <code>cashier@alhadeed.ug</code> / <code>cashier123</code><br />
-            Accounts <code>accounts@alhadeed.ug</code> / <code>accounts123</code>
+            Cashier, Accounts and the Manager sign in here with the phone
+            number or email on their staff account.
           </div>
 
           <div className="sub" style={{ marginTop: 14, textAlign: 'center' }}>
-            Customers, the Store Manager and the Manager use the Al Hadeed mobile app.
+            Customers and the Store Manager use the Al Hadeed mobile app.
           </div>
         </form>
       </div>

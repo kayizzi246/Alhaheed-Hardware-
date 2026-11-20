@@ -298,6 +298,9 @@ class AH_Rest {
 		);
 
 		// ── Manager ───────────────────────────────────────────────────
+		// The rest of the desks' API lives in its own class.
+		AH_Rest_Desks::routes();
+
 		register_rest_route(
 			$ns, '/manager/dashboard',
 			array(
