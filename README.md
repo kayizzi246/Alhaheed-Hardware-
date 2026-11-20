@@ -143,13 +143,14 @@ delivery tracking and EFRIS e-receipts. See
 | Mobile app | React Native (Expo), React Navigation | React Native ✓ |
 | Web panel | Next.js 15, React 19 | Next.js, React ✓ |
 | Back-end | Node.js, Express | Node.js, Express ✓ |
-| Database | PostgreSQL via `pg`; PGlite in development | Supabase ✓ |
+| Database | PostgreSQL via `pg`; PGlite in development | Supabase / MySQL — Postgres ✓ |
 | Real-time | Socket.IO | Real-time order hand-off ✓ |
 | Auth | JWT, bcrypt, role-based guards | Secure logins, role-based access ✓ |
 | Testing | `node:test` end-to-end suite | Automated testing ✓ |
 
-**On the database:** PostgreSQL, as the concept paper proposes — Supabase
-and Neon both have a free tier that holds the shop's data properly. Locally
+**On the database:** PostgreSQL. In production it is an ordinary Postgres
+server — the Render blueprint creates one alongside the API — and any other
+would do: the connection string is the only thing that changes. Locally
 there is nothing to install or start: with `DATABASE_URL` unset the API runs
 **PGlite**, which is PostgreSQL itself compiled to WebAssembly, in process,
 writing to `backend/data/pg`. The test suite uses it too, so what passes the

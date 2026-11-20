@@ -101,39 +101,50 @@ successful deploy.
 **delete `ADMIN_PASSWORD`** from the Render environment; it is never read
 again once a staff account exists.
 
-### Free, and the data survives
+### The database comes with it
 
-Everything in the blueprint is free, and nothing is lost between deploys,
-because the database is not on Render at all:
+The blueprint declares a PostgreSQL alongside the API, so Render creates
+both and injects the connection string. There is nothing to copy, nothing
+to paste, and no second account anywhere:
 
-- **the API** runs on Render's free web service
-- **the database** is a free hosted Postgres — Supabase or Neon
+```yaml
+databases:
+  - name: alhadeed-db
+    plan: free
 
-A free Render service has no persistent disk, so a database kept in a file
-inside the container would be wiped on every deploy, every restart and
-every wake from sleep. Postgres lives somewhere else and is untouched by
-any of that.
+    # …and in the service:
+    - key: DATABASE_URL
+      fromDatabase:
+        name: alhadeed-db
+        property: connectionString
+```
 
-The one free-tier cost left is **sleeping**: a free service naps after
-about 15 minutes without traffic, so the first request afterwards takes
-the best part of a minute, and the Socket.IO connection drops, meaning the
-cashier's screen stops updating live until someone reloads. Orders and
-money are safe; the screen just needs a refresh after a quiet spell. A
-paid instance removes that, and nothing else needs to change.
+A database rather than a file on disk because a free Render service has
+no persistent disk: a file inside the container is wiped on every deploy,
+restart and wake from sleep. The database is a separate thing and
+survives all of it.
 
-### Getting the DATABASE_URL
+### Two things about the free tier
 
-**Supabase** — create a project, then Project Settings -> Database ->
-Connection string -> URI. Use the **pooled** (session) string, not the
-direct one, so the free connection limit is not exhausted.
+**Render's free PostgreSQL expires.** It runs for a limited period and is
+then deleted — check their current terms rather than trusting a number
+written here. Before that day, either upgrade the database to a paid
+instance or move it. Any ordinary PostgreSQL works; change
+`DATABASE_URL` and nothing else:
 
-**Neon** — create a project and copy the pooled connection string from
-the dashboard.
+```bash
+pg_dump "$OLD_DATABASE_URL" > alhadeed.sql
+psql "$NEW_DATABASE_URL" < alhadeed.sql
+```
 
-Either looks like
-`postgresql://user:password@host:5432/postgres`. Paste it into
-`DATABASE_URL` when Render asks. The tables are created on first boot;
-there is nothing to import.
+Worth putting that `pg_dump` in the calendar regardless. A shop's order
+history is not something to hold in one copy.
+
+**The free web service sleeps** after about 15 minutes without traffic.
+The first request afterwards takes the best part of a minute, and the
+Socket.IO connection drops, so the cashier's screen stops updating live
+until someone reloads. Orders and money are safe; the screen just needs a
+refresh after a quiet spell. A paid instance removes it.
 
 ---
 

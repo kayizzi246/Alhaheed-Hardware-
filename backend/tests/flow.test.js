@@ -9,12 +9,26 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// A throwaway database of its own. With no DATABASE_URL the API runs
-// PGlite — PostgreSQL compiled to WebAssembly, in this process — so the
-// suite exercises the same engine the shop runs on, with no server to
-// install and nothing left behind.
-process.env.PG_DATA_DIR = `./data/test-${Date.now()}`;
-delete process.env.DATABASE_URL;
+// A throwaway database of its own.
+//
+// By default the suite runs PGlite — PostgreSQL compiled to WebAssembly,
+// in this process — so it needs no server and leaves nothing behind.
+//
+// To run the same tests against a real PostgreSQL instead, point
+// TEST_DATABASE_URL at an empty database:
+//
+//   docker run -d --name pg -e POSTGRES_PASSWORD=devpass \
+//     -e POSTGRES_USER=alhadeed -e POSTGRES_DB=alhadeed_test \
+//     -p 55432:5432 postgres:16-alpine
+//   TEST_DATABASE_URL=postgresql://alhadeed:devpass@localhost:55432/alhadeed_test npm test
+//
+// It drops every table first, so never point it at anything real.
+if (process.env.TEST_DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+} else {
+  process.env.PG_DATA_DIR = `./data/test-${Date.now()}`;
+  delete process.env.DATABASE_URL;
+}
 process.env.JWT_SECRET = 'test-secret';
 process.env.OTP_DEV_MODE = 'true';
 
@@ -25,6 +39,22 @@ const { close: closeDb } = await import('../src/db/index.js');
 let server, base;
 
 before(async () => {
+  // Against a real server the database may hold the last run's rows, so
+  // it is emptied before seeding. PGlite starts from an empty folder and
+  // needs no such thing.
+  if (process.env.TEST_DATABASE_URL) {
+    const { connect, close } = await import('../src/db/index.js');
+    const db = await connect();
+    await db.script(`
+      DROP TABLE IF EXISTS notifications, refunds, cash_book, payments,
+        order_events, order_items, stock_movements, orders, price_changes,
+        products, categories, otp_codes, users, companies, counters CASCADE;
+      DROP FUNCTION IF EXISTS now_text() CASCADE;
+      DROP FUNCTION IF EXISTS today_text() CASCADE;
+    `);
+    await close();
+  }
+
   // Seed the fresh test database.
   await import('../src/db/seed.js');
   server = http.createServer(await createApp());

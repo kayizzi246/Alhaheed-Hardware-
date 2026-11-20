@@ -1,26 +1,42 @@
-# Al Hadeed Hardware — the API, as a Render Blueprint.
+# Al Hadeed Hardware — the API and its database, as a Render Blueprint.
 #
-# Render reads this file and provisions the service, so the dashboard
-# steps are reduced to: New -> Blueprint -> pick this repository ->
-# fill in the values it asks for -> Apply.
+# Render reads this file and provisions both, so the dashboard steps are
+# reduced to: New -> Blueprint -> pick this repository -> fill in the
+# values it asks for -> Apply.
 #
-# Everything here is free, and the data survives.
+# PostgreSQL, created by Render, in the same dashboard as the API. No
+# second account anywhere, and the connection string is injected into
+# the service rather than copied by hand.
 #
-#   • the API runs on Render's free web service
-#   • the database is a free hosted Postgres — Supabase or Neon, set
-#     through DATABASE_URL below
+# Why a database and not a file on disk: a free Render service has no
+# persistent disk, so a SQLite file inside the container would be wiped
+# on every deploy, every restart and every wake from sleep. The database
+# is a separate thing that survives all of it.
 #
-# That second line is the whole point. A free Render service has no
-# persistent disk, so a database kept in a file inside the container
-# would be wiped on every deploy, every restart and every wake from
-# sleep. Postgres lives somewhere else and does not care what Render
-# does to the container.
+# ── TWO THINGS ABOUT THE FREE TIER ───────────────────────────────────
 #
-# The one free-tier cost left is sleep: a free service naps after about
-# 15 minutes without traffic, so the first request afterwards takes the
-# best part of a minute and the live Socket.IO link drops until a
-# reload. Orders and money are safe; the cashier's screen just needs a
-# refresh after a quiet spell. A paid instance removes that.
+#  1. Render's free PostgreSQL expires. At the time of writing it runs
+#     for a limited period and is then deleted, and their current terms
+#     are the thing to check — not this comment. When it expires the
+#     shop loses its data, so before that day either upgrade the
+#     database to a paid instance or take a dump and move it. Any
+#     ordinary PostgreSQL works: change DATABASE_URL and nothing else.
+#
+#  2. The free web service sleeps after about 15 minutes without
+#     traffic. The first request afterwards takes the best part of a
+#     minute, and the live Socket.IO link drops until a reload, so the
+#     cashier's screen needs a refresh after a quiet spell. Orders and
+#     money are safe either way.
+#
+# Keeping a backup is one command, and worth putting in the calendar:
+#   pg_dump $DATABASE_URL > alhadeed-$(date +%F).sql
+
+databases:
+  - name: alhadeed-db
+    databaseName: alhadeed
+    user: alhadeed
+    plan: free
+    region: frankfurt # the closest Render region to Uganda
 
 services:
   - type: web
@@ -39,13 +55,13 @@ services:
 
     envVars:
       # ─── The database ─────────────────────────────────────────────
-      # A free Postgres from Supabase (Project settings -> Database ->
-      # Connection string -> URI) or Neon. Use the pooled/session
-      # connection string, not the direct one, so the free connection
-      # limit is not exhausted. Looks like:
-      #   postgresql://user:password@host:5432/postgres
+      # Render creates the PostgreSQL below and puts its connection
+      # string here. Nothing to copy, nothing to paste, no second
+      # account anywhere.
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: alhadeed-db
+          property: connectionString
 
       # ─── Runtime ──────────────────────────────────────────────────
       - key: NODE_VERSION
