@@ -9,8 +9,8 @@ const router = Router();
 router.use(authenticate, requireRole('accounts', 'manager'));
 
 /** Queue of paid orders awaiting verification. */
-router.get('/queue', (_req, res) => {
-  const awaiting = all(
+router.get('/queue', async (_req, res) => {
+  const awaiting = await all(
     `SELECT o.*, p.receipt_no, p.method, p.amount_paid, p.transaction_ref, p.cashier_name,
             u.full_name AS ordered_by_name, c.company_name
        FROM orders o
@@ -20,14 +20,14 @@ router.get('/queue', (_req, res) => {
       WHERE o.status = 'paid'
       ORDER BY o.created_at ASC`
   );
-  const today = get(
+  const today = await get(
     `SELECT COUNT(*) AS verified_today,
             COALESCE(SUM(amount_paid), 0) AS verified_amount
-       FROM payments WHERE verified = 1 AND date(verified_at) = date('now')`
+       FROM payments WHERE verified = 1 AND substr(verified_at, 1, 10) = today_text()`
   );
-  const cash = get(
+  const cash = await get(
     `SELECT COALESCE(SUM(cash_in), 0) AS cash_in, COALESCE(SUM(cash_out), 0) AS cash_out
-       FROM cash_book WHERE entry_date = date('now')`
+       FROM cash_book WHERE entry_date = today_text()`
   );
   res.json({ orders: awaiting, summary: { awaiting: awaiting.length, ...today, ...cash } });
 });
@@ -36,22 +36,22 @@ router.get('/queue', (_req, res) => {
 router.post(
   '/orders/:id/verify',
   validate(z.object({ approve: z.boolean(), remarks: z.string().optional().nullable() })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
-      res.json({ order: verifyPayment(req.user, Number(req.params.id), req.body) });
+      res.json({ order: await verifyPayment(req.user, Number(req.params.id), req.body) });
     } catch (e) { next(e); }
   }
 );
 
 // ------------------------------------------------------------ Cash book
-router.get('/cash-book', (req, res) => {
+router.get('/cash-book', async (req, res) => {
   const date = req.query.date || new Date().toISOString().slice(0, 10);
-  const opening = get(
+  const opening = (await get(
     `SELECT COALESCE(SUM(cash_in - cash_out), 0) AS balance FROM cash_book WHERE entry_date < ?`,
     [date]
-  ).balance;
+  )).balance;
 
-  const rows = all(
+  const rows = await all(
     `SELECT cb.*, u.full_name AS recorded_by_name
        FROM cash_book cb JOIN users u ON u.id = cb.recorded_by
       WHERE cb.entry_date = ? ORDER BY cb.created_at ASC`,
@@ -84,34 +84,34 @@ router.post(
     method: z.string().optional().nullable(),
     entryDate: z.string().optional(),
   })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       const b = req.body;
-      const r = run(
+      const r = await run(
         `INSERT INTO cash_book (entry_date, details, cash_in, cash_out, method, recorded_by)
-         VALUES (COALESCE(?, date('now')), ?, ?, ?, ?, ?)`,
+         VALUES (COALESCE(?, today_text()), ?, ?, ?, ?, ?)`,
         [b.entryDate || null, b.details, b.cashIn, b.cashOut, b.method || null, req.user.id]
       );
-      res.status(201).json({ entry: get('SELECT * FROM cash_book WHERE id = ?', [Number(r.lastInsertRowid)]) });
+      res.status(201).json({ entry: await get('SELECT * FROM cash_book WHERE id = ?', [Number(r.lastInsertRowid)]) });
     } catch (e) { next(e); }
   }
 );
 
 /** Daily reconciliation: till and mobile money against verified payments. */
-router.get('/reconciliation', (req, res) => {
+router.get('/reconciliation', async (req, res) => {
   const date = req.query.date || new Date().toISOString().slice(0, 10);
-  const byMethod = all(
+  const byMethod = await all(
     `SELECT method,
             COUNT(*) AS count,
             COALESCE(SUM(amount_paid), 0) AS collected,
             COALESCE(SUM(CASE WHEN verified = 1 THEN amount_paid END), 0) AS verified,
             COALESCE(SUM(CASE WHEN verified = 0 THEN amount_paid END), 0) AS pending,
             COALESCE(SUM(CASE WHEN verified = -1 THEN amount_paid END), 0) AS rejected
-       FROM payments WHERE date(created_at) = ?
+       FROM payments WHERE substr(created_at, 1, 10) = ?
       GROUP BY method`,
     [date]
   );
-  const cashBook = get(
+  const cashBook = await get(
     `SELECT COALESCE(SUM(cash_in), 0) AS cash_in, COALESCE(SUM(cash_out), 0) AS cash_out
        FROM cash_book WHERE entry_date = ?`,
     [date]

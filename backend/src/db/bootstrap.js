@@ -17,13 +17,13 @@
  */
 
 import bcrypt from 'bcryptjs';
-import { db, get, run, migrate } from './index.js';
+import { get, run, migrate, close } from './index.js';
 import { config } from '../config.js';
 import { normalisePhone } from '../utils/sms.js';
 
-migrate();
+await migrate();
 
-const staff = get(`SELECT COUNT(*) AS n FROM users WHERE role <> 'customer'`);
+const staff = await get(`SELECT COUNT(*) AS n FROM users WHERE role <> 'customer'`);
 
 if (staff.n > 0) {
   console.log(`  Database ready — ${staff.n} staff account(s) already exist.`);
@@ -48,7 +48,7 @@ if (staff.n > 0) {
     process.exit(1);
   }
 
-  run(
+  await run(
     `INSERT INTO users (full_name, phone, email, password_hash, role, account_type)
      VALUES (?, ?, ?, ?, 'manager', 'individual')`,
     [name, normalisePhone(phone), email, bcrypt.hashSync(password, 10)]
@@ -63,16 +63,16 @@ if (staff.n > 0) {
 
 // Seed the product categories if the shop has none, so the catalogue has
 // its filters on day one. Products themselves are the manager's to add.
-const categories = get('SELECT COUNT(*) AS n FROM categories');
+const categories = await get('SELECT COUNT(*) AS n FROM categories');
 if (categories.n === 0) {
   for (const name of [
     'Cement', 'Iron & Steel', 'Roofing', 'Paints',
     'Plumbing', 'Electricals', 'Tools',
   ]) {
-    run('INSERT INTO categories (name) VALUES (?)', [name]);
+    await run('INSERT INTO categories (name) VALUES (?)', [name]);
   }
   console.log('  Added the seven starting categories.');
 }
 
-console.log(`  ${config.shopName} database: ${config.dbFile}\n`);
-db.close();
+console.log(`  ${config.shopName} database ready.\n`);
+await close();

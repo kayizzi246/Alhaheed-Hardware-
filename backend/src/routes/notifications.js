@@ -6,8 +6,8 @@ const router = Router();
 router.use(authenticate);
 
 /** A person's own alerts plus anything broadcast to their desk. */
-router.get('/', (req, res) => {
-  const notifications = all(
+router.get('/', async (req, res) => {
+  const notifications = await all(
     `SELECT n.*, o.order_no
        FROM notifications n LEFT JOIN orders o ON o.id = n.order_id
       WHERE n.user_id = ? OR (n.user_id IS NULL AND n.role = ?)
@@ -20,8 +20,8 @@ router.get('/', (req, res) => {
   });
 });
 
-router.post('/:id/read', (req, res) => {
-  run(
+router.post('/:id/read', async (req, res) => {
+  await run(
     `UPDATE notifications SET read = 1
       WHERE id = ? AND (user_id = ? OR (user_id IS NULL AND role = ?))`,
     [Number(req.params.id), req.user.id, req.user.role]
@@ -29,8 +29,8 @@ router.post('/:id/read', (req, res) => {
   res.json({ ok: true });
 });
 
-router.post('/read-all', (req, res) => {
-  run(
+router.post('/read-all', async (req, res) => {
+  await run(
     `UPDATE notifications SET read = 1
       WHERE read = 0 AND (user_id = ? OR (user_id IS NULL AND role = ?))`,
     [req.user.id, req.user.role]

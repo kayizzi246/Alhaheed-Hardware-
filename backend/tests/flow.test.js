@@ -9,20 +9,25 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
-process.env.DB_FILE = `./data/test-${Date.now()}.db`;
+// A throwaway database of its own. With no DATABASE_URL the API runs
+// PGlite — PostgreSQL compiled to WebAssembly, in this process — so the
+// suite exercises the same engine the shop runs on, with no server to
+// install and nothing left behind.
+process.env.PG_DATA_DIR = `./data/test-${Date.now()}`;
+delete process.env.DATABASE_URL;
 process.env.JWT_SECRET = 'test-secret';
 process.env.OTP_DEV_MODE = 'true';
 
 const { config } = await import('../src/config.js');
 const { createApp } = await import('../src/app.js');
-const { db } = await import('../src/db/index.js');
+const { close: closeDb } = await import('../src/db/index.js');
 
 let server, base;
 
 before(async () => {
   // Seed the fresh test database.
   await import('../src/db/seed.js');
-  server = http.createServer(createApp());
+  server = http.createServer(await createApp());
   await new Promise((r) => server.listen(0, r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
@@ -30,11 +35,8 @@ before(async () => {
 after(async () => {
   await new Promise((r) => server.close(r));
   // Close the handle first: Windows keeps open database files locked.
-  try { db.close(); } catch {}
-  for (const s of ['', '-wal', '-shm']) {
-    const f = config.dbFile + s;
-    try { if (fs.existsSync(f)) fs.rmSync(f); } catch {}
-  }
+  try { await closeDb(); } catch {}
+  try { fs.rmSync(config.dataDir, { recursive: true, force: true }); } catch {}
 });
 
 async function api(method, url, { token, body } = {}) {

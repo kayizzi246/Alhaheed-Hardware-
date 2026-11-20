@@ -10,7 +10,11 @@ export const config = {
   env: process.env.NODE_ENV || 'development',
   jwtSecret: process.env.JWT_SECRET || 'dev-secret-do-not-use-in-production',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '12h',
-  dbFile: path.resolve(root, process.env.DB_FILE || './data/alhadeed.db'),
+  // Production points DATABASE_URL at a hosted Postgres (Supabase, Neon,
+  // Render). With it unset the API runs PGlite — Postgres itself, in
+  // process — out of this folder, so a developer needs nothing installed.
+  databaseUrl: process.env.DATABASE_URL || '',
+  dataDir: path.resolve(root, process.env.PG_DATA_DIR || './data/pg'),
   corsOrigins: (process.env.CORS_ORIGINS || '*').split(',').map((s) => s.trim()),
   currency: process.env.CURRENCY || 'UGX',
   shopName: process.env.SHOP_NAME || 'Al Hadeed Hardware',

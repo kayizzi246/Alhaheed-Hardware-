@@ -3,7 +3,7 @@ import { verifyToken } from '../utils/tokens.js';
 import { unauthorized, forbidden } from '../utils/errors.js';
 
 /** Attach req.user from the Bearer token. Rejects suspended accounts. */
-export function authenticate(req, _res, next) {
+export async function authenticate(req, _res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return next(unauthorized());
@@ -15,7 +15,7 @@ export function authenticate(req, _res, next) {
     return next(unauthorized('Your session has expired, please sign in again'));
   }
 
-  const user = get('SELECT * FROM users WHERE id = ?', [Number(payload.sub)]);
+  const user = await get('SELECT * FROM users WHERE id = ?', [Number(payload.sub)]);
   if (!user) return next(unauthorized('Account no longer exists'));
   if (user.status !== 'active') return next(forbidden('This account has been suspended'));
 

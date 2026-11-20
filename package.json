@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "description": "Al Hadeed Hardware App - Ordering & Cash Booking System (MVP)",
-  "workspaces": ["backend", "web"],
+  "workspaces": [
+    "backend",
+    "web"
+  ],
   "scripts": {
     "setup": "npm install && npm run db:reset",
     "db:reset": "npm --workspace backend run db:reset",
@@ -16,5 +19,7 @@
   "devDependencies": {
     "concurrently": "9.1.2"
   },
-  "engines": { "node": ">=22.5.0" }
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }

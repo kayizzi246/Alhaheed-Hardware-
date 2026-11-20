@@ -10,7 +10,8 @@
 | `NODE_ENV` | `development` | Set to `production` to hide error details |
 | `JWT_SECRET` | dev value | **Must be changed.** A long random string |
 | `JWT_EXPIRES_IN` | `12h` | One working day |
-| `DB_FILE` | `./data/alhadeed.db` | Put this on a persistent disk |
+| `DATABASE_URL` | — | Postgres connection string. Blank runs PGlite in process, out of `PG_DATA_DIR` — no server to install. |
+| `PG_DATA_DIR` | `./data/pg` | Where PGlite keeps its data when `DATABASE_URL` is blank |
 | `CORS_ORIGINS` | localhost list | Comma-separated; set to your real web domain |
 | `OTP_DEV_MODE` | `true` | **Set to `false` in production** — otherwise every code is `123456` |
 | `SHOP_NAME`, `CURRENCY` | Al Hadeed Hardware, UGX | Shown on receipts |
@@ -57,7 +58,7 @@ your provider's call, and stop returning `devCode`.
 
 | Piece | Where | Why |
 | --- | --- | --- |
-| API | Render, Railway, Fly.io or a VPS | **Not Vercel.** The API holds a SQLite file and long-lived WebSocket connections; serverless functions have neither a writable disk nor a process that stays alive. |
+| API | Render, Railway, Fly.io or a VPS | **Not Vercel.** The API holds long-lived WebSocket connections for the live order hand-off, and serverless functions have no process that stays alive to hold them. |
 | Web panel | Vercel | Plain Next.js. Root directory `web`. |
 | Mobile | `eas build` for the Play Store and App Store | |
 | Domain / CDN | Namecheap + Cloudflare | Proxy the panel; the API needs WebSocket support enabled. |
@@ -100,39 +101,39 @@ successful deploy.
 **delete `ADMIN_PASSWORD`** from the Render environment; it is never read
 again once a staff account exists.
 
-### What the free tier costs you instead
+### Free, and the data survives
 
-Everything in the blueprint is free. Nothing in this repository asks for a
-paid instance, a disk or an add-on, and SMS sends nothing until you add
-gateway credentials.
+Everything in the blueprint is free, and nothing is lost between deploys,
+because the database is not on Render at all:
 
-The price of that is **the database does not survive**. A free Render
-service has no persistent disk, and the API keeps its data in a SQLite
-file inside the container. The file is wiped:
+- **the API** runs on Render's free web service
+- **the database** is a free hosted Postgres — Supabase or Neon
 
-- on every deploy, including every push to `main`
-- on every restart
-- when the service wakes from sleep — free services sleep after roughly
-  15 minutes without traffic, and wake into a fresh container
+A free Render service has no persistent disk, so a database kept in a file
+inside the container would be wiped on every deploy, every restart and
+every wake from sleep. Postgres lives somewhere else and is untouched by
+any of that.
 
-Orders, receipts, the cash book and the staff accounts go with it. The
-service recovers on its own — `db:bootstrap` rebuilds the tables and the
-manager account from `ADMIN_PHONE` / `ADMIN_PASSWORD`, which is why those
-stay set — but yesterday's orders are gone.
+The one free-tier cost left is **sleeping**: a free service naps after
+about 15 minutes without traffic, so the first request afterwards takes
+the best part of a minute, and the Socket.IO connection drops, meaning the
+cashier's screen stops updating live until someone reloads. Orders and
+money are safe; the screen just needs a refresh after a quiet spell. A
+paid instance removes that, and nothing else needs to change.
 
-That is **fine for a demo**, for showing the client, and for testing the
-whole flow end to end. It is **not fine for a shop taking real money**.
+### Getting the DATABASE_URL
 
-Sleeping has a second cost: the first request after a nap takes the best
-part of a minute, and the Socket.IO connection drops, so the cashier's
-screen stops updating live until someone reloads.
+**Supabase** — create a project, then Project Settings -> Database ->
+Connection string -> URI. Use the **pooled** (session) string, not the
+direct one, so the free connection limit is not exhausted.
 
-### Two free ways to keep the data
+**Neon** — create a project and copy the pooled connection string from
+the dashboard.
 
-| Option | What it takes |
-| --- | --- |
-| **Hosted Postgres** — Supabase or Neon, both free | A code change: port `backend/src/db/index.js` from `node:sqlite` to `pg`, and translate `schema.sql` (237 lines) to Postgres. Around 215 query call sites go through that one module, so they mostly come along unchanged. The concept paper proposes Supabase anyway. |
-| **A paid Render instance with a 1 GB disk** | No code change: set `plan: starter`, add the `disk:` block back, and set `DB_FILE=/data/alhadeed.db`. |
+Either looks like
+`postgresql://user:password@host:5432/postgres`. Paste it into
+`DATABASE_URL` when Render asks. The tables are created on first boot;
+there is nothing to import.
 
 ---
 
@@ -174,37 +175,39 @@ under [`flutterflow/custom_code/widgets/`](../flutterflow/custom_code/widgets/).
 
 ## Running the API anywhere else
 
-`npm start` in `backend/` is the entry point; it needs **Node 22.5 or
-newer** for the built-in `node:sqlite` module. Run `npm run db:bootstrap`
-before it — the command is safe to repeat and does nothing once the shop
+`npm start` in `backend/` is the entry point; it needs **Node 20 or
+newer** and a `DATABASE_URL`. Run `npm run db:bootstrap` before it — the command is safe to repeat and does nothing once the shop
 has data. Put it behind a process manager (`pm2` or a systemd unit) so it
 comes back after a reboot, and make sure the reverse proxy passes
 WebSocket upgrades through or real-time order hand-off will not work.
 
 ---
 
-## Moving to MySQL or Supabase
+## About the database
 
-This build uses SQLite through Node's built-in `node:sqlite`, so there is no
-native build step and no external service. For multiple shops, or if you want
-Supabase's hosted real-time and backups, swap the database:
+PostgreSQL, through one module: [`backend/src/db/index.js`](../backend/src/db/index.js).
 
-1. **Translate `schema.sql`.** `INTEGER PRIMARY KEY AUTOINCREMENT` becomes
-   `SERIAL` / `AUTO_INCREMENT`, `datetime('now')` becomes `NOW()`, and
-   `date(col)` becomes the equivalent date cast.
-2. **Rewrite [backend/src/db/index.js](../backend/src/db/index.js)** — just the
-   five functions `all`, `get`, `run`, `tx` and `nextCounter`. Everything else in
-   the codebase goes through them.
-3. **Convert placeholders** if you move to Postgres: `?` becomes `$1, $2, …`.
-   One helper in the same module can do this for every query.
-4. **Make the query functions async** and add `await` at the call sites. The
-   service layer is already written as small, transaction-wrapped units, so this
-   is mechanical.
-5. **Keep `counters`.** Order and receipt numbers are drawn inside the same
-   transaction as the insert, which is what makes them collision-free. A
-   database sequence works equally well.
+| `DATABASE_URL` | What runs | Used for |
+| --- | --- | --- |
+| set | `pg`, against a real server | production |
+| unset | PGlite — PostgreSQL compiled to WebAssembly, in process, writing to `PG_DATA_DIR` | local development and the test suite |
 
-Nothing in the routes, the web panel or the mobile app changes.
+Both are the same engine, so there is no dialect gap between what the
+tests prove and what the shop runs.
+
+Two details worth knowing before changing the schema:
+
+- **Timestamps are `TEXT`**, holding `'YYYY-MM-DD HH:MM:SS'`, written by
+  the `now_text()` function in `schema.sql`. Every client reads them as
+  strings; a `timestamptz` comes back from the driver as a Date, becomes
+  ISO with a T and a Z, and breaks the web panel's formatting and the
+  Flutter app's time slicing alike.
+- **Money is `INTEGER`**, in whole shillings. UGX has no sub-unit worth
+  tracking, and integers cannot drift the way floats do.
+
+The query helpers keep `?` placeholders and translate them to `$1, $2, …`,
+and `run()` reports `lastInsertRowid` by appending `RETURNING id` to an
+INSERT that has no RETURNING of its own.
 
 ---
 

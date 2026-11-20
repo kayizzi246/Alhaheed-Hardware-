@@ -7,6 +7,6 @@ build/
 .env.local
 .env.*.local
 *.bak
-backend/data/*.db
-backend/data/*.db-*
+# The local database: PGlite stores a Postgres data directory here.
+backend/data/
 .expo/

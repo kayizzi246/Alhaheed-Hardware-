@@ -11,14 +11,14 @@ const router = Router();
 router.use(authenticate, requireRole('cashier', 'manager'));
 
 /** Payment queue + the day's till summary. */
-router.get('/queue', (_req, res) => {
-  const waiting = queueFor('cashier');
-  const summary = get(
+router.get('/queue', async (_req, res) => {
+  const waiting = await queueFor('cashier');
+  const summary = await get(
     `SELECT COUNT(*) AS paid_today,
             COALESCE(SUM(CASE WHEN method = 'cash' THEN amount_paid END), 0)         AS cash_today,
             COALESCE(SUM(CASE WHEN method = 'mobile_money' THEN amount_paid END), 0) AS momo_today,
             COALESCE(SUM(CASE WHEN method = 'card' THEN amount_paid END), 0)         AS card_today
-       FROM payments WHERE date(created_at) = date('now')`
+       FROM payments WHERE substr(created_at, 1, 10) = today_text()`
   );
   res.json({
     orders: waiting,
@@ -34,22 +34,22 @@ router.post(
     amountPaid: z.number().int().positive(),
     transactionRef: z.string().optional().nullable(),
   })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
-      const order = receivePayment(req.user, Number(req.params.id), req.body);
+      const order = await receivePayment(req.user, Number(req.params.id), req.body);
       res.json({ order, receipt: order.payment });
     } catch (e) { next(e); }
   }
 );
 
 /** Receipts issued by this cashier (today by default). */
-router.get('/receipts', (req, res) => {
+router.get('/receipts', async (req, res) => {
   const { date, mine } = req.query;
-  const where = ['date(p.created_at) = ?'];
+  const where = ['substr(p.created_at, 1, 10) = ?'];
   const params = [date || new Date().toISOString().slice(0, 10)];
   if (mine === '1') { where.push('p.cashier_id = ?'); params.push(req.user.id); }
   res.json({
-    receipts: all(
+    receipts: await all(
       `SELECT p.*, o.order_no, o.status, u.full_name AS customer_name, c.company_name
          FROM payments p
          JOIN orders o ON o.id = p.order_id
@@ -63,11 +63,11 @@ router.get('/receipts', (req, res) => {
 });
 
 /** A printable / shareable receipt. */
-router.get('/receipts/:receiptNo', (req, res, next) => {
+router.get('/receipts/:receiptNo', async (req, res, next) => {
   try {
-    const payment = get('SELECT * FROM payments WHERE receipt_no = ?', [req.params.receiptNo]);
+    const payment = await get('SELECT * FROM payments WHERE receipt_no = ?', [req.params.receiptNo]);
     if (!payment) throw notFound('Receipt not found');
-    const order = getOrder(payment.order_id);
+    const order = await getOrder(payment.order_id);
     res.json({
       receipt: {
         shop: config.shopName,
@@ -92,15 +92,15 @@ router.get('/receipts/:receiptNo', (req, res, next) => {
 });
 
 /** End of day: what this cashier took in. */
-router.get('/end-of-day', (req, res) => {
+router.get('/end-of-day', async (req, res) => {
   const date = req.query.date || new Date().toISOString().slice(0, 10);
-  const totals = get(
+  const totals = await get(
     `SELECT COUNT(*) AS receipts,
             COALESCE(SUM(amount_paid), 0) AS total,
             COALESCE(SUM(CASE WHEN method = 'cash' THEN amount_paid END), 0) AS cash,
             COALESCE(SUM(CASE WHEN method = 'mobile_money' THEN amount_paid END), 0) AS mobile_money,
             COALESCE(SUM(CASE WHEN method = 'card' THEN amount_paid END), 0) AS card
-       FROM payments WHERE date(created_at) = ? AND cashier_id = ?`,
+       FROM payments WHERE substr(created_at, 1, 10) = ? AND cashier_id = ?`,
     [date, req.user.id]
   );
   res.json({ date, cashier: req.user.full_name, ...totals });

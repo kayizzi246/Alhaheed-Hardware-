@@ -14,7 +14,7 @@ Built to the MVP scope in the concept paper (Annex 1).
 
 | Folder | What it is | Who uses it |
 | --- | --- | --- |
-| [backend/](backend/) | Node.js + Express API, SQLite database, Socket.IO real-time | All sides |
+| [backend/](backend/) | Node.js + Express API, PostgreSQL, Socket.IO real-time, SMS | All sides |
 | [web/](web/) | Next.js web app, role-based | All five sides |
 | [mobile/](mobile/) | React Native (Expo) app, role-based login | Customer, Cashier, Accounts, Store Manager, Manager |
 | [docs/](docs/) | Order flow, API reference, data model, deployment | — |
@@ -38,8 +38,11 @@ and no navigation for them.
 
 ## Quick start
 
-Requires **Node.js 22.5 or newer** (the API uses the built-in `node:sqlite`
-module, so there is nothing to compile).
+Requires **Node.js 20 or newer**. No database to install: with no
+`DATABASE_URL` set the API runs **PGlite** — PostgreSQL compiled to
+WebAssembly, inside the Node process — storing to `backend/data/pg`.
+Production points `DATABASE_URL` at a hosted Postgres; it is the same
+engine either way.
 
 ```bash
 npm install          # installs backend and web
@@ -140,18 +143,18 @@ delivery tracking and EFRIS e-receipts. See
 | Mobile app | React Native (Expo), React Navigation | React Native ✓ |
 | Web panel | Next.js 15, React 19 | Next.js, React ✓ |
 | Back-end | Node.js, Express | Node.js, Express ✓ |
-| Database | SQLite via `node:sqlite` | Supabase / MySQL — see note below |
+| Database | PostgreSQL via `pg`; PGlite in development | Supabase ✓ |
 | Real-time | Socket.IO | Real-time order hand-off ✓ |
 | Auth | JWT, bcrypt, role-based guards | Secure logins, role-based access ✓ |
 | Testing | `node:test` end-to-end suite | Automated testing ✓ |
 
-**On the database:** the concept paper proposes Supabase or MySQL. This build
-uses SQLite so the whole system runs with no external service and no native
-compilation — useful for development, demos and a single-shop deployment. All
-database access goes through [backend/src/db/index.js](backend/src/db/index.js)
-and plain SQL, so moving to MySQL or Postgres/Supabase means changing that one
-module and the `schema.sql` dialect. [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
-covers the migration.
+**On the database:** PostgreSQL, as the concept paper proposes — Supabase
+and Neon both have a free tier that holds the shop's data properly. Locally
+there is nothing to install or start: with `DATABASE_URL` unset the API runs
+**PGlite**, which is PostgreSQL itself compiled to WebAssembly, in process,
+writing to `backend/data/pg`. The test suite uses it too, so what passes the
+tests runs on the same engine as the shop. Every query goes through
+[backend/src/db/index.js](backend/src/db/index.js).
 
 ---
 

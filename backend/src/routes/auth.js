@@ -37,27 +37,27 @@ const registerSchema = z.object({
   tin: z.string().optional().nullable(),
 });
 
-router.post('/register', validate(registerSchema), (req, res, next) => {
+router.post('/register', validate(registerSchema), async (req, res, next) => {
   try {
     const b = req.body;
-    if (get('SELECT id FROM users WHERE phone = ?', [b.phone])) {
+    if (await get('SELECT id FROM users WHERE phone = ?', [b.phone])) {
       throw conflict('That phone number is already registered');
     }
     if (b.accountType === 'company' && !b.companyName) {
       throw badRequest('Company name is required for a company account');
     }
 
-    const user = tx(() => {
+    const user = await tx(async () => {
       let companyId = null;
       if (b.accountType === 'company') {
-        const c = run(
+        const c = await run(
           `INSERT INTO companies (company_name, tin, contact_person, phone, email, address)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [b.companyName, b.tin || null, b.fullName, b.phone, b.email || null, b.address || null]
         );
         companyId = Number(c.lastInsertRowid);
       }
-      const r = run(
+      const r = await run(
         `INSERT INTO users (full_name, phone, email, role, account_type, company_id, tin, address)
          VALUES (?, ?, ?, 'customer', ?, ?, ?, ?)`,
         [
@@ -70,7 +70,7 @@ router.post('/register', validate(registerSchema), (req, res, next) => {
           b.address || null,
         ]
       );
-      return get('SELECT * FROM users WHERE id = ?', [Number(r.lastInsertRowid)]);
+      return await get('SELECT * FROM users WHERE id = ?', [Number(r.lastInsertRowid)]);
     });
 
     res.status(201).json({ user: publicUser(user), token: signToken(user) });
@@ -85,7 +85,7 @@ router.post('/otp/request', validate(z.object({ phone: z.string().min(9) })), as
     // 0772 123 456, 772123456 and +256772123456 are the same number, and
     // people type all three. Match on the stored form.
     const phone = normalisePhone(req.body.phone);
-    const user = get('SELECT * FROM users WHERE phone = ?', [phone]);
+    const user = await get('SELECT * FROM users WHERE phone = ?', [phone]);
     if (!user) throw badRequest('That phone number is not registered');
     if (user.status !== 'active') throw unauthorized('This account has been suspended');
 
@@ -93,10 +93,10 @@ router.post('/otp/request', validate(z.object({ phone: z.string().min(9) })), as
       ? '123456'
       : String(Math.floor(100000 + Math.random() * 900000));
 
-    run('UPDATE otp_codes SET consumed = 1 WHERE phone = ? AND consumed = 0', [phone]);
-    run(
+    await run('UPDATE otp_codes SET consumed = 1 WHERE phone = ? AND consumed = 0', [phone]);
+    await run(
       `INSERT INTO otp_codes (phone, code, expires_at)
-       VALUES (?, ?, datetime('now', '+5 minutes'))`,
+       VALUES (?, ?, to_char(now() + interval '5 minutes', 'YYYY-MM-DD HH24:MI:SS'))`,
       [phone, code]
     );
 
@@ -125,22 +125,22 @@ router.post('/otp/request', validate(z.object({ phone: z.string().min(9) })), as
 router.post(
   '/otp/verify',
   validate(z.object({ phone: z.string().min(9), code: z.string().length(6) })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       // Normalised the same way as the request, or a code sent to
       // +256772123456 could not be verified by someone who typed 0772…
       const phone = normalisePhone(req.body.phone);
       const { code } = req.body;
-      const otp = get(
+      const otp = await get(
         `SELECT * FROM otp_codes
-          WHERE phone = ? AND code = ? AND consumed = 0 AND expires_at > datetime('now')
+          WHERE phone = ? AND code = ? AND consumed = 0 AND expires_at > now_text()
           ORDER BY id DESC LIMIT 1`,
         [phone, code]
       );
       if (!otp) throw unauthorized('That code is wrong or has expired');
-      run('UPDATE otp_codes SET consumed = 1 WHERE id = ?', [otp.id]);
+      await run('UPDATE otp_codes SET consumed = 1 WHERE id = ?', [otp.id]);
 
-      const user = get('SELECT * FROM users WHERE phone = ?', [phone]);
+      const user = await get('SELECT * FROM users WHERE phone = ?', [phone]);
       if (!user) throw unauthorized('Account not found');
       res.json({ user: publicUser(user), token: signToken(user) });
     } catch (e) { next(e); }
@@ -153,10 +153,10 @@ router.post(
 router.post(
   '/staff/login',
   validate(z.object({ identifier: z.string().min(3), password: z.string().min(4) })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       const { identifier, password } = req.body;
-      const user = get(
+      const user = await get(
         `SELECT * FROM users WHERE (phone = ? OR email = ?) AND role != 'customer'`,
         [identifier, identifier]
       );
@@ -169,10 +169,10 @@ router.post(
   }
 );
 
-router.get('/me', authenticate, (req, res) => {
+router.get('/me', authenticate, async (req, res) => {
   const user = publicUser(req.user);
   if (req.user.company_id) {
-    user.company = get('SELECT * FROM companies WHERE id = ?', [req.user.company_id]);
+    user.company = await get('SELECT * FROM companies WHERE id = ?', [req.user.company_id]);
   }
   res.json({ user });
 });
@@ -181,13 +181,13 @@ router.post(
   '/change-password',
   authenticate,
   validate(z.object({ currentPassword: z.string(), newPassword: z.string().min(6) })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       const u = req.user;
       if (!u.password_hash || !bcrypt.compareSync(req.body.currentPassword, u.password_hash)) {
         throw unauthorized('Your current password is wrong');
       }
-      run('UPDATE users SET password_hash = ? WHERE id = ?', [
+      await run('UPDATE users SET password_hash = ? WHERE id = ?', [
         bcrypt.hashSync(req.body.newPassword, 10),
         u.id,
       ]);

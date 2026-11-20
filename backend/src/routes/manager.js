@@ -15,39 +15,43 @@ const router = Router();
 router.use(authenticate, requireRole('manager'));
 
 // ------------------------------------------------------------ Dashboard
-router.get('/dashboard', (_req, res) => {
-  const sales = get(
+router.get('/dashboard', async (_req, res) => {
+  const sales = await get(
     `SELECT COALESCE(SUM(p.amount_paid), 0) AS sales_today, COUNT(*) AS payments_today
-       FROM payments p WHERE p.verified = 1 AND date(p.created_at) = date('now')`
+       FROM payments p WHERE p.verified = 1 AND substr(p.created_at, 1, 10) = today_text()`
   );
-  const ordersToday = get(
-    `SELECT COUNT(*) AS n FROM orders WHERE date(created_at) = date('now')`
-  ).n;
-  const byMethod = get(
+  const ordersToday = (await get(
+    `SELECT COUNT(*) AS n FROM orders WHERE substr(created_at, 1, 10) = today_text()`
+  )).n;
+  const byMethod = await get(
     `SELECT COALESCE(SUM(CASE WHEN method='cash' THEN amount_paid END),0) AS cash,
             COALESCE(SUM(CASE WHEN method='mobile_money' THEN amount_paid END),0) AS mobile_money,
             COALESCE(SUM(CASE WHEN method='card' THEN amount_paid END),0) AS card
-       FROM payments WHERE date(created_at) = date('now')`
+       FROM payments WHERE substr(created_at, 1, 10) = today_text()`
   );
-  const byStage = get(
+  const byStage = await get(
+    // SQLite let SUM() add up a comparison as 1 and 0; PostgreSQL will
+    // not add booleans, so the count is filtered instead — which says
+    // what it means rather more plainly anyway.
     `SELECT
-       SUM(status = 'pending_payment')  AS cashier,
-       SUM(status = 'paid')             AS accounts,
-       SUM(status = 'payment_verified') AS store,
-       SUM(status = 'released')         AS done
+       COUNT(*) FILTER (WHERE status = 'pending_payment')  AS cashier,
+       COUNT(*) FILTER (WHERE status = 'paid')             AS accounts,
+       COUNT(*) FILTER (WHERE status = 'payment_verified') AS store,
+       COUNT(*) FILTER (WHERE status = 'released')         AS done
      FROM orders`
   );
-  const lowStock = all(
+  const lowStock = await all(
     `SELECT id, name, code, unit, stock_available, reorder_level
        FROM products WHERE active = 1 AND stock_available <= reorder_level ORDER BY stock_available`
   );
-  const last7Days = all(
-    `SELECT date(p.created_at) AS day, COALESCE(SUM(p.amount_paid), 0) AS total
+  const last7Days = await all(
+    `SELECT substr(p.created_at, 1, 10) AS day, COALESCE(SUM(p.amount_paid), 0) AS total
        FROM payments p
-      WHERE p.verified = 1 AND date(p.created_at) >= date('now', '-6 days')
+      WHERE p.verified = 1
+        AND substr(p.created_at, 1, 10) >= to_char(now() - interval '6 days', 'YYYY-MM-DD')
       GROUP BY day ORDER BY day`
   );
-  const refunds = all(
+  const refunds = await all(
     `SELECT r.*, o.order_no, u.full_name AS requested_by_name
        FROM refunds r
        JOIN orders o ON o.id = r.order_id
@@ -80,35 +84,35 @@ const staffSchema = z.object({
   password: z.string().min(6),
 });
 
-router.get('/staff', (_req, res) => {
+router.get('/staff', async (_req, res) => {
   res.json({
-    staff: all(
+    staff: (await all(
       `SELECT * FROM users WHERE role != 'customer' ORDER BY role, full_name`
-    ).map(publicUser),
+    )).map(publicUser),
   });
 });
 
-router.post('/staff', validate(staffSchema), (req, res, next) => {
+router.post('/staff', validate(staffSchema), async (req, res, next) => {
   try {
     const b = req.body;
-    if (get('SELECT id FROM users WHERE phone = ?', [b.phone])) {
+    if (await get('SELECT id FROM users WHERE phone = ?', [b.phone])) {
       throw conflict('That phone number already has an account');
     }
-    const r = run(
+    const r = await run(
       `INSERT INTO users (full_name, phone, email, password_hash, role, account_type, added_by)
        VALUES (?, ?, ?, ?, ?, 'staff', ?)`,
       [b.fullName, b.phone, b.email || null, bcrypt.hashSync(b.password, 10), b.role, req.user.id]
     );
-    res.status(201).json({ staff: publicUser(get('SELECT * FROM users WHERE id = ?', [Number(r.lastInsertRowid)])) });
+    res.status(201).json({ staff: publicUser(await get('SELECT * FROM users WHERE id = ?', [Number(r.lastInsertRowid)])) });
   } catch (e) { next(e); }
 });
 
 router.patch('/staff/:id', validate(staffSchema.partial().extend({
   status: z.enum(['active', 'suspended']).optional(),
-})), (req, res, next) => {
+})), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const staff = get(`SELECT * FROM users WHERE id = ? AND role != 'customer'`, [id]);
+    const staff = await get(`SELECT * FROM users WHERE id = ? AND role != 'customer'`, [id]);
     if (!staff) throw notFound('Staff member not found');
     if (id === req.user.id && req.body.status === 'suspended') {
       throw badRequest('You cannot suspend your own account');
@@ -121,19 +125,19 @@ router.patch('/staff/:id', validate(staffSchema.partial().extend({
       if (b[key] !== undefined) { sets.push(`${col} = ?`); params.push(b[key]); }
     }
     if (b.password) { sets.push('password_hash = ?'); params.push(bcrypt.hashSync(b.password, 10)); }
-    if (sets.length) run(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...params, id]);
+    if (sets.length) await run(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...params, id]);
 
-    res.json({ staff: publicUser(get('SELECT * FROM users WHERE id = ?', [id])) });
+    res.json({ staff: publicUser(await get('SELECT * FROM users WHERE id = ?', [id])) });
   } catch (e) { next(e); }
 });
 
 // ----------------------------------------------------------- Customers
-router.get('/customers', (req, res) => {
+router.get('/customers', async (req, res) => {
   const { q } = req.query;
   const where = [`u.role = 'customer'`], params = [];
-  if (q) { where.push('(u.full_name LIKE ? OR u.phone LIKE ? OR c.company_name LIKE ?)'); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  if (q) { where.push('(u.full_name ILIKE ? OR u.phone ILIKE ? OR c.company_name ILIKE ?)'); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
   res.json({
-    customers: all(
+    customers: await all(
       `SELECT u.*, c.company_name,
               (SELECT COUNT(*) FROM orders o WHERE o.customer_id = u.id) AS order_count,
               (SELECT COALESCE(SUM(o.total),0) FROM orders o WHERE o.customer_id = u.id AND o.status = 'released') AS lifetime_value
@@ -144,9 +148,9 @@ router.get('/customers', (req, res) => {
   });
 });
 
-router.get('/companies', (_req, res) => {
+router.get('/companies', async (_req, res) => {
   res.json({
-    companies: all(
+    companies: await all(
       `SELECT c.*,
               (SELECT COUNT(*) FROM users u WHERE u.company_id = c.id) AS staff_count,
               (SELECT COUNT(*) FROM orders o WHERE o.company_id = c.id) AS order_count
@@ -156,9 +160,9 @@ router.get('/companies', (_req, res) => {
 });
 
 // ------------------------------------------------------------- Refunds
-router.get('/refunds', (_req, res) => {
+router.get('/refunds', async (_req, res) => {
   res.json({
-    refunds: all(
+    refunds: await all(
       `SELECT r.*, o.order_no, o.total, u.full_name AS requested_by_name
          FROM refunds r JOIN orders o ON o.id = r.order_id
          LEFT JOIN users u ON u.id = r.requested_by
@@ -170,39 +174,39 @@ router.get('/refunds', (_req, res) => {
 router.post(
   '/refunds/:id/decide',
   validate(z.object({ approve: z.boolean(), notes: z.string().optional().nullable() })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       const id = Number(req.params.id);
-      const refund = get('SELECT * FROM refunds WHERE id = ?', [id]);
+      const refund = await get('SELECT * FROM refunds WHERE id = ?', [id]);
       if (!refund) throw notFound('Refund request not found');
       if (refund.status !== 'requested') throw conflict('This refund has already been decided');
 
-      const order = tx(() => {
-        run(
-          `UPDATE refunds SET status = ?, decided_by = ?, decided_at = datetime('now') WHERE id = ?`,
+      const order = await tx(async () => {
+        await run(
+          `UPDATE refunds SET status = ?, decided_by = ?, decided_at = now_text() WHERE id = ?`,
           [req.body.approve ? 'approved' : 'declined', req.user.id, id]
         );
         if (req.body.approve) {
-          run(`UPDATE orders SET status = 'refunded', current_stage = 'done', updated_at = datetime('now') WHERE id = ?`,
+          await run(`UPDATE orders SET status = 'refunded', current_stage = 'done', updated_at = now_text() WHERE id = ?`,
             [refund.order_id]);
-          run(
+          await run(
             `INSERT INTO cash_book (details, cash_out, order_id, recorded_by)
              VALUES (?, ?, ?, ?)`,
             [`Refund on order #${get('SELECT order_no FROM orders WHERE id = ?', [refund.order_id]).order_no}`,
              refund.amount, refund.order_id, req.user.id]
           );
         }
-        logEvent({
+        await logEvent({
           orderId: refund.order_id,
           stage: 'manager',
           action: req.body.approve ? 'refunded' : 'refund_declined',
           user: req.user,
           notes: req.body.notes || refund.reason,
         });
-        return getOrder(refund.order_id);
+        return await getOrder(refund.order_id);
       });
 
-      notifyUser(order.customer_id, {
+      await notifyUser(order.customer_id, {
         title: req.body.approve
           ? `Refund approved for #${order.order_no}`
           : `Refund declined for #${order.order_no}`,
@@ -210,7 +214,7 @@ router.post(
         orderId: order.id,
       });
       emitToDesks('order:updated', order);
-      res.json({ order, refund: get('SELECT * FROM refunds WHERE id = ?', [id]) });
+      res.json({ order, refund: await get('SELECT * FROM refunds WHERE id = ?', [id]) });
     } catch (e) { next(e); }
   }
 );
@@ -223,27 +227,27 @@ router.post(
     amount: z.number().int().positive(),
     reason: z.string().min(2),
   })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
-      const order = getOrder(req.body.orderId);
-      const r = run(
+      const order = await getOrder(req.body.orderId);
+      const r = await run(
         'INSERT INTO refunds (order_id, amount, reason, requested_by) VALUES (?, ?, ?, ?)',
         [order.id, req.body.amount, req.body.reason, req.user.id]
       );
-      res.status(201).json({ refund: get('SELECT * FROM refunds WHERE id = ?', [Number(r.lastInsertRowid)]) });
+      res.status(201).json({ refund: await get('SELECT * FROM refunds WHERE id = ?', [Number(r.lastInsertRowid)]) });
     } catch (e) { next(e); }
   }
 );
 
 /** Full audit trail across all orders. */
-router.get('/audit', (req, res) => {
+router.get('/audit', async (req, res) => {
   const { from, to, userId, limit = 300 } = req.query;
   const where = [], params = [];
-  if (from) { where.push('date(e.created_at) >= ?'); params.push(from); }
-  if (to) { where.push('date(e.created_at) <= ?'); params.push(to); }
+  if (from) { where.push('substr(e.created_at, 1, 10) >= ?'); params.push(from); }
+  if (to) { where.push('substr(e.created_at, 1, 10) <= ?'); params.push(to); }
   if (userId) { where.push('e.handled_by = ?'); params.push(Number(userId)); }
   res.json({
-    events: all(
+    events: await all(
       `SELECT e.*, o.order_no
          FROM order_events e JOIN orders o ON o.id = e.order_id
         ${where.length ? 'WHERE ' + where.join(' AND ') : ''}

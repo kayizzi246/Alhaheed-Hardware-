@@ -13,21 +13,21 @@ const router = Router();
 // sees what the shop sells straight away; the phone number is only asked
 // for at the point of ordering. Everything that *changes* a product sits
 // below `router.use(authenticate)` further down.
-router.get('/categories', (_req, res) => {
+router.get('/categories', async (_req, res) => {
   res.json({
-    categories: all(`SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.active = 1) AS product_count
+    categories: await all(`SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.active = 1) AS product_count
                        FROM categories c ORDER BY c.name`),
   });
 });
 
 /** GET /api/products?search=cement&category=3&minPrice=&maxPrice=&inStock=1 */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { search, category, minPrice, maxPrice, inStock } = req.query;
   const where = ['p.active = 1'];
   const params = [];
 
   if (search) {
-    where.push('(p.name LIKE ? OR p.code LIKE ? OR p.description LIKE ?)');
+    where.push('(p.name ILIKE ? OR p.code ILIKE ? OR p.description ILIKE ?)');
     const like = `%${search}%`;
     params.push(like, like, like);
   }
@@ -36,7 +36,7 @@ router.get('/', (req, res) => {
   if (maxPrice) { where.push('p.price <= ?'); params.push(Number(maxPrice)); }
   if (inStock === '1') where.push('p.stock_available > 0');
 
-  const products = all(
+  const products = await all(
     `SELECT p.*, c.name AS category_name
        FROM products p LEFT JOIN categories c ON c.id = p.category_id
       WHERE ${where.join(' AND ')}
@@ -47,9 +47,9 @@ router.get('/', (req, res) => {
   res.json({ products });
 });
 
-router.get('/:id', (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   try {
-    const p = get(
+    const p = await get(
       `SELECT p.*, c.name AS category_name
          FROM products p LEFT JOIN categories c ON c.id = p.category_id
         WHERE p.id = ?`,
@@ -78,31 +78,31 @@ const productSchema = z.object({
   remarks: z.string().optional().nullable(),
 });
 
-router.post('/', requireRole('manager'), validate(productSchema), (req, res, next) => {
+router.post('/', requireRole('manager'), validate(productSchema), async (req, res, next) => {
   try {
     const b = req.body;
-    const r = run(
+    const r = await run(
       `INSERT INTO products
          (code, name, category_id, description, unit, price, picture, stock_available, reorder_level, supplier, remarks)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [b.code, b.name, b.categoryId || null, b.description || null, b.unit, b.price,
        b.picture || null, b.stockAvailable, b.reorderLevel, b.supplier || null, b.remarks || null]
     );
-    res.status(201).json({ product: get('SELECT * FROM products WHERE id = ?', [Number(r.lastInsertRowid)]) });
+    res.status(201).json({ product: await get('SELECT * FROM products WHERE id = ?', [Number(r.lastInsertRowid)]) });
   } catch (e) { next(e); }
 });
 
-router.patch('/:id', requireRole('manager'), validate(productSchema.partial()), (req, res, next) => {
+router.patch('/:id', requireRole('manager'), validate(productSchema.partial()), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const existing = get('SELECT * FROM products WHERE id = ?', [id]);
+    const existing = await get('SELECT * FROM products WHERE id = ?', [id]);
     if (!existing) throw notFound('Product not found');
     const b = req.body;
 
-    tx(() => {
+    await tx(async () => {
       // Price changes are kept as history for the manager's reports.
       if (b.price != null && b.price !== existing.price) {
-        run(
+        await run(
           'INSERT INTO price_changes (product_id, old_price, new_price, changed_by) VALUES (?, ?, ?, ?)',
           [id, existing.price, b.price, req.user.id]
         );
@@ -117,28 +117,28 @@ router.patch('/:id', requireRole('manager'), validate(productSchema.partial()), 
         if (b[key] !== undefined) { sets.push(`${col} = ?`); params.push(b[key]); }
       }
       if (sets.length) {
-        run(`UPDATE products SET ${sets.join(', ')}, updated_at = datetime('now') WHERE id = ?`, [...params, id]);
+        await run(`UPDATE products SET ${sets.join(', ')}, updated_at = now_text() WHERE id = ?`, [...params, id]);
       }
     });
 
-    res.json({ product: get('SELECT * FROM products WHERE id = ?', [id]) });
+    res.json({ product: await get('SELECT * FROM products WHERE id = ?', [id]) });
   } catch (e) { next(e); }
 });
 
-router.delete('/:id', requireRole('manager'), (req, res, next) => {
+router.delete('/:id', requireRole('manager'), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    if (!get('SELECT id FROM products WHERE id = ?', [id])) throw notFound('Product not found');
+    if (!await get('SELECT id FROM products WHERE id = ?', [id])) throw notFound('Product not found');
     // Products are retired, never deleted: old orders still reference them.
-    run('UPDATE products SET active = 0 WHERE id = ?', [id]);
+    await run('UPDATE products SET active = 0 WHERE id = ?', [id]);
     res.json({ ok: true });
   } catch (e) { next(e); }
 });
 
-router.post('/categories', requireRole('manager'), validate(z.object({ name: z.string().min(2) })), (req, res, next) => {
+router.post('/categories', requireRole('manager'), validate(z.object({ name: z.string().min(2) })), async (req, res, next) => {
   try {
-    const r = run('INSERT INTO categories (name) VALUES (?)', [req.body.name]);
-    res.status(201).json({ category: get('SELECT * FROM categories WHERE id = ?', [Number(r.lastInsertRowid)]) });
+    const r = await run('INSERT INTO categories (name) VALUES (?)', [req.body.name]);
+    res.status(201).json({ category: await get('SELECT * FROM categories WHERE id = ?', [Number(r.lastInsertRowid)]) });
   } catch (e) { next(e); }
 });
 

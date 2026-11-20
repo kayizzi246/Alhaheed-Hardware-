@@ -3,12 +3,12 @@
  * demo orders sitting at each desk, so every screen has something to show.
  */
 import bcrypt from 'bcryptjs';
-import { db, migrate, all, get, run, nextOrderNo, nextReceiptNo } from './index.js';
+import { migrate, all, get, run, nextOrderNo, nextReceiptNo, close } from './index.js';
 import { config } from '../config.js';
 
-migrate();
+await migrate();
 
-if (get('SELECT COUNT(*) AS n FROM products').n > 0) {
+if ((await get('SELECT COUNT(*) AS n FROM products')).n > 0) {
   console.log('Database already has data - nothing seeded. Run `npm run db:reset` to start fresh.');
   process.exit(0);
 }
@@ -19,7 +19,7 @@ const hash = (p) => bcrypt.hashSync(p, 10);
 const categories = ['Cement', 'Iron & Steel', 'Roofing', 'Paints', 'Plumbing', 'Electricals', 'Tools'];
 const catId = {};
 for (const name of categories) {
-  const r = run('INSERT INTO categories (name) VALUES (?)', [name]);
+  const r = await run('INSERT INTO categories (name) VALUES (?)', [name]);
   catId[name] = Number(r.lastInsertRowid);
 }
 
@@ -47,7 +47,7 @@ const products = [
   ['AH-TLS-004', 'Hammer 2lb',             'Tools',       'pc',     23000,  36, 10, 'Mukwano'],
 ];
 for (const [code, name, cat, unit, price, stock, reorder, supplier] of products) {
-  run(
+  await run(
     `INSERT INTO products (code, name, category_id, unit, price, stock_available, reorder_level, supplier, description)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [code, name, catId[cat], unit, price, stock, reorder, supplier, `${name} - ${cat}`]
@@ -63,7 +63,7 @@ const staff = [
 ];
 const staffId = {};
 for (const [name, phone, email, role, password] of staff) {
-  const r = run(
+  const r = await run(
     `INSERT INTO users (full_name, phone, email, password_hash, role, account_type)
      VALUES (?, ?, ?, ?, ?, 'staff')`,
     [name, phone, email, hash(password), role]
@@ -79,7 +79,7 @@ const individuals = [
 ];
 const custId = {};
 for (const [name, phone, email] of individuals) {
-  const r = run(
+  const r = await run(
     `INSERT INTO users (full_name, phone, email, role, account_type) VALUES (?, ?, ?, 'customer', 'individual')`,
     [name, phone, email]
   );
@@ -87,7 +87,7 @@ for (const [name, phone, email] of individuals) {
 }
 
 // A company customer with its own staff
-const companyRow = run(
+const companyRow = await run(
   `INSERT INTO companies (company_name, tin, contact_person, phone, email, address)
    VALUES (?, ?, ?, ?, ?, ?)`,
   ['Kampala Construction Ltd', '1000234567', 'John Okello', '+256770222001',
@@ -95,7 +95,7 @@ const companyRow = run(
 );
 const companyId = Number(companyRow.lastInsertRowid);
 
-const ownerRow = run(
+const ownerRow = await run(
   `INSERT INTO users (full_name, phone, email, role, account_type, company_id, tin)
    VALUES (?, ?, ?, 'customer', 'company_owner', ?, ?)`,
   ['John Okello', '+256770222001', 'john@kampalaconstruction.ug', companyId, '1000234567']
@@ -109,7 +109,7 @@ const companyStaff = [
 ];
 const compStaffId = {};
 for (const [name, phone, staffRole, limit] of companyStaff) {
-  const r = run(
+  const r = await run(
     `INSERT INTO users (full_name, phone, role, account_type, company_id, staff_role, spending_limit, added_by)
      VALUES (?, ?, 'customer', 'company_staff', ?, ?, ?, ?)`,
     [name, phone, companyId, staffRole, limit, ownerId]
@@ -118,30 +118,33 @@ for (const [name, phone, staffRole, limit] of companyStaff) {
 }
 
 // --------------------------------------------------------- Demo orders
-const productByCode = (code) => get('SELECT * FROM products WHERE code = ?', [code]);
+const productByCode = async (code) =>
+  get('SELECT * FROM products WHERE code = ?', [code]);
 
-function createOrder({ customerId, companyId: coId, lines, fulfilment = 'pickup', address }) {
-  const items = lines.map(([code, qty]) => {
-    const p = productByCode(code);
-    return { p, qty, total: p.price * qty };
-  });
+async function createOrder({ customerId, companyId: coId, lines, fulfilment = 'pickup', address }) {
+  const items = await Promise.all(
+    lines.map(async ([code, qty]) => {
+      const p = await productByCode(code);
+      return { p, qty, total: p.price * qty };
+    })
+  );
   const subtotal = items.reduce((s, i) => s + i.total, 0);
-  const orderNo = nextOrderNo();
-  const r = run(
+  const orderNo = await nextOrderNo();
+  const r = await run(
     `INSERT INTO orders (order_no, customer_id, company_id, subtotal, total, fulfilment, delivery_address)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [orderNo, customerId, coId || null, subtotal, subtotal, fulfilment, address || null]
   );
   const orderId = Number(r.lastInsertRowid);
   for (const i of items) {
-    run(
+    await run(
       `INSERT INTO order_items (order_id, product_id, product_name, unit, quantity, unit_price, line_total)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [orderId, i.p.id, i.p.name, i.p.unit, i.qty, i.p.price, i.total]
     );
   }
-  const customer = get('SELECT * FROM users WHERE id = ?', [customerId]);
-  run(
+  const customer = await get('SELECT * FROM users WHERE id = ?', [customerId]);
+  await run(
     `INSERT INTO order_events (order_id, stage, action, to_status, handled_by, handler_name, notes)
      VALUES (?, 'customer', 'placed', 'pending_payment', ?, ?, ?)`,
     [orderId, customerId, customer.full_name, `${items.length} item(s)`]
@@ -149,16 +152,16 @@ function createOrder({ customerId, companyId: coId, lines, fulfilment = 'pickup'
   return { orderId, orderNo, total: subtotal };
 }
 
-function payOrder(orderId, method, ref) {
-  const order = get('SELECT * FROM orders WHERE id = ?', [orderId]);
-  const receiptNo = nextReceiptNo();
-  run(
+async function payOrder(orderId, method, ref) {
+  const order = await get('SELECT * FROM orders WHERE id = ?', [orderId]);
+  const receiptNo = await nextReceiptNo();
+  await run(
     `INSERT INTO payments (order_id, receipt_no, amount_due, amount_paid, method, transaction_ref, cashier_id, cashier_name)
      VALUES (?, ?, ?, ?, ?, ?, ?, 'Aisha Nakato')`,
     [orderId, receiptNo, order.total, order.total, method, ref || null, staffId.cashier]
   );
-  run(`UPDATE orders SET status = 'paid', current_stage = 'accounts' WHERE id = ?`, [orderId]);
-  run(
+  await run(`UPDATE orders SET status = 'paid', current_stage = 'accounts' WHERE id = ?`, [orderId]);
+  await run(
     `INSERT INTO order_events (order_id, stage, action, from_status, to_status, handled_by, handler_name, notes)
      VALUES (?, 'cashier', 'payment_received', 'pending_payment', 'paid', ?, 'Aisha Nakato', ?)`,
     [orderId, staffId.cashier, `${receiptNo} - ${method}`]
@@ -166,43 +169,43 @@ function payOrder(orderId, method, ref) {
   return receiptNo;
 }
 
-function verifyOrder(orderId) {
-  const payment = get('SELECT * FROM payments WHERE order_id = ? ORDER BY id DESC LIMIT 1', [orderId]);
-  const order = get('SELECT * FROM orders WHERE id = ?', [orderId]);
-  run(
-    `UPDATE payments SET verified = 1, verified_by = ?, verifier_name = 'David Mugisha', verified_at = datetime('now')
+async function verifyOrder(orderId) {
+  const payment = await get('SELECT * FROM payments WHERE order_id = ? ORDER BY id DESC LIMIT 1', [orderId]);
+  const order = await get('SELECT * FROM orders WHERE id = ?', [orderId]);
+  await run(
+    `UPDATE payments SET verified = 1, verified_by = ?, verifier_name = 'David Mugisha', verified_at = now_text()
       WHERE id = ?`,
     [staffId.accounts, payment.id]
   );
-  run(`UPDATE orders SET status = 'payment_verified', current_stage = 'store' WHERE id = ?`, [orderId]);
-  run(
+  await run(`UPDATE orders SET status = 'payment_verified', current_stage = 'store' WHERE id = ?`, [orderId]);
+  await run(
     `INSERT INTO cash_book (details, cash_in, method, order_id, payment_id, recorded_by)
      VALUES (?, ?, ?, ?, ?, ?)`,
     [`${payment.receipt_no} - Order #${order.order_no}`, payment.amount_paid, payment.method,
      orderId, payment.id, staffId.accounts]
   );
-  run(
+  await run(
     `INSERT INTO order_events (order_id, stage, action, from_status, to_status, handled_by, handler_name)
      VALUES (?, 'accounts', 'verified', 'paid', 'payment_verified', ?, 'David Mugisha')`,
     [orderId, staffId.accounts]
   );
 }
 
-function releaseOrderSeed(orderId) {
-  const items = all('SELECT * FROM order_items WHERE order_id = ?', [orderId]);
+async function releaseOrderSeed(orderId) {
+  const items = await all('SELECT * FROM order_items WHERE order_id = ?', [orderId]);
   for (const item of items) {
-    const p = get('SELECT * FROM products WHERE id = ?', [item.product_id]);
+    const p = await get('SELECT * FROM products WHERE id = ?', [item.product_id]);
     const after = p.stock_available - item.quantity;
-    run('UPDATE products SET stock_available = ? WHERE id = ?', [after, p.id]);
-    run('UPDATE order_items SET qty_released = quantity WHERE id = ?', [item.id]);
-    run(
+    await run('UPDATE products SET stock_available = ? WHERE id = ?', [after, p.id]);
+    await run('UPDATE order_items SET qty_released = quantity WHERE id = ?', [item.id]);
+    await run(
       `INSERT INTO stock_movements (product_id, movement, quantity, stock_before, stock_after, order_id, handled_by, reason)
        VALUES (?, 'release', ?, ?, ?, ?, ?, 'Released to customer')`,
       [p.id, -item.quantity, p.stock_available, after, orderId, staffId.store]
     );
   }
-  run(`UPDATE orders SET status = 'released', current_stage = 'done' WHERE id = ?`, [orderId]);
-  run(
+  await run(`UPDATE orders SET status = 'released', current_stage = 'done' WHERE id = ?`, [orderId]);
+  await run(
     `INSERT INTO order_events (order_id, stage, action, from_status, to_status, handled_by, handler_name)
      VALUES (?, 'store', 'released', 'payment_verified', 'released', ?, 'Musa Kateregga')`,
     [orderId, staffId.store]
@@ -210,33 +213,33 @@ function releaseOrderSeed(orderId) {
 }
 
 // Opening cash float
-run(
+await run(
   `INSERT INTO cash_book (details, cash_in, recorded_by) VALUES ('Opening balance', 1500000, ?)`,
   [staffId.accounts]
 );
 
 // 1. Waiting at the Cashier
-createOrder({ customerId: custId['Mukasa Joseph'], lines: [['AH-CEM-001', 2], ['AH-TLS-001', 4]] });
-createOrder({
+await createOrder({ customerId: custId['Mukasa Joseph'], lines: [['AH-CEM-001', 2], ['AH-TLS-001', 4]] });
+await createOrder({
   customerId: compStaffId['Sarah Namuli'], companyId,
   lines: [['AH-CEM-001', 40], ['AH-IRN-001', 10]],
   fulfilment: 'delivery', address: 'Site B, Namugongo Road',
 });
-createOrder({ customerId: custId['Nakato Grace'], lines: [['AH-PNT-001', 1]] });
+await createOrder({ customerId: custId['Nakato Grace'], lines: [['AH-PNT-001', 1]] });
 
 // 2. Paid, waiting at Accounts
-const paid1 = createOrder({ customerId: compStaffId['Sarah Namuli'], companyId, lines: [['AH-ROF-001', 20], ['AH-ROF-003', 6]] });
-payOrder(paid1.orderId, 'mobile_money', 'MP2611190934');
-const paid2 = createOrder({ customerId: custId['Mukasa Joseph'], lines: [['AH-ELE-002', 10], ['AH-ELE-003', 6]] });
-payOrder(paid2.orderId, 'cash');
+const paid1 = await createOrder({ customerId: compStaffId['Sarah Namuli'], companyId, lines: [['AH-ROF-001', 20], ['AH-ROF-003', 6]] });
+await payOrder(paid1.orderId, 'mobile_money', 'MP2611190934');
+const paid2 = await createOrder({ customerId: custId['Mukasa Joseph'], lines: [['AH-ELE-002', 10], ['AH-ELE-003', 6]] });
+await payOrder(paid2.orderId, 'cash');
 
 // 3. Verified, waiting at the Store
-const ver1 = createOrder({ customerId: compStaffId['Peter Ssali'], companyId, lines: [['AH-PLM-001', 8], ['AH-PLM-003', 4]] });
-payOrder(ver1.orderId, 'mobile_money', 'MP2611190920');
-verifyOrder(ver1.orderId);
-const ver2 = createOrder({ customerId: custId['Nakato Grace'], lines: [['AH-TLS-002', 1], ['AH-TLS-003', 2]], fulfilment: 'delivery', address: 'Ntinda, Kampala' });
-payOrder(ver2.orderId, 'card', 'CARD-55120');
-verifyOrder(ver2.orderId);
+const ver1 = await createOrder({ customerId: compStaffId['Peter Ssali'], companyId, lines: [['AH-PLM-001', 8], ['AH-PLM-003', 4]] });
+await payOrder(ver1.orderId, 'mobile_money', 'MP2611190920');
+await verifyOrder(ver1.orderId);
+const ver2 = await createOrder({ customerId: custId['Nakato Grace'], lines: [['AH-TLS-002', 1], ['AH-TLS-003', 2]], fulfilment: 'delivery', address: 'Ntinda, Kampala' });
+await payOrder(ver2.orderId, 'card', 'CARD-55120');
+await verifyOrder(ver2.orderId);
 
 // 4. Completed history
 for (const [customerId, coId, lines, method] of [
@@ -245,20 +248,20 @@ for (const [customerId, coId, lines, method] of [
   [compStaffId['Moses Kigozi'], companyId, [['AH-CEM-002', 30]], 'mobile_money'],
   [custId['Nakato Grace'], null, [['AH-PNT-002', 3]], 'cash'],
 ]) {
-  const o = createOrder({ customerId, companyId: coId, lines });
-  payOrder(o.orderId, method, method === 'cash' ? null : `MP${Math.floor(Math.random() * 1e10)}`);
-  verifyOrder(o.orderId);
-  releaseOrderSeed(o.orderId);
+  const o = await createOrder({ customerId, companyId: coId, lines });
+  await payOrder(o.orderId, method, method === 'cash' ? null : `MP${Math.floor(Math.random() * 1e10)}`);
+  await verifyOrder(o.orderId);
+  await releaseOrderSeed(o.orderId);
 }
 
 // A cash-out entry and a refund request for the manager's dashboard
-run(
+await run(
   `INSERT INTO cash_book (details, cash_out, method, recorded_by)
    VALUES ('Transport - delivery truck fuel', 120000, 'cash', ?)`,
   [staffId.accounts]
 );
-const lastReleased = get(`SELECT id FROM orders WHERE status = 'released' ORDER BY id DESC LIMIT 1`);
-run(
+const lastReleased = await get(`SELECT id FROM orders WHERE status = 'released' ORDER BY id DESC LIMIT 1`);
+await run(
   `INSERT INTO refunds (order_id, amount, reason, requested_by) VALUES (?, ?, ?, ?)`,
   [lastReleased.id, 38500, 'Iron sheet damaged on delivery', staffId.cashier]
 );
@@ -280,5 +283,7 @@ console.log(`
     Company staff      +256770222003  Peter Ssali (Buyer, limit UGX 1,000,000)
     Company staff      +256770222004  Moses Kigozi (Site Supervisor, limit UGX 2,000,000)
 
-  ${all('SELECT 1 FROM products').length} products, ${all('SELECT 1 FROM orders').length} demo orders across all desks.
+  ${(await all('SELECT 1 FROM products')).length} products, ${(await all('SELECT 1 FROM orders')).length} demo orders across all desks.
 `);
+
+await close();

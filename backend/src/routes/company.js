@@ -11,18 +11,18 @@ const router = Router();
 router.use(authenticate, requireRole('customer'));
 
 /** The company profile of the signed-in customer. */
-router.get('/', (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
     if (!req.user.company_id) throw badRequest('You are not on a company account');
-    const company = get('SELECT * FROM companies WHERE id = ?', [req.user.company_id]);
+    const company = await get('SELECT * FROM companies WHERE id = ?', [req.user.company_id]);
     if (!company) throw notFound('Company not found');
     res.json({ company, isOwner: req.user.account_type === 'company_owner' });
   } catch (e) { next(e); }
 });
 
 /** Staff the company has added to order on its behalf. */
-router.get('/staff', requireCompanyOwner, (req, res) => {
-  const staff = all(
+router.get('/staff', requireCompanyOwner, async (req, res) => {
+  const staff = await all(
     `SELECT u.*,
             (SELECT COUNT(*) FROM orders o WHERE o.customer_id = u.id) AS order_count,
             (SELECT COALESCE(SUM(o.total),0) FROM orders o
@@ -53,20 +53,20 @@ router.post(
     staffRole: z.string().min(2),
     spendingLimit: z.number().int().nonnegative().nullable().optional(),
   })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       const b = req.body;
-      if (get('SELECT id FROM users WHERE phone = ?', [b.phone])) {
+      if (await get('SELECT id FROM users WHERE phone = ?', [b.phone])) {
         throw conflict('That phone number already has an account');
       }
-      const r = run(
+      const r = await run(
         `INSERT INTO users
            (full_name, phone, email, role, account_type, company_id, staff_role, spending_limit, added_by)
          VALUES (?, ?, ?, 'customer', 'company_staff', ?, ?, ?, ?)`,
         [b.fullName, b.phone, b.email || null, req.user.company_id, b.staffRole,
          b.spendingLimit ?? null, req.user.id]
       );
-      res.status(201).json({ staff: publicUser(get('SELECT * FROM users WHERE id = ?', [Number(r.lastInsertRowid)])) });
+      res.status(201).json({ staff: publicUser(await get('SELECT * FROM users WHERE id = ?', [Number(r.lastInsertRowid)])) });
     } catch (e) { next(e); }
   }
 );
@@ -81,10 +81,10 @@ router.patch(
     spendingLimit: z.number().int().nonnegative().nullable().optional(),
     status: z.enum(['active', 'suspended']).optional(),
   })),
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
       const id = Number(req.params.id);
-      const staff = get(
+      const staff = await get(
         `SELECT * FROM users WHERE id = ? AND company_id = ? AND account_type = 'company_staff'`,
         [id, req.user.company_id]
       );
@@ -96,30 +96,30 @@ router.patch(
       for (const [key, col] of Object.entries(map)) {
         if (b[key] !== undefined) { sets.push(`${col} = ?`); params.push(b[key]); }
       }
-      if (sets.length) run(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...params, id]);
+      if (sets.length) await run(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...params, id]);
 
-      res.json({ staff: publicUser(get('SELECT * FROM users WHERE id = ?', [id])) });
+      res.json({ staff: publicUser(await get('SELECT * FROM users WHERE id = ?', [id])) });
     } catch (e) { next(e); }
   }
 );
 
 /** Remove a staff member. Their past orders stay on the company record. */
-router.delete('/staff/:id', requireCompanyOwner, (req, res, next) => {
+router.delete('/staff/:id', requireCompanyOwner, async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const staff = get(
+    const staff = await get(
       `SELECT * FROM users WHERE id = ? AND company_id = ? AND account_type = 'company_staff'`,
       [id, req.user.company_id]
     );
     if (!staff) throw notFound('That person is not on your company account');
-    run(`UPDATE users SET status = 'suspended' WHERE id = ?`, [id]);
+    await run(`UPDATE users SET status = 'suspended' WHERE id = ?`, [id]);
     res.json({ ok: true, message: `${staff.full_name} can no longer order for the company` });
   } catch (e) { next(e); }
 });
 
 /** Every order placed under the company account, with who ordered and when. */
-router.get('/orders', requireCompanyOwner, (req, res) => {
-  const orders = all(
+router.get('/orders', requireCompanyOwner, async (req, res) => {
+  const orders = await all(
     `SELECT o.*, u.full_name AS ordered_by_name, u.staff_role,
             (SELECT COUNT(*) FROM order_items i WHERE i.order_id = o.id) AS item_count
        FROM orders o JOIN users u ON u.id = o.customer_id
@@ -127,7 +127,7 @@ router.get('/orders', requireCompanyOwner, (req, res) => {
       ORDER BY o.created_at DESC LIMIT 300`,
     [req.user.company_id]
   );
-  const summary = get(
+  const summary = await get(
     `SELECT COUNT(*) AS total_orders,
             COALESCE(SUM(CASE WHEN status = 'released' THEN total END), 0) AS total_spent,
             COALESCE(SUM(CASE WHEN status NOT IN ('released','cancelled','rejected') THEN total END), 0) AS in_progress

@@ -4,38 +4,23 @@
 # steps are reduced to: New -> Blueprint -> pick this repository ->
 # fill in the values it asks for -> Apply.
 #
-# Everything here is on free tiers. Nothing in this file costs money:
-# no paid instance, no disk, no add-on. SMS sends nothing until you put
-# real gateway credentials in (see SMS_PROVIDER at the bottom).
+# Everything here is free, and the data survives.
 #
-# ─────────────────────────────────────────────────────────────────────
-#  READ THIS BEFORE TAKING REAL ORDERS
+#   • the API runs on Render's free web service
+#   • the database is a free hosted Postgres — Supabase or Neon, set
+#     through DATABASE_URL below
 #
-#  A free Render service has no persistent disk, and the API keeps its
-#  data in a SQLite file. That file lives only as long as the running
-#  container, so it is wiped:
+# That second line is the whole point. A free Render service has no
+# persistent disk, so a database kept in a file inside the container
+# would be wiped on every deploy, every restart and every wake from
+# sleep. Postgres lives somewhere else and does not care what Render
+# does to the container.
 #
-#    • on every deploy (including every push to main)
-#    • on every restart
-#    • when the service wakes after sleeping (free services sleep after
-#      roughly 15 minutes with no traffic, and wake into a fresh
-#      container)
-#
-#  So orders, receipts, the cash book and the staff accounts all
-#  disappear, regularly and without warning. That is fine for a demo,
-#  for showing the client, and for testing the whole flow end to end.
-#  It is not fine for a shop taking real money.
-#
-#  The free way to fix it is a hosted Postgres — Supabase and Neon both
-#  have a free tier, and the concept paper proposes Supabase anyway. The
-#  API would need its database layer ported from node:sqlite; all the
-#  SQL lives in backend/src/db/. See docs/DEPLOYMENT.md.
-#
-#  The quick way to fix it is a paid Render instance with a 1 GB disk
-#  mounted at /data and DB_FILE=/data/alhadeed.db. That is the block
-#  this file used to carry, and it is the only thing that was costing
-#  anything.
-# ─────────────────────────────────────────────────────────────────────
+# The one free-tier cost left is sleep: a free service naps after about
+# 15 minutes without traffic, so the first request afterwards takes the
+# best part of a minute and the live Socket.IO link drops until a
+# reload. Orders and money are safe; the cashier's screen just needs a
+# refresh after a quiet spell. A paid instance removes that.
 
 services:
   - type: web
@@ -47,24 +32,26 @@ services:
     buildCommand: npm install
     # Bootstrap first: it creates the tables on an empty database and
     # exits non-zero rather than starting a shop nobody can sign in to.
-    # On free hosting it runs in earnest on every wake, because the
-    # database is empty again each time.
+    # It is safe to repeat and does nothing once the shop has data.
     startCommand: npm run db:bootstrap && npm start
     healthCheckPath: /api/health
     autoDeploy: true
 
     envVars:
+      # ─── The database ─────────────────────────────────────────────
+      # A free Postgres from Supabase (Project settings -> Database ->
+      # Connection string -> URI) or Neon. Use the pooled/session
+      # connection string, not the direct one, so the free connection
+      # limit is not exhausted. Looks like:
+      #   postgresql://user:password@host:5432/postgres
+      - key: DATABASE_URL
+        sync: false
+
       # ─── Runtime ──────────────────────────────────────────────────
-      # The API uses the built-in node:sqlite module, which does not
-      # exist before Node 22.5. Without this the deploy fails with
-      # "Cannot find module 'node:sqlite'".
       - key: NODE_VERSION
         value: 22.11.0
       - key: NODE_ENV
         value: production
-      # Inside the container, since there is no disk to mount.
-      - key: DB_FILE
-        value: ./data/alhadeed.db
 
       # ─── Security ─────────────────────────────────────────────────
       # Render generates this once and keeps it. Never commit a real
@@ -93,9 +80,9 @@ services:
         sync: false
 
       # ─── The first manager ────────────────────────────────────────
-      # Used on an empty database to create the account that adds the
-      # real staff and products. On free hosting the database empties
-      # itself, so leave these set — they are how the service recovers.
+      # Used once, on an empty database, to create the account that adds
+      # the real staff and products. Delete ADMIN_PASSWORD afterwards;
+      # it is never read again once a staff account exists.
       - key: ADMIN_NAME
         sync: false
       - key: ADMIN_PHONE
@@ -106,8 +93,8 @@ services:
       # ─── SMS ──────────────────────────────────────────────────────
       # "log" writes the message to the service log and sends nothing,
       # so it costs nothing: fine for testing, useless to a customer
-      # waiting for a code. Switch to africastalking and add the three
-      # values below when you are ready to pay per message.
+      # waiting for a code. Switch to africastalking and fill in the
+      # three values below when you are ready to pay per message.
       - key: SMS_PROVIDER
         value: log
       - key: SMS_USERNAME

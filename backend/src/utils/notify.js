@@ -2,9 +2,9 @@ import { run } from '../db/index.js';
 import { emitToUser, emitToRole } from '../realtime.js';
 
 /** Notify one person (the customer who ordered, a company owner, ...). */
-export function notifyUser(userId, { title, body, orderId }) {
+export async function notifyUser(userId, { title, body, orderId }) {
   if (!userId) return;
-  const res = run(
+  const res = await run(
     'INSERT INTO notifications (user_id, title, body, order_id) VALUES (?, ?, ?, ?)',
     [userId, title, body || null, orderId || null]
   );
@@ -19,8 +19,8 @@ export function notifyUser(userId, { title, body, orderId }) {
 }
 
 /** Alert a whole desk that something landed in their queue. */
-export function notifyRole(role, { title, body, orderId }) {
-  const res = run(
+export async function notifyRole(role, { title, body, orderId }) {
+  const res = await run(
     'INSERT INTO notifications (role, title, body, order_id) VALUES (?, ?, ?, ?)',
     [role, title, body || null, orderId || null]
   );

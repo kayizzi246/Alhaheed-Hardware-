@@ -49,7 +49,7 @@ router.post('/guest', validate(guestSchema), async (req, res, next) => {
       throw badRequest('Tell us where to deliver, so the driver can find you');
     }
 
-    let user = get('SELECT * FROM users WHERE phone = ?', [phone]);
+    let user = await get('SELECT * FROM users WHERE phone = ?', [phone]);
     if (user && user.role !== 'customer') {
       throw badRequest(
         'That number belongs to a staff account. Use a customer number to order.'
@@ -60,17 +60,17 @@ router.post('/guest', validate(guestSchema), async (req, res, next) => {
     }
 
     if (!user) {
-      const created = run(
+      const created = await run(
         `INSERT INTO users (full_name, phone, role, account_type)
          VALUES (?, ?, 'customer', 'individual')`,
         [b.fullName.trim(), phone]
       );
-      user = get('SELECT * FROM users WHERE id = ?', [Number(created.lastInsertRowid)]);
+      user = await get('SELECT * FROM users WHERE id = ?', [Number(created.lastInsertRowid)]);
     }
 
     // Only the shop's own delivery needs an address on the order; a
     // customer's own transporter collects from the counter.
-    const order = placeOrder(user, {
+    const order = await placeOrder(user, {
       items: b.items,
       fulfilment: b.delivery === 'shop_delivery' ? 'delivery' : 'pickup',
       deliveryAddress: b.delivery === 'shop_delivery' ? b.location.trim() : null,
@@ -120,34 +120,34 @@ const placeSchema = z.object({
 });
 
 /** Customer places an order (individual, or company staff on the company's behalf). */
-router.post('/', requireRole('customer'), validate(placeSchema), (req, res, next) => {
+router.post('/', requireRole('customer'), validate(placeSchema), async (req, res, next) => {
   try {
-    res.status(201).json({ order: placeOrder(req.user, req.body) });
+    res.status(201).json({ order: await placeOrder(req.user, req.body) });
   } catch (e) { next(e); }
 });
 
 /** My orders. ?scope=company lets a company owner see every staff order. */
-router.get('/mine', requireRole('customer'), (req, res, next) => {
+router.get('/mine', requireRole('customer'), async (req, res, next) => {
   try {
-    res.json({ orders: ordersForCustomer(req.user, { scope: req.query.scope || 'mine' }) });
+    res.json({ orders: await ordersForCustomer(req.user, { scope: req.query.scope || 'mine' }) });
   } catch (e) { next(e); }
 });
 
 /** Staff view of the whole order register, with filters. */
-router.get('/', requireRole('cashier', 'accounts', 'store', 'manager'), (req, res, next) => {
+router.get('/', requireRole('cashier', 'accounts', 'store', 'manager'), async (req, res, next) => {
   try {
     const { status, stage, from, to, q, limit = 200 } = req.query;
     const where = [], params = [];
     if (status) { where.push('o.status = ?'); params.push(status); }
     if (stage) { where.push('o.current_stage = ?'); params.push(stage); }
-    if (from) { where.push('date(o.created_at) >= ?'); params.push(from); }
-    if (to) { where.push('date(o.created_at) <= ?'); params.push(to); }
+    if (from) { where.push('substr(o.created_at, 1, 10) >= ?'); params.push(from); }
+    if (to) { where.push('substr(o.created_at, 1, 10) <= ?'); params.push(to); }
     if (q) {
-      where.push('(o.order_no LIKE ? OR u.full_name LIKE ? OR c.company_name LIKE ?)');
+      where.push('(o.order_no ILIKE ? OR u.full_name ILIKE ? OR c.company_name ILIKE ?)');
       const like = `%${q}%`;
       params.push(like, like, like);
     }
-    const orders = all(
+    const orders = (await all(
       `SELECT o.*, u.full_name AS ordered_by_name, u.phone AS ordered_by_phone, c.company_name,
               (SELECT COUNT(*) FROM order_items i WHERE i.order_id = o.id) AS item_count
          FROM orders o
@@ -157,39 +157,39 @@ router.get('/', requireRole('cashier', 'accounts', 'store', 'manager'), (req, re
         ORDER BY o.created_at DESC
         LIMIT ?`,
       [...params, Number(limit)]
-    ).map((o) => ({ ...o, status_label: STATUS_LABEL[o.status] }));
+    )).map((o) => ({ ...o, status_label: STATUS_LABEL[o.status] }));
     res.json({ orders });
   } catch (e) { next(e); }
 });
 
 /** The queue for one desk. */
-router.get('/queue/:stage', requireRole('cashier', 'accounts', 'store', 'manager'), (req, res, next) => {
+router.get('/queue/:stage', requireRole('cashier', 'accounts', 'store', 'manager'), async (req, res, next) => {
   try {
-    res.json({ orders: queueFor(req.params.stage) });
+    res.json({ orders: await queueFor(req.params.stage) });
   } catch (e) { next(e); }
 });
 
-router.get('/by-no/:orderNo', (req, res, next) => {
+router.get('/by-no/:orderNo', async (req, res, next) => {
   try {
-    const order = getOrderByNo(req.params.orderNo);
-    assertCanView(req.user, order);
+    const order = await getOrderByNo(req.params.orderNo);
+    await assertCanView(req.user, order);
     res.json({ order });
   } catch (e) { next(e); }
 });
 
-router.get('/:id', (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   try {
-    const order = getOrder(Number(req.params.id));
-    assertCanView(req.user, order);
+    const order = await getOrder(Number(req.params.id));
+    await assertCanView(req.user, order);
     res.json({ order });
   } catch (e) { next(e); }
 });
 
 /** Live tracking: the audit trail the customer sees as a progress list. */
-router.get('/:id/track', (req, res, next) => {
+router.get('/:id/track', async (req, res, next) => {
   try {
-    const order = getOrder(Number(req.params.id));
-    assertCanView(req.user, order);
+    const order = await getOrder(Number(req.params.id));
+    await assertCanView(req.user, order);
     const steps = [
       { key: 'placed',   label: 'Order placed' },
       { key: 'paid',     label: 'Paid at Cashier' },
@@ -219,9 +219,9 @@ router.get('/:id/track', (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/:id/cancel', validate(z.object({ reason: z.string().optional() })), (req, res, next) => {
+router.post('/:id/cancel', validate(z.object({ reason: z.string().optional() })), async (req, res, next) => {
   try {
-    res.json({ order: cancelOrder(req.user, Number(req.params.id), req.body.reason) });
+    res.json({ order: await cancelOrder(req.user, Number(req.params.id), req.body.reason) });
   } catch (e) { next(e); }
 });
 

@@ -1,6 +1,6 @@
 # Backend — Al Hadeed Hardware API
 
-Node.js + Express, SQLite via the built-in `node:sqlite`, Socket.IO for
+Node.js + Express, PostgreSQL via the built-in `pg`, Socket.IO for
 real-time order hand-off.
 
 ## Run

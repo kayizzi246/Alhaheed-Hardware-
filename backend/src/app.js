@@ -15,8 +15,8 @@ import companyRoutes from './routes/company.js';
 import reportRoutes from './routes/reports.js';
 import notificationRoutes from './routes/notifications.js';
 
-export function createApp() {
-  migrate();
+export async function createApp() {
+  await migrate();
 
   const app = express();
   app.use(express.json({ limit: '2mb' }));

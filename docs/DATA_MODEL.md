@@ -1,10 +1,10 @@
 # Data Model
 
-SQLite schema, defined in
+PostgreSQL schema, defined in
 [backend/src/db/schema.sql](../backend/src/db/schema.sql).
 
 All money is stored as **whole Ugandan shillings in INTEGER columns** — never
-floats. Timestamps are UTC text (`datetime('now')`).
+floats. Timestamps are UTC text (`now_text()`).
 
 ## Tables
 
