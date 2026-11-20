@@ -1,0 +1,101 @@
+# Al Hadeed Hardware — the API, as a Render Blueprint.
+#
+# Render reads this file and provisions the service, so the dashboard
+# steps are reduced to: New -> Blueprint -> pick this repository ->
+# fill in the three values it asks for -> Apply.
+#
+# What it sets up:
+#   • a Node web service running the Express API and Socket.IO
+#   • Node 22.11, because the API uses the built-in node:sqlite module,
+#     which does not exist before Node 22.5
+#   • a 1 GB persistent disk at /data, because SQLite is a file and the
+#     container's own filesystem is wiped on every deploy
+#   • a health check, so Render knows the difference between "started"
+#     and "working"
+#   • a bootstrap on every boot that creates the tables, and on a brand
+#     new disk creates one manager account — no demo passwords
+#
+# NOTE ON PLAN: the disk below requires a paid instance type. On the free
+# tier Render gives no persistent disk, so every order would be lost on
+# each restart, and the service sleeps after ~15 minutes idle, which
+# breaks the live order hand-off between desks. For a real shop counter
+# `starter` is the floor. To try it for free first, delete the `disk:`
+# block and set `plan: free` — and treat the data as disposable.
+
+services:
+  - type: web
+    name: alhadeed-api
+    runtime: node
+    plan: starter
+    region: frankfurt # the closest Render region to Uganda
+    rootDir: backend
+    buildCommand: npm install
+    # Bootstrap first: it creates the tables on a fresh disk and exits
+    # non-zero rather than starting a shop nobody can sign in to.
+    startCommand: npm run db:bootstrap && npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+
+    envVars:
+      # ─── Runtime ──────────────────────────────────────────────────
+      - key: NODE_VERSION
+        value: 22.11.0
+      - key: NODE_ENV
+        value: production
+      - key: DB_FILE
+        value: /data/alhadeed.db
+
+      # ─── Security ─────────────────────────────────────────────────
+      # Render generates this once and keeps it. Never commit a real one:
+      # anyone holding it can mint a valid login for any account.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 12h
+
+      # Left true, every login code is 123456 for anyone who knows a
+      # registered number.
+      - key: OTP_DEV_MODE
+        value: "false"
+
+      # ─── The shop ─────────────────────────────────────────────────
+      - key: SHOP_NAME
+        value: Al Hadeed Hardware
+      - key: CURRENCY
+        value: UGX
+
+      # ─── Who can call the API ─────────────────────────────────────
+      # Set this to the Vercel domain once it exists, e.g.
+      # https://alhaheed-hardware.vercel.app — comma-separated for more
+      # than one. Until it is right, the browser blocks every request.
+      - key: CORS_ORIGINS
+        sync: false
+
+      # ─── The first manager ────────────────────────────────────────
+      # Used once, on a brand new database, to create the account that
+      # adds the real staff and products. Remove ADMIN_PASSWORD from the
+      # environment afterwards; it is not read again.
+      - key: ADMIN_NAME
+        sync: false
+      - key: ADMIN_PHONE
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      # ─── SMS ──────────────────────────────────────────────────────
+      # Login codes and order confirmations. "log" prints to the service
+      # log and sends nothing — fine for a first smoke test, useless to a
+      # customer waiting for a code.
+      - key: SMS_PROVIDER
+        value: africastalking
+      - key: SMS_USERNAME
+        sync: false
+      - key: SMS_API_KEY
+        sync: false
+      - key: SMS_SENDER_ID
+        sync: false
