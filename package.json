@@ -1,0 +1,20 @@
+{
+  "name": "al-hadeed-hardware",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Al Hadeed Hardware App - Ordering & Cash Booking System (MVP)",
+  "workspaces": ["backend", "web"],
+  "scripts": {
+    "setup": "npm install && npm run db:reset",
+    "db:reset": "npm --workspace backend run db:reset",
+    "dev": "concurrently -n api,web -c blue,magenta \"npm --workspace backend run dev\" \"npm --workspace web run dev\"",
+    "dev:api": "npm --workspace backend run dev",
+    "dev:web": "npm --workspace web run dev",
+    "dev:mobile": "cd mobile && npm start",
+    "test": "npm --workspace backend test"
+  },
+  "devDependencies": {
+    "concurrently": "9.1.2"
+  },
+  "engines": { "node": ">=22.5.0" }
+}

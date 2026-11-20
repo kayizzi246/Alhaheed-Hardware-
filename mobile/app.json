@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Al Hadeed Hardware",
+    "slug": "al-hadeed-hardware",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "alhadeed",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#15314f"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ug.alhadeed.hardware"
+    },
+    "android": {
+      "package": "ug.alhadeed.hardware",
+      "adaptiveIcon": { "backgroundColor": "#15314f" }
+    },
+    "extra": {
+      "apiUrl": "http://localhost:4000"
+    }
+  }
+}
