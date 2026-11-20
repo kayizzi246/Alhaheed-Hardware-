@@ -68,8 +68,12 @@ your provider's call, and stop returning `devCode`.
 ## Step by step: the API on Render
 
 [`render.yaml`](../render.yaml) in the repository root is a Render
-Blueprint — it declares the service, the Node version, the disk, the health
-check and every environment variable, so most of this is already done.
+Blueprint — it declares the service, the Node version, the health check
+and every environment variable, so most of this is already done.
+
+**0.** Create a free PostgreSQL first and keep its connection string —
+see *Where the database goes* below. The blueprint does not create one,
+for the reason explained there.
 
 **1.** On render.com: **New → Blueprint** → pick this repository → **Apply**.
 
@@ -77,6 +81,7 @@ check and every environment variable, so most of this is already done.
 
 | Variable | What to put |
 | --- | --- |
+| `DATABASE_URL` | The connection string from step 0 |
 | `CORS_ORIGINS` | The Vercel domain, e.g. `https://alhaheed-hardware.vercel.app`. Put `http://localhost:3000` for now and correct it in step 7. |
 | `ADMIN_NAME` | The first manager's name |
 | `ADMIN_PHONE` | Their phone, any format — `0704892253` is fine |
@@ -101,50 +106,74 @@ successful deploy.
 **delete `ADMIN_PASSWORD`** from the Render environment; it is never read
 again once a staff account exists.
 
-### The database comes with it
+### Where the database goes — and why not Render's
 
-The blueprint declares a PostgreSQL alongside the API, so Render creates
-both and injects the connection string. There is nothing to copy, nothing
-to paste, and no second account anywhere:
+**Render's free PostgreSQL expires** about a month after it is created
+and is then deleted. That is a deadline, not a free tier, and a shop's
+order history should not be sitting on one.
 
-```yaml
-databases:
-  - name: alhadeed-db
-    plan: free
+Render's free *web service* has no expiry, so the split that actually
+works is: **API on Render, database somewhere permanently free.**
 
-    # …and in the service:
-    - key: DATABASE_URL
-      fromDatabase:
-        name: alhadeed-db
-        property: connectionString
-```
+| | Free | Expires? | The catch |
+| --- | --- | --- | --- |
+| **Neon** | yes | no | Compute sleeps when idle, wakes in well under a second |
+| **Aiven** | yes | no | Powers off after a long idle period; they email first |
+| **Your own machine** | yes | no | It has to stay on, and the power has to stay on |
+| Render Postgres | 30 days | **yes** | Deleted after a short grace period |
 
-A database rather than a file on disk because a free Render service has
-no persistent disk: a file inside the container is wiped on every deploy,
-restart and wake from sleep. The database is a separate thing and
-survives all of it.
-
-### Two things about the free tier
-
-**Render's free PostgreSQL expires.** It runs for a limited period and is
-then deleted — check their current terms rather than trusting a number
-written here. Before that day, either upgrade the database to a paid
-instance or move it. Any ordinary PostgreSQL works; change
-`DATABASE_URL` and nothing else:
+All of them are ordinary PostgreSQL. `DATABASE_URL` is the only thing
+this application knows about the database, so moving between them is a
+dump, a restore and one environment variable:
 
 ```bash
 pg_dump "$OLD_DATABASE_URL" > alhadeed.sql
 psql "$NEW_DATABASE_URL" < alhadeed.sql
 ```
 
-Worth putting that `pg_dump` in the calendar regardless. A shop's order
-history is not something to hold in one copy.
+Check the current terms on their own pricing pages before committing.
+Free tiers move, and a document cannot.
 
-**The free web service sleeps** after about 15 minutes without traffic.
-The first request afterwards takes the best part of a minute, and the
-Socket.IO connection drops, so the cashier's screen stops updating live
-until someone reloads. Orders and money are safe; the screen just needs a
-refresh after a quiet spell. A paid instance removes it.
+### Or keep the whole thing in the shop
+
+For one shop this is worth considering seriously: it is free forever,
+there is no expiry to diarise, the data never leaves the premises, and
+the counter does not depend on anybody's free tier.
+
+```bash
+# On the shop's computer, once:
+docker run -d --name alhadeed-db --restart always \
+  -e POSTGRES_PASSWORD='choose-a-real-one' \
+  -e POSTGRES_USER=alhadeed -e POSTGRES_DB=alhadeed \
+  -v alhadeed-data:/var/lib/postgresql/data \
+  -p 5432:5432 postgres:16-alpine
+
+cd backend
+npm install
+DATABASE_URL=postgresql://alhadeed:choose-a-real-one@localhost:5432/alhadeed \
+ADMIN_NAME="Your name" ADMIN_PHONE=07xxxxxxxx ADMIN_PASSWORD='…' \
+  npm run db:bootstrap
+npm start
+```
+
+Put it behind `pm2` or a systemd unit so it comes back after a power
+cut. The cashier and accounts desks then reach it over the shop's own
+network, and the customers' phones reach it from outside through a free
+Cloudflare Tunnel — which also means no router ports to open and no
+static IP to rent.
+
+The honest trade: when the shop's power or internet is down, so is the
+ordering app. Weigh that against a free tier that can expire or change
+under you. A nightly `pg_dump` to a USB stick or to Google Drive covers
+the machine dying.
+
+### The one remaining free-tier catch
+
+A free Render web service **sleeps** after about 15 minutes without
+traffic. The first request afterwards takes the best part of a minute,
+and the Socket.IO connection drops, so the cashier's screen stops
+updating live until someone reloads. Orders and money are safe; the
+screen just needs a refresh after a quiet spell.
 
 ---
 
