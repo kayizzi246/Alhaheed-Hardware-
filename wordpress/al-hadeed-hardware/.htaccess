@@ -1,0 +1,8 @@
+# Apache running PHP as CGI drops the Authorization header, and plenty
+# of shared hosts are exactly that. Without it every app request looks
+# unauthenticated. This puts it back.
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+</IfModule>

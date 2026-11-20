@@ -1,0 +1,190 @@
+/*
+ * The desk screens.
+ *
+ * Built for a counter: big type, big targets, and the order number and
+ * the amount readable across a desk. Everything else is quiet so those
+ * two are not competing with anything.
+ */
+
+.ah-wrap {
+	--ah-navy: #14334f;
+	--ah-brand: #e98a24;
+	--ah-ink: #102a3f;
+	--ah-mid: #6b7a88;
+	--ah-line: #e3e8ed;
+	--ah-green: #1e8e5a;
+	--ah-blue: #2d6ca2;
+	--ah-ember: #c0392b;
+	max-width: 1100px;
+}
+
+.ah-wrap h1 {
+	color: var(--ah-navy);
+	font-weight: 700;
+}
+
+.ah-sub {
+	color: var(--ah-mid);
+	margin-top: -6px;
+}
+
+.ah-card {
+	background: #fff;
+	border: 1px solid var(--ah-line);
+	border-radius: 12px;
+	padding: 18px;
+	margin: 0 0 14px;
+}
+
+.ah-empty {
+	color: var(--ah-mid);
+}
+
+/* --- One order in a queue ------------------------------------------- */
+
+.ah-order-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 19px;
+	color: var(--ah-ink);
+}
+
+.ah-order-head strong {
+	font-size: 21px;
+	letter-spacing: -0.01em;
+}
+
+.ah-total {
+	margin-left: auto;
+	font-weight: 800;
+	font-size: 21px;
+	color: var(--ah-ink);
+}
+
+.ah-meta {
+	color: var(--ah-mid);
+	margin: 6px 0 14px;
+	font-size: 13px;
+}
+
+.ah-chip {
+	font-size: 11.5px;
+	font-weight: 700;
+	padding: 4px 9px;
+	border-radius: 8px;
+	background: #f1f3f5;
+	color: var(--ah-mid);
+}
+
+.ah-chip-amber { background: #fdf2e4; color: #c9731a; }
+.ah-chip-blue  { background: #e8f0f8; color: var(--ah-blue); }
+.ah-chip-green { background: #e8f5ee; color: var(--ah-green); }
+
+/* --- Forms ---------------------------------------------------------- */
+
+.ah-form { margin-top: 10px; }
+
+.ah-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.ah-row input[type="text"],
+.ah-row input[type="number"],
+.ah-row select {
+	height: 38px;
+	border-radius: 8px;
+	border: 1px solid var(--ah-line);
+	padding: 0 10px;
+	min-width: 170px;
+}
+
+.ah-row input[type="number"] {
+	font-weight: 700;
+	font-size: 15px;
+}
+
+.ah-wrap .button-primary {
+	background: var(--ah-brand);
+	border-color: var(--ah-brand);
+	height: 38px;
+	padding: 0 18px;
+	font-weight: 600;
+}
+
+.ah-wrap .button-primary:hover {
+	background: #c9731a;
+	border-color: #c9731a;
+}
+
+.ah-wrap .ah-danger {
+	color: var(--ah-ember);
+	border-color: #e7b7b2;
+	height: 38px;
+}
+
+/* --- Pick list ------------------------------------------------------ */
+
+.ah-picklist {
+	margin: 0 0 12px;
+	padding: 12px 16px;
+	background: #f7f8fa;
+	border-radius: 10px;
+	list-style: none;
+}
+
+.ah-picklist li {
+	padding: 4px 0;
+	font-size: 15px;
+	color: var(--ah-ink);
+}
+
+.ah-code {
+	color: var(--ah-mid);
+	font-size: 12px;
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+
+/* --- Tiles ---------------------------------------------------------- */
+
+.ah-tiles {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 14px 0;
+}
+
+.ah-tile {
+	flex: 1 1 160px;
+	background: #fff;
+	border: 1px solid var(--ah-line);
+	border-radius: 12px;
+	padding: 14px;
+}
+
+.ah-tile span {
+	display: block;
+	color: var(--ah-mid);
+	font-size: 12px;
+	margin-bottom: 6px;
+}
+
+.ah-tile strong {
+	font-size: 22px;
+	color: var(--ah-ink);
+	font-weight: 800;
+}
+
+/* --- Cash book ------------------------------------------------------ */
+
+.ah-in  { color: var(--ah-green); font-weight: 600; }
+.ah-out { color: var(--ah-ember); font-weight: 600; }
+
+@media (max-width: 782px) {
+	.ah-order-head { flex-wrap: wrap; }
+	.ah-total { margin-left: 0; width: 100%; }
+	.ah-row input, .ah-row select { flex: 1 1 100%; min-width: 0; }
+}

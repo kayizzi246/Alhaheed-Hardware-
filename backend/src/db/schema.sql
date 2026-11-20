@@ -260,3 +260,22 @@ CREATE TABLE IF NOT EXISTS counters (
 );
 INSERT INTO counters(name, value) VALUES ('order', 10400), ('receipt', 800)
   ON CONFLICT (name) DO NOTHING;
+
+-- ---------------------------------------------------------------------
+-- WHERE AN ORDER CAME FROM
+--
+-- Added after the fact, so ALTER rather than a column in the table
+-- above: an existing shop's database has to survive the upgrade.
+--
+--   source       'app' | 'web' | 'woocommerce'
+--   external_ref the order id in that other system, so a webhook
+--                delivered twice does not become two orders, and so the
+--                status can be pushed back to where it came from
+-- ---------------------------------------------------------------------
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'app';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS external_ref TEXT;
+
+-- One order per external reference, per source. Partial, so the many
+-- app orders with no reference do not collide with each other.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_external
+  ON orders(source, external_ref) WHERE external_ref IS NOT NULL;

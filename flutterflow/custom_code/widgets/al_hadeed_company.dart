@@ -31,7 +31,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 //  On a real phone `localhost` means the phone itself, so while testing
 //  use the computer's LAN address: http://192.168.1.14:4000
 // ═══════════════════════════════════════════════════════════════
-const String _apiBase = 'http://localhost:4000';
+const String _apiBase = 'https://pearlfx.online';
 
 // Everything from here down to the screen itself is repeated, identically,
 // in all five screen files. That is deliberate: FlutterFlow generates

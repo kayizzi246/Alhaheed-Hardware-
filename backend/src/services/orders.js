@@ -135,7 +135,7 @@ export function assertCanView(user, order) {
 // ---------------------------------------------------------------------
 // 1. Customer places the order
 // ---------------------------------------------------------------------
-export async function placeOrder(user, { items, fulfilment = 'pickup', deliveryAddress, notes, deliveryFee = 0 }) {
+export async function placeOrder(user, { items, fulfilment = 'pickup', deliveryAddress, notes, deliveryFee = 0, source = 'app', externalRef = null }) {
   if (!Array.isArray(items) || items.length === 0) throw badRequest('Your cart is empty');
   if (fulfilment === 'delivery' && !deliveryAddress) {
     throw badRequest('A delivery address is required for delivery orders');
@@ -179,8 +179,9 @@ export async function placeOrder(user, { items, fulfilment = 'pickup', deliveryA
     const res = await run(
       `INSERT INTO orders
          (order_no, customer_id, company_id, status, current_stage,
-          subtotal, delivery_fee, total, fulfilment, delivery_address, notes)
-       VALUES (?, ?, ?, ?, 'cashier', ?, ?, ?, ?, ?, ?)`,
+          subtotal, delivery_fee, total, fulfilment, delivery_address, notes,
+          source, external_ref)
+       VALUES (?, ?, ?, ?, 'cashier', ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         orderNo,
         user.id,
@@ -192,6 +193,8 @@ export async function placeOrder(user, { items, fulfilment = 'pickup', deliveryA
         fulfilment,
         deliveryAddress || null,
         notes || null,
+        source,
+        externalRef,
       ]
     );
     const orderId = Number(res.lastInsertRowid);
