@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { api, getUser } from '@/lib/api';
-import { getSocket } from '@/lib/socket';
+import { usePoll } from '@/lib/live';
 import { money, shortMoney, methodLabel, time } from '@/lib/format';
 import { Stat, Card, Empty, Alert, Modal } from '@/components/ui';
 import CashBookTable from '@/components/CashBookTable';
@@ -19,16 +19,8 @@ export default function VerifyPayments() {
     catch (e) { setError(e.message); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
-  useEffect(() => {
-    const s = getSocket();
-    if (!s) return;
-    const refresh = () => load();
-    s.on('order:updated', refresh);
-    s.on('order:new', refresh);
-    return () => { s.off('order:updated', refresh); s.off('order:new', refresh); };
-  }, [load]);
+  // Payments arrive from the cashier, so the queue re-checks itself.
+  const { at, failing } = usePoll(load, 10000);
 
   async function verify(order, approve, remarks) {
     setBusyId(order.id);

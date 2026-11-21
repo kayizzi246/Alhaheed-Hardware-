@@ -1,168 +1,125 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { money, shortMoney } from '@/lib/format';
-import { Card, Alert } from '@/components/ui';
+import { money, shortMoney, time, statusLabel } from '@/lib/format';
+import { Chip, Alert } from '@/components/ui';
+import { usePoll, freshness } from '@/lib/live';
 
 /**
- * The manager's dashboard.
+ * The manager's console.
  *
- * It answers three questions, in the order a manager asks them:
+ * Dense on purpose. A manager standing in the shop wants the whole
+ * position in one look, not six clicks, so everything that fits above
+ * the fold is there: what we took, where it is stuck, what sells, and
+ * what just happened.
  *
- *   1. How much have we taken today?        — one number, big
- *   2. Where is the work stuck?             — the pipeline, tappable
- *   3. Is anything about to run out?        — low stock
+ * It reads from three endpoints in parallel. If one of them fails the
+ * other two still draw, because a dashboard that goes blank because a
+ * single report timed out is worse than one that is partly complete
+ * and says so.
  *
- * Everything else is supporting detail and sits below the fold. The
- * seven-day chart is there to answer "is today normal?", which is the
- * only reason to look at last week while standing in the shop.
- *
- * Nothing on this page animates on its own. It reloads every twenty
- * seconds, and a screen that re-animates every twenty seconds is one
- * people stop reading.
+ * On colour: the chrome is the shop's red and orange. The three
+ * payment slices are orange, red and plum — a third warm hue would sit
+ * on top of the other two for anyone with the commonest form of colour
+ * blindness, so the third one steps out of the family. Every figure is
+ * written beside its colour regardless.
  */
-export default function ManagerDashboard() {
+export default function ManagerConsole() {
   const [d, setD] = useState(null);
+  const [best, setBest] = useState(null);
+  const [recent, setRecent] = useState(null);
   const [error, setError] = useState('');
-  const [at, setAt] = useState(null);
 
   const load = useCallback(async () => {
-    try {
-      setD(await api('/api/manager/dashboard'));
-      setAt(new Date());
-      setError('');
-    } catch (e) { setError(e.message); }
+    const [dash, sellers, orders] = await Promise.allSettled([
+      api('/api/manager/dashboard'),
+      api('/api/reports/best-sellers?period=weekly'),
+      api('/api/orders?limit=7'),
+    ]);
+
+    if (dash.status === 'fulfilled') setD(dash.value);
+    if (sellers.status === 'fulfilled') setBest(sellers.value.products.slice(0, 5));
+    if (orders.status === 'fulfilled') setRecent(orders.value.orders.slice(0, 7));
+
+    const failed = [dash, sellers, orders].filter((r) => r.status === 'rejected');
+    setError(failed.length === 3 ? failed[0].reason.message : '');
+    if (dash.status === 'rejected') throw dash.reason;   // lets the poll back off
   }, []);
 
-  useEffect(() => {
-    load();
-    const t = setInterval(load, 20000);
-    return () => clearInterval(t);
-  }, [load]);
+  const { at, failing } = usePoll(load, 20000);
 
   if (error && !d) return <Alert>{error}</Alert>;
-  if (!d) return <DashboardSkeleton />;
+  if (!d) return <ConsoleSkeleton />;
 
-  const today = d.salesToday;
   const days = d.last7Days || [];
-  // "Is today normal?" needs something to compare against, and the
-  // average of the days before it is a fairer mark than yesterday —
-  // one quiet Sunday should not make Monday look like a triumph.
-  const previous = days.slice(0, -1);
-  const average = previous.length
-    ? Math.round(previous.reduce((s, x) => s + x.total, 0) / previous.length)
+  const earlier = days.slice(0, -1);
+  const average = earlier.length
+    ? Math.round(earlier.reduce((s, x) => s + x.total, 0) / earlier.length)
     : 0;
-  const delta = average ? Math.round(((today - average) / average) * 100) : null;
+  const delta = average ? Math.round(((d.salesToday - average) / average) * 100) : null;
 
-  const methods = [
-    { key: 'cash', label: 'Cash', value: d.byMethod.cash, tone: 'a' },
-    { key: 'mobile_money', label: 'Mobile Money', value: d.byMethod.mobile_money, tone: 'b' },
-    { key: 'card', label: 'Card', value: d.byMethod.card, tone: 'c' },
-  ];
-  const methodTotal = methods.reduce((s, m) => s + m.value, 0);
-
-  const stages = [
-    { key: 'cashier', label: 'At the cashier', status: 'pending_payment', hint: 'waiting to pay' },
-    { key: 'accounts', label: 'At accounts', status: 'paid', hint: 'to verify' },
-    { key: 'store', label: 'At the store', status: 'payment_verified', hint: 'to pick & release' },
-    { key: 'done', label: 'Completed', status: 'released', hint: 'released today' },
-  ];
   const waiting = d.byStage.cashier + d.byStage.accounts + d.byStage.store;
+  const avgOrder = d.ordersToday ? Math.round(d.salesToday / d.ordersToday) : 0;
 
   return (
     <>
-      <div className="page-head">
-        <h1>Dashboard</h1>
-        <div className="page-meta">
-          {at && <>Updated {at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · refreshes itself</>}
+      <div className="console-head">
+        <div>
+          <h1>The shop today</h1>
+          <p className="page-meta">
+            Everything moving through the counter, {new Date().toLocaleDateString('en-GB',
+              { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <div className="console-tools">
+          <span className={`fresh ${failing ? 'stale' : ''}`}>{freshness(at, failing)}</span>
+          <Link className="btn btn-ghost btn-sm" href="/manager/reports">Reports</Link>
+          <Link className="btn btn-primary btn-sm" href="/manager/orders">All orders</Link>
         </div>
       </div>
 
       <Alert>{error}</Alert>
 
-      {/* 1 ─ How much have we taken today? */}
-      <section className="hero">
-        <div className="hero-main">
-          <span className="hero-label">Sales today</span>
-          <strong className="hero-value">{money(today)}</strong>
-          <span className="hero-sub">
-            {d.ordersToday} {d.ordersToday === 1 ? 'order' : 'orders'}
-            {delta !== null && (
-              <>
-                {' · '}
-                <span className={delta >= 0 ? 'delta up' : 'delta down'}>
-                  {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}%
-                </span>
-                {' vs the daily average'}
-              </>
-            )}
-          </span>
-        </div>
-
-        {/* The payment mix, as one bar. Three numbers that add to the
-            total are a composition, not three separate facts. */}
-        <div className="hero-side">
-          <span className="hero-label">How it was paid</span>
-          {methodTotal === 0 ? (
-            <p className="hero-none">Nothing taken yet today.</p>
-          ) : (
-            <>
-              <div className="mix" role="img"
-                aria-label={methods.map((m) => `${m.label} ${money(m.value)}`).join(', ')}>
-                {methods.filter((m) => m.value > 0).map((m) => (
-                  <span
-                    key={m.key}
-                    className={`mix-part mix-${m.tone}`}
-                    style={{ flexGrow: m.value }}
-                  />
-                ))}
-              </div>
-              <ul className="mix-key">
-                {methods.map((m) => (
-                  <li key={m.key}>
-                    <span className={`dot mix-${m.tone}`} />
-                    <span className="mix-name">{m.label}</span>
-                    <span className="mix-val">{money(m.value)}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* 2 ─ Where is the work stuck? */}
-      <div className="section-head">
-        <h2>Where the work is</h2>
-        <span className="page-meta">
-          {waiting === 0 ? 'Every order is done.' : `${waiting} still moving through the shop`}
-        </span>
+      {/* ── The row of figures ─────────────────────────────────────── */}
+      <div className="kpis">
+        <Kpi label="Sales today" value={money(d.salesToday)} delta={delta} note="vs daily average" big />
+        <Kpi label="Orders today" value={String(d.ordersToday)} note={`${waiting} still open`} />
+        <Kpi label="Average order" value={money(avgOrder)} note="per order today" />
+        <Kpi label="Waiting on a desk" value={String(waiting)} note="cashier, accounts, store" tone={waiting ? 'warn' : ''} />
+        <Kpi label="Low on stock" value={String(d.lowStock.length)} note="at or below reorder" tone={d.lowStock.length ? 'bad' : ''} />
       </div>
 
-      <div className="pipeline">
-        {stages.map((s, i) => {
-          const n = d.byStage[s.key] ?? 0;
-          return (
-            <Link
-              key={s.key}
-              href={`/manager/orders?status=${s.status}`}
-              className={`pipe ${n > 0 && s.key !== 'done' ? 'pipe-busy' : ''}`}
-            >
-              <span className="pipe-step">{i + 1}</span>
-              <strong className="pipe-count">{n}</strong>
-              <span className="pipe-label">{s.label}</span>
-              <span className="pipe-hint">{s.hint}</span>
-            </Link>
-          );
-        })}
+      {/* ── Trajectory and funnel ──────────────────────────────────── */}
+      <div className="grid-2">
+        <Panel title="Takings — last 7 days" note="Verified sales only">
+          <Trajectory days={days} average={average} />
+        </Panel>
+
+        <Panel title="Where orders are" note="Every open order, by desk">
+          <Funnel byStage={d.byStage} />
+        </Panel>
       </div>
 
-      {/* 3 ─ Is anything about to run out? */}
+      {/* ── Mix, sellers, and what just happened ───────────────────── */}
+      <div className="grid-3">
+        <Panel title="How today was paid">
+          <Mix byMethod={d.byMethod} />
+        </Panel>
+
+        <Panel title="Best sellers" note="This week, by revenue">
+          <Sellers rows={best} />
+        </Panel>
+
+        <Panel title="Latest orders" link={{ href: '/manager/orders', label: 'All orders' }}>
+          <Latest rows={recent} />
+        </Panel>
+      </div>
+
       {d.lowStock.length > 0 && (
-        <Card
-          title={`Low stock — ${d.lowStock.length} ${d.lowStock.length === 1 ? 'product' : 'products'}`}
-          action={<Link className="btn btn-ghost btn-sm" href="/manager/products">Open products</Link>}
+        <Panel
+          title={`Running low — ${d.lowStock.length} ${d.lowStock.length === 1 ? 'product' : 'products'}`}
+          link={{ href: '/manager/products', label: 'Open products' }}
         >
           <table>
             <thead>
@@ -183,59 +140,72 @@ export default function ManagerDashboard() {
               ))}
             </tbody>
           </table>
-        </Card>
+        </Panel>
       )}
-
-      {/* Supporting ─ is today normal? */}
-      <Card title="Sales — last 7 days">
-        <SevenDays days={days} average={average} />
-      </Card>
     </>
   );
 }
 
-/**
- * Seven bars, one series.
- *
- * No legend: the title names the series. The day sits under every bar
- * and the amount is written beside the one you are looking at, so the
- * chart never depends on colour alone to be read — the orange does not
- * carry 3:1 against this surface, and labels are the relief for that.
- */
-function SevenDays({ days, average }) {
-  const [picked, setPicked] = useState(null);
+/* ── Pieces ───────────────────────────────────────────────────────── */
 
-  if (days.length === 0) {
-    return <div className="empty">No verified sales in the last week.</div>;
-  }
+function Kpi({ label, value, delta, note, tone, big }) {
+  return (
+    <div className={`kpi ${big ? 'kpi-lead' : ''} ${tone ? `kpi-${tone}` : ''}`}>
+      <span className="kpi-label">{label}</span>
+      <strong className="kpi-value">{value}</strong>
+      <span className="kpi-foot">
+        {delta !== null && delta !== undefined && (
+          <span className={`tag ${delta >= 0 ? 'up' : 'down'}`}>
+            {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}%
+          </span>
+        )}
+        {note}
+      </span>
+    </div>
+  );
+}
+
+function Panel({ title, note, link, children }) {
+  return (
+    <section className="panel">
+      <header className="panel-head">
+        <div>
+          <h2>{title}</h2>
+          {note && <span>{note}</span>}
+        </div>
+        {link && <Link className="panel-link" href={link.href}>{link.label} →</Link>}
+      </header>
+      <div className="panel-body">{children}</div>
+    </section>
+  );
+}
+
+/** Seven bars. One series, so no legend — the title names it. */
+function Trajectory({ days, average }) {
+  const [picked, setPicked] = useState(null);
+  if (!days.length) return <p className="none">No verified sales in the last week.</p>;
 
   const max = Math.max(1, ...days.map((d) => d.total));
   const active = picked ?? days.length - 1;
   const chosen = days[active];
-
-  const label = (iso) => {
+  const dayName = (iso) => {
     const d = new Date(iso + 'T00:00:00');
     return Number.isNaN(d.getTime()) ? String(iso).slice(5)
       : d.toLocaleDateString('en-GB', { weekday: 'short' });
   };
 
   return (
-    <div className="chart">
-      <div className="chart-read">
+    <>
+      <div className="read">
         <strong>{money(chosen.total)}</strong>
-        <span>
-          {label(chosen.day)} {String(chosen.day).slice(5)} ·{' '}
-          {chosen.receipts} {chosen.receipts === 1 ? 'receipt' : 'receipts'}
-        </span>
+        <span>{dayName(chosen.day)} {String(chosen.day).slice(5)} · {chosen.receipts} receipts</span>
       </div>
-
       <div className="bars">
         {average > 0 && (
           <div className="avg-line" style={{ bottom: `${(average / max) * 100}%` }}>
             <span>avg {shortMoney(average)}</span>
           </div>
         )}
-
         {days.map((d, i) => (
           <button
             key={d.day}
@@ -244,28 +214,138 @@ function SevenDays({ days, average }) {
             onClick={() => setPicked(i)}
             aria-label={`${d.day}: ${money(d.total)}`}
           >
-            {/* A floor of 3px so a zero day is still visibly a day. */}
             <span className="bar" style={{ height: `${3 + (d.total / max) * 97}%` }} />
-            <span className="bar-day">{label(d.day)}</span>
+            <span className="bar-day">{dayName(d.day)}</span>
           </button>
         ))}
       </div>
-
-      <p className="chart-note">Verified sales only. Tap a day to read it.</p>
-    </div>
+    </>
   );
 }
 
-/** The shape of the page, while it loads. Less jarring than a spinner. */
-function DashboardSkeleton() {
+/**
+ * The pipeline as a funnel, which is what it is: every order enters at
+ * the cashier and leaves from the store, and the width of each bar is
+ * how many are sitting there now.
+ */
+function Funnel({ byStage }) {
+  const steps = [
+    { key: 'cashier', label: 'At the cashier', hint: 'waiting to pay', status: 'pending_payment' },
+    { key: 'accounts', label: 'At accounts', hint: 'payment being checked', status: 'paid' },
+    { key: 'store', label: 'At the store', hint: 'being picked', status: 'payment_verified' },
+    { key: 'done', label: 'Released', hint: 'with the customer', status: 'released' },
+  ];
+  const max = Math.max(1, ...steps.map((s) => byStage[s.key] ?? 0));
+
+  return (
+    <ol className="funnel">
+      {steps.map((s, i) => {
+        const n = byStage[s.key] ?? 0;
+        return (
+          <li key={s.key}>
+            <Link href={`/manager/orders?status=${s.status}`}>
+              <span className="fn-n">{i + 1}</span>
+              <span className="fn-text">
+                <b>{s.label}</b>
+                <em>{s.hint}</em>
+              </span>
+              <span className="fn-track">
+                <span className={`fn-fill ${n > 0 && s.key !== 'done' ? 'busy' : ''}`}
+                  style={{ width: `${Math.max(3, (n / max) * 100)}%` }} />
+              </span>
+              <span className="fn-count">{n}</span>
+            </Link>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** Three figures that add up to the total, so one bar and a key. */
+function Mix({ byMethod }) {
+  const parts = [
+    { key: 'cash', label: 'Cash', value: byMethod.cash, tone: 'a' },
+    { key: 'mobile_money', label: 'Mobile Money', value: byMethod.mobile_money, tone: 'b' },
+    { key: 'card', label: 'Card', value: byMethod.card, tone: 'c' },
+  ];
+  const total = parts.reduce((s, p) => s + p.value, 0);
+  if (!total) return <p className="none">Nothing taken yet today.</p>;
+
   return (
     <>
-      <div className="page-head"><h1>Dashboard</h1></div>
-      <div className="hero skel-block" style={{ height: 136 }} />
-      <div className="pipeline">
-        {[0, 1, 2, 3].map((i) => <div key={i} className="pipe skel-block" style={{ height: 104 }} />)}
+      <div className="mix" role="img" aria-label={parts.map((p) => `${p.label} ${money(p.value)}`).join(', ')}>
+        {parts.filter((p) => p.value > 0).map((p) => (
+          <span key={p.key} className={`mix-part mix-${p.tone}`} style={{ flexGrow: p.value }} />
+        ))}
       </div>
-      <div className="skel-block" style={{ height: 240, borderRadius: 'var(--radius)' }} />
+      <ul className="mix-key">
+        {parts.map((p) => (
+          <li key={p.key}>
+            <span className={`dot mix-${p.tone}`} />
+            <span className="mix-name">{p.label}</span>
+            <span className="mix-pct">{Math.round((p.value / total) * 100)}%</span>
+            <span className="mix-val">{money(p.value)}</span>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function Sellers({ rows }) {
+  if (!rows) return <p className="none">Loading…</p>;
+  if (!rows.length) return <p className="none">Nothing sold this week yet.</p>;
+  const max = Math.max(...rows.map((r) => r.revenue), 1);
+
+  return (
+    <ul className="ranked">
+      {rows.map((r) => (
+        <li key={r.product_id}>
+          <span className="rk-name" title={r.product_name}>{r.product_name}</span>
+          <span className="rk-track">
+            <span className="rk-fill" style={{ width: `${(r.revenue / max) * 100}%` }} />
+          </span>
+          <span className="rk-qty">{r.qty_sold} {r.unit}</span>
+          <span className="rk-val">{shortMoney(r.revenue)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Latest({ rows }) {
+  if (!rows) return <p className="none">Loading…</p>;
+  if (!rows.length) return <p className="none">No orders yet.</p>;
+
+  return (
+    <ul className="feed">
+      {rows.map((o) => (
+        <li key={o.id}>
+          <Link href={`/manager/orders/${o.id}`}>
+            <span className="fd-no">{o.order_no}</span>
+            <span className="fd-who">{o.company_name || o.ordered_by_name}</span>
+            <Chip status={o.status}>{statusLabel(o.status)}</Chip>
+            <span className="fd-amt">{money(o.total)}</span>
+            <span className="fd-at">{time(o.created_at)}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ConsoleSkeleton() {
+  return (
+    <>
+      <div className="console-head"><h1>The shop today</h1></div>
+      <div className="kpis">
+        {[0, 1, 2, 3, 4].map((i) => <div key={i} className="kpi skel-block" style={{ height: 96 }} />)}
+      </div>
+      <div className="grid-2">
+        <div className="skel-block" style={{ height: 250 }} />
+        <div className="skel-block" style={{ height: 250 }} />
+      </div>
     </>
   );
 }

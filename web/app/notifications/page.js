@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { getSocket } from '@/lib/socket';
+import { usePoll } from '@/lib/live';
 import { dateTime } from '@/lib/format';
 import { Card, Alert, Empty } from '@/components/ui';
 
@@ -15,15 +15,8 @@ export default function NotificationsPage() {
     catch (e) { setError(e.message); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
-  useEffect(() => {
-    const s = getSocket();
-    if (!s) return;
-    const onNotify = () => load();
-    s.on('notification', onNotify);
-    return () => { s.off('notification', onNotify); };
-  }, [load]);
+  // New alerts arrive as the desks work.
+  const { at, failing } = usePoll(load, 10000);
 
   async function markAllRead() {
     try { await api('/api/notifications/read-all', { method: 'POST' }); load(); }

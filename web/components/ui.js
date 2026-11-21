@@ -46,12 +46,32 @@ export function Alert({ kind = 'error', children, onDone }) {
   return <div className={`alert ${kind}`}>{children}</div>;
 }
 
-export function Modal({ title, onClose, children, footer }) {
+/**
+ * A modal.
+ *
+ * `open` defaults to true so the older call sites, which decide by
+ * rendering it or not, keep working. Passing `open={false}` closes it —
+ * without that, a page that sets its state to closed and leaves the
+ * element rendered has a dialog that cannot be dismissed, which is
+ * exactly what happened to the cancel-order box.
+ */
+export function Modal({ open = true, title, onClose, children, footer }) {
   useEffect(() => {
+    if (!open) return;
     const esc = (e) => e.key === 'Escape' && onClose?.();
     window.addEventListener('keydown', esc);
     return () => window.removeEventListener('keydown', esc);
-  }, [onClose]);
+  }, [open, onClose]);
+
+  // The page behind must not scroll under an open dialog.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
+  if (!open) return null;
 
   return (
     <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose?.()}>

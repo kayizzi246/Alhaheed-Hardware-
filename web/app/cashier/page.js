@@ -1,9 +1,11 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { api, getUser } from '@/lib/api';
-import { getSocket } from '@/lib/socket';
+import { usePoll } from '@/lib/live';
 import { money, shortMoney, time, dateTime } from '@/lib/format';
 import { Stat, Card, Chip, Empty, Alert, Modal } from '@/components/ui';
+import { freshness } from '@/lib/live';
+import Link from 'next/link';
 
 /** Fig 8: Cashier Web Panel - Payment Queue. */
 export default function CashierQueue() {
@@ -24,17 +26,8 @@ export default function CashierQueue() {
     } catch (e) { setError(e.message); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
-  // Orders arrive from the customer app in real time.
-  useEffect(() => {
-    const s = getSocket();
-    if (!s) return;
-    const refresh = () => load();
-    s.on('order:new', refresh);
-    s.on('order:updated', refresh);
-    return () => { s.off('order:new', refresh); s.off('order:updated', refresh); };
-  }, [load]);
+  // Orders arrive from the customer app, so the queue re-checks itself.
+  const { at, failing } = usePoll(load, 10000);
 
   if (!data) return <div className="loading">Loading the payment queue…</div>;
 
@@ -44,11 +37,14 @@ export default function CashierQueue() {
   return (
     <>
       <div className="page-head">
-        <h1>Cashier &ndash; Payment Queue</h1>
-        <div className="page-meta">
-          {user?.fullName} &middot; Cashier desk &middot;{' '}
-          {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+        <div>
+          <h1>Payment queue</h1>
+          <p className="page-meta">
+            {user?.fullName} &middot;{' '}
+            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
         </div>
+        <span className={`fresh ${failing ? 'stale' : ''}`}>{freshness(at, failing)}</span>
       </div>
 
       <Alert>{error}</Alert>
@@ -61,82 +57,74 @@ export default function CashierQueue() {
         <Stat label="Mobile Money received" value={shortMoney(s.momo_today)} />
       </div>
 
-      <Card title="Orders waiting for payment">
-        {data.orders.length === 0 ? (
-          <Empty>No orders are waiting for payment right now.</Empty>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Customer</th>
-                <th>Type</th>
-                <th className="num">Items</th>
-                <th className="num">Amount</th>
-                <th>Time</th>
-                <th>Status</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {data.orders.map((o) => (
-                <tr key={o.id}>
-                  <td className="order-no">#{o.order_no}</td>
-                  <td>
-                    {o.company_name || o.ordered_by_name}
-                    {o.company_name && <div className="sub">Ordered by {o.ordered_by_name}</div>}
-                  </td>
-                  <td>{o.company_name ? 'Company' : 'Individual'}</td>
-                  <td className="num">{o.item_count}</td>
-                  <td className="num"><strong>{money(o.total)}</strong></td>
-                  <td>{time(o.created_at)}</td>
-                  <td><Chip status={o.status}>Pending</Chip></td>
-                  <td>
-                    <button className="btn btn-primary btn-sm" onClick={() => setPaying(o)}>
-                      Receive Payment
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Card>
+      <section className="section">
+        <div className="section-head">
+          <h2>Waiting for payment</h2>
+          <span className="page-meta">
+            {data.orders.length === 0 ? 'nothing waiting' : `${data.orders.length} in the queue`}
+          </span>
+        </div>
 
-      <Card title="Recently paid">
-        {recent.length === 0 ? (
-          <Empty>No receipts issued today yet.</Empty>
+        {data.orders.length === 0 ? (
+          <div className="card"><Empty>Every order has been paid for. New ones arrive here on their own.</Empty></div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Receipt</th>
-                <th>Method</th>
-                <th className="num">Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map((r) => (
-                <tr key={r.id}>
-                  <td className="order-no">#{r.order_no}</td>
-                  <td>{r.receipt_no}</td>
-                  <td>{r.method.replace('_', ' ')}</td>
-                  <td className="num">{money(r.amount_paid)}</td>
-                  <td>
-                    {r.verified === 1
-                      ? <span className="chip approved">Verified</span>
-                      : r.verified === -1
-                        ? <span className="chip rejected">Rejected</span>
-                        : <span className="chip paid">Sent to Accounts</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul className="queue">
+            {data.orders.map((o) => (
+              <li key={o.id} className="qrow">
+                <div className="qmain">
+                  <div className="qtop">
+                    <span className="qno">{o.order_no}</span>
+                    <Chip status={o.status}>Pending</Chip>
+                  </div>
+                  <p className="qwho">
+                    {o.company_name || o.ordered_by_name}
+                    {o.company_name && <em> · ordered by {o.ordered_by_name}</em>}
+                  </p>
+                  <p className="qmeta">
+                    {o.item_count} {o.item_count === 1 ? 'item' : 'items'} · {time(o.created_at)}
+                    {o.fulfilment === 'delivery' && ' · delivery'}
+                  </p>
+                </div>
+
+                <div className="qside">
+                  <span className="qamount">{money(o.total)}</span>
+                  <button className="btn btn-primary" onClick={() => setPaying(o)}>
+                    Receive payment
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
-      </Card>
+      </section>
+
+      <section className="section">
+        <div className="section-head">
+          <h2>Receipts issued today</h2>
+          <Link className="btn btn-ghost btn-sm" href="/cashier/receipts">All receipts</Link>
+        </div>
+
+        <div className="card">
+          {recent.length === 0 ? (
+            <Empty>No receipts issued today yet.</Empty>
+          ) : (
+            <ul className="ledger">
+              {recent.map((r) => (
+                <li key={r.id}>
+                  <span className="lno">{r.order_no}</span>
+                  <span className="lsub">{r.receipt_no} · {r.method.replace('_', ' ')}</span>
+                  <span className="lamt">{money(r.amount_paid)}</span>
+                  {r.verified === 1
+                    ? <span className="chip approved">Verified</span>
+                    : r.verified === -1
+                      ? <span className="chip rejected">Rejected</span>
+                      : <span className="chip paid">With accounts</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
       {paying && (
         <ReceivePaymentModal

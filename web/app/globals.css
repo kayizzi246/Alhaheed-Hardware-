@@ -27,9 +27,9 @@
 
 :root {
   /* ── Brand ───────────────────────────────────────────────────────── */
-  --navy:        #122c48;
-  --navy-deep:   #0b1d31;
-  --navy-soft:   #1d3f63;
+  --navy:        #1e1310;   /* the dark is warm now, not blue */
+  --navy-deep:   #120a08;
+  --navy-soft:   #32201a;
   --orange:      #e8862a;
   --orange-dark: #c96f18;
   --orange-soft: #fdf3e7;
@@ -52,7 +52,7 @@
   /* ── States ──────────────────────────────────────────────────────── */
   --green:       #15803d;
   --green-bg:    #e8f6ed;
-  --red:         #be3b3b;
+  --red:         #c0392b;   /* brand red, and still the danger colour */
   --red-bg:      #fdeded;
   --amber:       #b45309;
   --amber-bg:    #fdf2e2;
@@ -88,9 +88,9 @@
    looks like a mistake. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --navy:        #0d2137;
-    --navy-deep:   #071726;
-    --navy-soft:   #16344f;
+    --navy:        #1a110e;
+    --navy-deep:   #0d0807;
+    --navy-soft:   #2b1c17;
     --orange:      #f0952f;
     --orange-dark: #d47d1c;
     --orange-soft: #2a1f12;
@@ -131,8 +131,8 @@ html, body {
   color: var(--text);
   font-family: "Inter var", Inter, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "cv11", "ss01";
@@ -249,9 +249,9 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 9px 11px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 500;
   color: var(--text-2);
   transition: background-color 140ms var(--ease-out), color 140ms var(--ease-out);
@@ -335,7 +335,7 @@ a { color: inherit; text-decoration: none; }
 
 .topbar-title {
   margin: 0;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 680;
   letter-spacing: -0.014em;
   color: var(--text);
@@ -534,14 +534,14 @@ a { color: inherit; text-decoration: none; }
 
 .page-head h1 {
   margin: 0;
-  font-size: 25px;
+  font-size: 27px;
   font-weight: 700;
   letter-spacing: -0.021em;
   color: var(--text);
 }
 
 .page-meta {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -593,7 +593,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .stat .value {
-  font-size: 25px;
+  font-size: 27px;
   font-weight: 700;
   letter-spacing: -0.024em;
   line-height: 1.1;
@@ -624,7 +624,7 @@ a { color: inherit; text-decoration: none; }
   padding: 14px 18px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 650;
   letter-spacing: -0.005em;
   color: var(--text);
@@ -633,7 +633,7 @@ a { color: inherit; text-decoration: none; }
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 14.5px;
 }
 
 th {
@@ -652,7 +652,7 @@ th {
 }
 
 td {
-  padding: 13px 18px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border);
   color: var(--text-2);
   vertical-align: middle;
@@ -729,12 +729,12 @@ code {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  height: 38px;
-  padding: 0 16px;
+  height: 40px;
+  padding: 0 17px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
   letter-spacing: -0.003em;
   cursor: pointer;
@@ -795,7 +795,7 @@ code {
 
 label {
   display: block;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-2);
   margin-bottom: 6px;
@@ -803,14 +803,14 @@ label {
 
 input, select, textarea {
   width: 100%;
-  height: 40px;
+  height: 42px;
   padding: 0 13px;
   border: 1px solid var(--border-firm);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 15px;
   transition: border-color 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
 }
 
@@ -1146,16 +1146,16 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
 :root {
   /* Categorical. Order matters: the warm hue sits between the two
      cool ones so adjacent pairs stay apart under protanopia. */
-  --cat-a: #2563a8;  /* cash          */
-  --cat-b: #c2410c;  /* mobile money  */
-  --cat-c: #9a4fc2;  /* card          */
+  --cat-a: #f0932b;  /* cash          */
+  --cat-b: #c0392b;  /* mobile money  */
+  --cat-c: #7a2e8f;  /* card — a third warm hue would be unreadable */
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --cat-a: #4788c8;
-    --cat-b: #cf7430;
-    --cat-c: #a473cf;
+    --cat-a: #c07f34;
+    --cat-b: #cf4470;
+    --cat-c: #9f63c4;
   }
 }
 
@@ -1270,7 +1270,7 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
 
 .section-head h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 680;
   letter-spacing: -0.012em;
   color: var(--text);
@@ -1312,7 +1312,7 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
 
 .pipe-count {
   display: block;
-  font-size: 31px;
+  font-size: 33px;
   font-weight: 750;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -1323,7 +1323,7 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
 .pipe-label {
   display: block;
   margin-top: 8px;
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
   color: var(--text);
 }
@@ -1570,9 +1570,9 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
    onto <html>; "system" removes it and the media queries above take
    over again. */
 :root[data-theme="dark"] {
-    --navy:        #0d2137;
-    --navy-deep:   #071726;
-    --navy-soft:   #16344f;
+    --navy:        #1a110e;
+    --navy-deep:   #0d0807;
+    --navy-soft:   #2b1c17;
     --orange:      #f0952f;
     --orange-dark: #d47d1c;
     --orange-soft: #2a1f12;
@@ -1604,9 +1604,9 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
   }
 
 :root[data-theme="dark"] {
-    --cat-a: #4788c8;
-    --cat-b: #cf7430;
-    --cat-c: #a473cf;
+    --cat-a: #c07f34;
+    --cat-b: #cf4470;
+    --cat-c: #9f63c4;
   }
 
 /* =====================================================================
@@ -1958,4 +1958,594 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
   .auth-headline { font-size: 27px; }
   .auth-lede, .auth-flow, .auth-k { display: none; }
   .auth-stats { margin: 20px 0 18px; }
+}
+
+/* =====================================================================
+   TEXT AND CONTROLS THAT EVERY SCREEN LEANS ON
+   ---------------------------------------------------------------------
+   These were lost when the old sign-in block was replaced, and they are
+   used across the cashier, accounts, receipts and notification screens
+   as well as here. Restored as designed rules rather than patched back.
+   ===================================================================== */
+
+/* The second line in a table cell: who ordered, when it was taken, what
+   a unit costs. Deliberately quiet — it is there to be read second. */
+.sub {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+td .sub { margin-top: 2px; }
+
+/* A button that reads as a link, because it does something rather than
+   going somewhere. Still a <button>, so the keyboard and screen reader
+   treat it as the action it is. */
+.linkish {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 6px 2px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--orange-dark);
+  text-align: center;
+  cursor: pointer;
+  transition: color 140ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .linkish:hover { color: var(--orange); text-decoration: underline; text-underline-offset: 2px; }
+}
+
+.linkish.inline {
+  display: inline;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+/* Accounts has verified this one. Same family as the other chips. */
+.chip.approved {
+  background: var(--green-bg);
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 20%, transparent);
+}
+
+/* --- The checkbox ------------------------------------------------------
+   The browser default is a different shape and colour on every platform,
+   which on a sign-in page is the one control people look straight at. */
+
+.check input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid var(--border-firm);
+  border-radius: 5px;
+  background: var(--surface);
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  transition: background-color 140ms var(--ease-out), border-color 140ms var(--ease-out);
+}
+
+.check input[type="checkbox"]::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  transform: scale(0);
+  transition: transform 140ms var(--ease-out);
+  background: #fff;
+  /* A tick, drawn rather than typed, so it is the same on every OS. */
+  clip-path: polygon(14% 44%, 0 60%, 39% 100%, 100% 18%, 84% 2%, 39% 68%);
+}
+
+.check input[type="checkbox"]:checked {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+
+.check input[type="checkbox"]:checked::after { transform: scale(1); }
+
+.check input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+/* --- A disabled primary action -----------------------------------------
+   Grey-on-grey reads as broken. Keeping the shape and dropping the
+   saturation says "not yet" instead. */
+
+.btn:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  background: var(--surface-sunk);
+  color: var(--faint);
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.btn-ghost:disabled { background: var(--surface-sunk); }
+
+/* =====================================================================
+   A QUEUE OF WORK
+   ---------------------------------------------------------------------
+   A table is right when you are comparing values down a column. A desk
+   queue is not that: it is a list of jobs, each picked up, dealt with,
+   and gone. So each one is a row, with the two things that matter sized
+   accordingly — the number the customer reads out, and the amount being
+   counted — and one button, on the right, where the hand already is.
+   ===================================================================== */
+
+.section { margin-bottom: 26px; }
+
+.queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.qrow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 170ms var(--ease-out), box-shadow 170ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .qrow:hover { border-color: var(--border-firm); box-shadow: var(--shadow); }
+}
+
+.qmain { min-width: 0; flex: 1; }
+
+.qtop { display: flex; align-items: center; gap: 9px; }
+
+.qno {
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.qwho {
+  margin: 5px 0 0;
+  font-size: 15px;
+  font-weight: 550;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qwho em { font-style: normal; font-weight: 400; color: var(--muted); }
+
+.qmeta { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+
+.qside {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: none;
+}
+
+/* The amount is the largest thing on the row. It is what is being
+   counted out, and it is read across a desk. */
+.qamount {
+  font-size: 23px;
+  font-weight: 750;
+  letter-spacing: -0.022em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --- A ledger: a record rather than a job list, so it is quieter ----- */
+
+.ledger { list-style: none; margin: 0; padding: 0; }
+
+.ledger li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14.5px;
+}
+
+.ledger li:last-child { border-bottom: none; }
+
+.lno { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+.lsub {
+  color: var(--muted);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lamt {
+  margin-left: auto;
+  font-weight: 650;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- When the screen last checked ------------------------------------ */
+
+.fresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.fresh::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18);
+}
+
+.fresh.stale { color: var(--red); border-color: color-mix(in srgb, var(--red) 25%, transparent); }
+.fresh.stale::before { background: var(--red); box-shadow: 0 0 0 3px rgba(190, 59, 59, 0.16); }
+
+@media (max-width: 720px) {
+  .qrow { flex-direction: column; align-items: stretch; gap: 12px; }
+  .qside { justify-content: space-between; }
+  .ledger li { flex-wrap: wrap; }
+  .lamt { margin-left: auto; }
+}
+
+/* =====================================================================
+   THE CONSOLE — a dense dashboard
+   ---------------------------------------------------------------------
+   Everything that matters above the fold: what we took, where it is
+   stuck, what sells, what just happened. Dense on purpose — a manager
+   standing in the shop wants the whole position in one look, not six
+   clicks — so the type is small, the panels are tight, and the only
+   large thing on the page is the money.
+   ===================================================================== */
+
+.console-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.console-head h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  color: var(--text);
+}
+
+.console-head .page-meta { margin: 4px 0 0; }
+
+.console-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* --- The row of figures ------------------------------------------------ */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.kpi {
+  position: relative;
+  padding: 15px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* The lead figure gets the brand wash and a heavier number. It is the
+   one thing somebody walking past the screen should be able to read. */
+.kpi-lead {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--orange) 9%, transparent), transparent 62%),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--orange) 34%, var(--border));
+}
+
+.kpi-lead .kpi-value { font-size: 29px; color: var(--text); }
+
+.kpi::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: transparent;
+}
+
+.kpi-lead::after { background: linear-gradient(var(--orange), var(--red)); }
+.kpi-warn::after { background: var(--amber); }
+.kpi-bad::after  { background: var(--red); }
+
+.kpi-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpi-value {
+  display: block;
+  margin: 7px 0 5px;
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.026em;
+  line-height: 1.05;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-foot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag.up   { background: var(--green-bg); color: var(--green); }
+.tag.down { background: var(--red-bg);   color: var(--red); }
+
+/* --- Panels ------------------------------------------------------------ */
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 680;
+  letter-spacing: -0.008em;
+  color: var(--text);
+}
+
+.panel-head span { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); }
+
+.panel-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange-dark);
+  white-space: nowrap;
+}
+
+.panel-body { padding: 14px 16px; flex: 1; }
+.panel-body table { margin: -14px -16px -14px; width: calc(100% + 32px); }
+
+.none { margin: 10px 0; color: var(--muted); font-size: 13px; }
+
+/* --- The funnel --------------------------------------------------------
+   The pipeline is a funnel: every order enters at the cashier and
+   leaves from the store, and the bar is how many sit there now. */
+
+.funnel { list-style: none; margin: 0; padding: 0; }
+
+.funnel li + li { margin-top: 4px; }
+
+.funnel a {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1.1fr) 34px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px;
+  border-radius: var(--radius-sm);
+  transition: background-color 140ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .funnel a:hover { background: var(--surface-2); }
+}
+
+.fn-n {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-sunk);
+  color: var(--faint);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.fn-text { min-width: 0; }
+.fn-text b { display: block; font-size: 13px; font-weight: 600; color: var(--text); }
+.fn-text em { display: block; font-style: normal; font-size: 11px; color: var(--muted); }
+
+.fn-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-sunk);
+  overflow: hidden;
+}
+
+.fn-fill {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--border-firm);
+  transition: width 320ms var(--ease-out);
+}
+
+.fn-fill.busy { background: linear-gradient(90deg, var(--orange), var(--red)); }
+
+.fn-count {
+  text-align: right;
+  font-size: 15px;
+  font-weight: 750;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Ranked list -------------------------------------------------------- */
+
+.ranked { list-style: none; margin: 0; padding: 0; }
+
+.ranked li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 12.5px;
+}
+
+.rk-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-weight: 550;
+}
+
+.rk-track { height: 8px; border-radius: 4px; background: var(--surface-sunk); overflow: hidden; }
+
+.rk-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--orange), var(--red));
+}
+
+.rk-qty { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.rk-val {
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --- The feed ----------------------------------------------------------- */
+
+.feed { list-style: none; margin: 0; padding: 0; }
+
+.feed li + li { border-top: 1px solid var(--border); }
+
+.feed a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 2px;
+  font-size: 12.5px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .feed a:hover .fd-no { color: var(--orange-dark); }
+}
+
+.fd-no { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+.fd-who {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fd-amt { font-weight: 650; color: var(--text); font-variant-numeric: tabular-nums; }
+.fd-at { color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* --- The mix key gains a percentage ------------------------------------- */
+
+.mix-pct {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mix-key .mix-val { margin-left: 0; min-width: 92px; text-align: right; }
+
+@media (max-width: 1080px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .feed a { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .feed .fd-at, .feed .chip { display: none; }
+  .ranked li { grid-template-columns: minmax(0, 1fr) auto; }
+  .ranked .rk-track, .ranked .rk-qty { display: none; }
 }

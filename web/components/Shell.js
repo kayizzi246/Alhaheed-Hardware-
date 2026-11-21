@@ -3,9 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, getUser, clearSession } from '@/lib/api';
-import { getSocket, closeSocket } from '@/lib/socket';
 import { NAV, HOME, DESK_LABEL } from '@/lib/roles';
 import { Icon } from '@/components/icons';
+import { usePoll, freshness } from '@/lib/live';
 
 /**
  * The chrome every desk sits in: a light rail on the left, a bar across
@@ -27,7 +27,6 @@ export default function Shell({ allow, children }) {
   const router = useRouter();
 
   const [user, setUser] = useState(null);
-  const [live, setLive] = useState(false);
   const [unread, setUnread] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);   // the phone rail
   const [accountOpen, setAccountOpen] = useState(false);
@@ -49,18 +48,12 @@ export default function Shell({ allow, children }) {
     loadUnread();
   }, [allow, router, loadUnread]);
 
-  useEffect(() => {
-    const s = getSocket();
-    if (!s) return;
-    const on = () => setLive(true);
-    const off = () => setLive(false);
-    const onNotify = () => loadUnread();
-    s.on('connect', on);
-    s.on('disconnect', off);
-    s.on('notification', onNotify);
-    setLive(s.connected);
-    return () => { s.off('connect', on); s.off('disconnect', off); s.off('notification', onNotify); };
-  }, [loadUnread]);
+  // The alert count keeps itself current the same way the desks do.
+  //
+  // There is no websocket. The Node API had one; WordPress on shared
+  // hosting does not, and a "Live" dot that could never go green is
+  // worse than no dot at all — so the rail says when it last checked.
+  const { at, failing } = usePoll(loadUnread, 20000);
 
   // A tap anywhere else closes the account menu, which is what every
   // menu on every other site does.
@@ -76,7 +69,6 @@ export default function Shell({ allow, children }) {
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   const signOut = () => {
-    closeSocket();
     clearSession();
     router.replace('/');
   };
@@ -120,9 +112,12 @@ export default function Shell({ allow, children }) {
         </nav>
 
         <div className="rail-foot">
-          <span className={`conn ${live ? '' : 'off'}`}>
+          <span
+            className={`conn ${failing ? 'off' : ''}`}
+            title="These screens re-check the shop on their own"
+          >
             <i />
-            {live ? 'Live' : 'Reconnecting…'}
+            {freshness(at, failing)}
           </span>
         </div>
       </aside>
