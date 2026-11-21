@@ -235,9 +235,7 @@ class AH_Rest {
 			array(
 				'methods'             => $get,
 				'permission_callback' => self::desk( array( 'cashier', 'manager' ) ),
-				'callback'            => function () {
-					return array( 'orders' => AH_Flow::queue_for( 'cashier' ) );
-				},
+				'callback'            => array( __CLASS__, 'cashier_queue' ),
 			)
 		);
 		register_rest_route(
@@ -255,9 +253,7 @@ class AH_Rest {
 			array(
 				'methods'             => $get,
 				'permission_callback' => self::desk( array( 'accounts', 'manager' ) ),
-				'callback'            => function () {
-					return array( 'orders' => AH_Flow::queue_for( 'accounts' ) );
-				},
+				'callback'            => array( __CLASS__, 'accounts_queue' ),
 			)
 		);
 		register_rest_route(
@@ -399,6 +395,74 @@ class AH_Rest {
 		return array(
 			'user'  => AH_Shape::user( $user ),
 			'token' => AH_Auth::issue( $user->ID ),
+		);
+	}
+
+	// -----------------------------------------------------------------
+	// The desk queues
+	//
+	// Each returns `orders` and a `summary`: the four numbers across the
+	// top of the screen. They are part of the response rather than a
+	// second request because a desk opening its queue always wants both,
+	// and two round trips on a counter's connection is one too many.
+	// -----------------------------------------------------------------
+
+	public static function cashier_queue() {
+		global $wpdb;
+		$pay   = AH_Install::table( 'payments' );
+		$today = current_time( 'Y-m-d' );
+
+		$taken = function ( $method ) use ( $wpdb, $pay, $today ) {
+			return (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COALESCE(SUM(amount_paid),0) FROM {$pay}
+					  WHERE method = %s AND DATE(created_at) = %s",
+					$method,
+					$today
+				)
+			);
+		};
+
+		$orders = AH_Flow::queue_for( 'cashier' );
+
+		return array(
+			'orders'  => $orders,
+			'summary' => array(
+				'waiting'    => count( $orders ),
+				'paid_today' => (int) $wpdb->get_var(
+					$wpdb->prepare( "SELECT COUNT(*) FROM {$pay} WHERE DATE(created_at) = %s", $today )
+				),
+				'cash_today' => $taken( 'cash' ),
+				'momo_today' => $taken( 'mobile_money' ),
+			),
+		);
+	}
+
+	public static function accounts_queue() {
+		global $wpdb;
+		$pay   = AH_Install::table( 'payments' );
+		$book  = AH_Install::table( 'cash_book' );
+		$today = current_time( 'Y-m-d' );
+
+		$orders = AH_Flow::queue_for( 'accounts' );
+
+		return array(
+			'orders'  => $orders,
+			'summary' => array(
+				'awaiting'       => count( $orders ),
+				'verified_today' => (int) $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM {$pay} WHERE verified = 1 AND DATE(verified_at) = %s",
+						$today
+					)
+				),
+				'cash_in'        => (int) $wpdb->get_var(
+					$wpdb->prepare( "SELECT COALESCE(SUM(cash_in),0) FROM {$book} WHERE entry_date = %s", $today )
+				),
+				'cash_out'       => (int) $wpdb->get_var(
+					$wpdb->prepare( "SELECT COALESCE(SUM(cash_out),0) FROM {$book} WHERE entry_date = %s", $today )
+				),
+			),
 		);
 	}
 
