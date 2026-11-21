@@ -1,15 +1,26 @@
 'use client';
+
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { today } from '@/lib/format';
-import { Card, Alert, Modal } from './ui';
-import CashBookTable from './CashBookTable';
+import {
+  Alert, Button, Card, CardHead, CardTitle, Field, Input, Modal, PageHead, Segmented, Select,
+} from '@/components/ui';
+import CashBookTable from '@/components/CashBookTable';
+
+const DIRECTIONS = [
+  { value: 'in', label: 'Cash in' },
+  { value: 'out', label: 'Cash out' },
+];
 
 /**
- * Full cash book page. Accounts can add entries (e.g. transport, fuel);
- * the cashier gets the same view read-only.
+ * The cash book for a day.
+ *
+ * Accounts can add entries — a float, a bank deposit, transport, a
+ * supplier paid out of the drawer. The cashier gets the same view
+ * read-only, because the drawer is theirs to count but not to correct.
  */
-export default function CashBook({ readOnly, title = 'Cash Book' }) {
+export default function CashBook({ readOnly, title = 'Cash book' }) {
   const [date, setDate] = useState(today());
   const [adding, setAdding] = useState(false);
   const [notice, setNotice] = useState('');
@@ -17,28 +28,28 @@ export default function CashBook({ readOnly, title = 'Cash Book' }) {
 
   return (
     <>
-      <div className="page-head">
-        <h1>{title}</h1>
-        <div className="filters">
-          <div className="field">
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          {!readOnly && (
-            <button className="btn btn-primary" onClick={() => setAdding(true)}>
-              + Add entry
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHead
+        title={title}
+        sub={readOnly ? 'Accounts keeps this. You can read it and count against it.' : null}
+      >
+        <Input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="tnum w-[170px]"
+        />
+        {!readOnly && <Button onClick={() => setAdding(true)}>Add entry</Button>}
+      </PageHead>
 
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
-      <Card title={`Entries for ${date}`}>
+      <Card>
+        <CardHead><CardTitle>Entries for {date}</CardTitle></CardHead>
         <CashBookTable key={`${date}-${key}`} date={date} />
       </Card>
 
       {adding && (
-        <AddEntryModal
+        <AddEntry
           date={date}
           onClose={() => setAdding(false)}
           onDone={() => {
@@ -52,7 +63,7 @@ export default function CashBook({ readOnly, title = 'Cash Book' }) {
   );
 }
 
-function AddEntryModal({ date, onClose, onDone }) {
+function AddEntry({ date, onClose, onDone }) {
   const [details, setDetails] = useState('');
   const [direction, setDirection] = useState('out');
   const [amount, setAmount] = useState('');
@@ -83,44 +94,56 @@ function AddEntryModal({ date, onClose, onDone }) {
   }
 
   return (
-    <Modal title="Add cash book entry" onClose={onClose}>
-      <form onSubmit={submit}>
+    <Modal
+      title="Add a cash book entry"
+      description={`Booked against ${date}.`}
+      onClose={onClose}
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" form="entry" disabled={busy || !details.trim() || !amount}>
+            {busy ? 'Saving…' : 'Save entry'}
+          </Button>
+        </>
+      }
+    >
+      <form id="entry" onSubmit={submit} className="space-y-4">
         <Alert>{error}</Alert>
 
-        <div className="field">
-          <label htmlFor="d">Details</label>
-          <input id="d" value={details} onChange={(e) => setDetails(e.target.value)}
-                 placeholder="Transport - delivery truck fuel" required />
-        </div>
+        <Field label="What is it for?">
+          <Input
+            value={details}
+            onChange={(e) => setDetails(e.target.value)}
+            placeholder="Transport — delivery truck fuel"
+            autoFocus
+            required
+          />
+        </Field>
 
-        <div className="field">
-          <label>Direction</label>
-          <div className="method-group">
-            <button type="button" className={direction === 'in' ? 'on' : ''}
-                    onClick={() => setDirection('in')}>Cash In</button>
-            <button type="button" className={direction === 'out' ? 'on' : ''}
-                    onClick={() => setDirection('out')}>Cash Out</button>
-          </div>
-        </div>
+        <Field label="Direction">
+          <Segmented label="Direction" value={direction} onChange={setDirection} options={DIRECTIONS} />
+        </Field>
 
-        <div className="field">
-          <label htmlFor="a">Amount (UGX)</label>
-          <input id="a" type="number" min="1" value={amount}
-                 onChange={(e) => setAmount(e.target.value)} required />
-        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Amount (UGX)">
+            <Input
+              type="number"
+              min="1"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+              className="tnum font-semibold"
+            />
+          </Field>
 
-        <div className="field">
-          <label htmlFor="m">Method</label>
-          <select id="m" value={method} onChange={(e) => setMethod(e.target.value)}>
-            <option value="cash">Cash</option>
-            <option value="mobile_money">Mobile Money</option>
-            <option value="bank">Bank</option>
-          </select>
-        </div>
-
-        <div className="modal-foot" style={{ padding: '8px 0 0', borderTop: 'none' }}>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save entry'}</button>
+          <Field label="Method">
+            <Select value={method} onChange={(e) => setMethod(e.target.value)}>
+              <option value="cash">Cash</option>
+              <option value="mobile_money">Mobile Money</option>
+              <option value="bank">Bank</option>
+            </Select>
+          </Field>
         </div>
       </form>
     </Modal>

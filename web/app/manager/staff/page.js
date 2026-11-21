@@ -1,8 +1,12 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { list } from '@/lib/format';
-import { Card, Chip, Alert, Empty, Stat } from '@/components/ui';
+import {
+  Alert, Card, CardHead, CardTitle, Chip, Empty, Loading, PageHead,
+  Stat, Stats, Table, TableWrap, Td, Th, Tr,
+} from '@/components/ui';
 
 const ROLE_LABEL = {
   cashier: 'Cashier',
@@ -10,6 +14,13 @@ const ROLE_LABEL = {
   store: 'Store Manager',
   manager: 'Manager',
 };
+
+const REACH = [
+  ['Cashier', 'The payment queue, receipts, the cash book (read-only), end of day'],
+  ['Accounts', 'Verifying payments, the cash book, reconciliation, reports'],
+  ['Store Manager', 'Approved orders, the pick list, releasing goods — on the app'],
+  ['Manager', 'Everything, plus products, staff, customers and the audit trail'],
+];
 
 /**
  * Who works here and at which desk.
@@ -25,66 +36,74 @@ export default function ManagerStaff() {
   useEffect(() => {
     api('/api/manager/staff')
       .then((r) => setStaff(list(r.staff)))
-      .catch((e) => setError(e.message));
+      .catch((e) => { setStaff([]); setError(e.message); });
   }, []);
 
   const count = (role) => (staff || []).filter((s) => s.role === role).length;
 
   return (
     <>
-      <div className="page-head">
-        <h1>Staff</h1>
-        <div className="page-meta">
-          Added in WordPress under Users → Add New, with the matching role.
-        </div>
-      </div>
+      <PageHead
+        title="Staff"
+        sub="Added in WordPress under Users → Add New, with the matching role."
+      />
 
       <Alert>{error}</Alert>
 
-      <div className="stats">
+      <Stats>
         {Object.keys(ROLE_LABEL).map((r) => (
           <Stat key={r} label={ROLE_LABEL[r]} value={count(r)} />
         ))}
-      </div>
+      </Stats>
 
-      <Card title="Everyone with a desk">
+      <Card className="mb-4">
+        <CardHead><CardTitle>Everyone with a desk</CardTitle></CardHead>
         {!staff ? (
-          <div className="loading">Loading staff…</div>
+          <Loading>Loading staff…</Loading>
         ) : staff.length === 0 ? (
-          <Empty>No staff accounts yet.</Empty>
+          <Empty title="No staff accounts yet">
+            Add them in WordPress under Users → Add New.
+          </Empty>
         ) : (
-          <table>
-            <thead>
-              <tr><th>Name</th><th>Desk</th><th>Phone</th><th>Email</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              {staff.map((s) => (
-                <tr key={s.id}>
-                  <td><strong>{s.fullName}</strong></td>
-                  <td>{ROLE_LABEL[s.role] || s.role}</td>
-                  <td>{s.phone || '—'}</td>
-                  <td>{s.email || '—'}</td>
-                  <td>
-                    <Chip status={s.status === 'active' ? 'released' : 'cancelled'}>
-                      {s.status === 'active' ? 'Active' : 'Suspended'}
-                    </Chip>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <TableWrap>
+            <Table>
+              <thead>
+                <tr><Th>Name</Th><Th>Desk</Th><Th>Phone</Th><Th>Email</Th><Th>Status</Th></tr>
+              </thead>
+              <tbody>
+                {staff.map((s) => (
+                  <Tr key={s.id}>
+                    <Td className="font-semibold text-ink">{s.fullName}</Td>
+                    <Td>{ROLE_LABEL[s.role] || s.role}</Td>
+                    <Td className="tnum">{s.phone || '—'}</Td>
+                    <Td>{s.email || '—'}</Td>
+                    <Td>
+                      <Chip tone={s.status === 'active' ? 'good' : 'grey'}>
+                        {s.status === 'active' ? 'Active' : 'Suspended'}
+                      </Chip>
+                    </Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
+          </TableWrap>
         )}
       </Card>
 
-      <Card title="What each desk can reach">
-        <table>
-          <tbody>
-            <tr><th>Cashier</th><td>The payment queue, receipts, the cash book (read-only), end of day</td></tr>
-            <tr><th>Accounts</th><td>Verifying payments, the cash book, reconciliation, reports</td></tr>
-            <tr><th>Store Manager</th><td>Approved orders, the pick list, releasing goods — on the app</td></tr>
-            <tr><th>Manager</th><td>Everything, plus products, staff, customers and the audit trail</td></tr>
-          </tbody>
-        </table>
+      <Card>
+        <CardHead><CardTitle>What each desk can reach</CardTitle></CardHead>
+        <TableWrap>
+          <Table>
+            <tbody>
+              {REACH.map(([desk, what]) => (
+                <Tr key={desk}>
+                  <Td className="w-[150px] align-top font-semibold text-ink">{desk}</Td>
+                  <Td>{what}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableWrap>
       </Card>
     </>
   );

@@ -451,6 +451,25 @@ class AH_Rest {
 
 		$orders = AH_Flow::queue_for( 'accounts' );
 
+		// Accounts is checking a payment, so the row has to carry the
+		// payment: the receipt number, what was taken, how, and the
+		// reference to look up on the statement. Without these the desk
+		// showed a customer name and "UGX 0" and could verify nothing.
+		foreach ( $orders as $i => $order ) {
+			$payment = AH_Flow::payment_for( $order['id'] );
+			if ( ! $payment ) {
+				continue;
+			}
+			$cashier = $payment['cashier_id'] ? get_user_by( 'id', $payment['cashier_id'] ) : null;
+
+			$orders[ $i ]['receipt_no']      = $payment['receipt_no'];
+			$orders[ $i ]['method']          = $payment['method'];
+			$orders[ $i ]['transaction_ref'] = $payment['transaction_ref'];
+			$orders[ $i ]['amount_paid']     = (int) $payment['amount_paid'];
+			$orders[ $i ]['cashier_name']    = $cashier ? $cashier->display_name : null;
+			$orders[ $i ]['paid_at']         = $payment['created_at'];
+		}
+
 		return array(
 			'orders'  => $orders,
 			'summary' => array(

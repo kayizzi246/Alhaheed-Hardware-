@@ -1,8 +1,12 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { money, today } from '@/lib/format';
-import { Stat, Card, Alert } from '@/components/ui';
+import {
+  Alert, Button, Card, CardHead, CardTitle, Input, Loading,
+  PageHead, Stat, Stats, Table, TableWrap, Td, Tr,
+} from '@/components/ui';
 
 /** What this cashier took in today, for handing over the till. */
 export default function EndOfDayPage() {
@@ -11,47 +15,61 @@ export default function EndOfDayPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api(`/api/cashier/end-of-day?date=${date}`).then(setData).catch((e) => setError(e.message));
+    setData(null);
+    api(`/api/cashier/end-of-day?date=${date}`)
+      .then(setData)
+      .catch((e) => setError(e.message));
   }, [date]);
 
   return (
     <>
-      <div className="page-head">
-        <h1>End of Day</h1>
-        <div className="filters">
-          <div className="field">
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-        </div>
-      </div>
+      <PageHead title="End of day" sub="Count the drawer against this before you hand over.">
+        <Input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="tnum w-[170px]"
+        />
+      </PageHead>
 
       <Alert>{error}</Alert>
 
+      {!data && !error && <Loading>Adding up the day…</Loading>}
+
       {data && (
         <>
-          <div className="stats">
+          <Stats>
             <Stat label="Receipts issued" value={data.receipts} />
-            <Stat label="Total collected" value={money(data.total)} tone="green" />
-            <Stat label="Cash" value={money(data.cash)} />
+            <Stat label="Total collected" value={money(data.total)} lead />
+            <Stat label="Cash" value={money(data.cash)} tone="ok" />
             <Stat label="Mobile Money" value={money(data.mobile_money)} />
-          </div>
+          </Stats>
 
-          <Card title="Hand-over summary">
-            <table>
-              <tbody>
-                <tr><td>Cashier</td><td className="num">{data.cashier}</td></tr>
-                <tr><td>Date</td><td className="num">{data.date}</td></tr>
-                <tr><td>Cash in the till</td><td className="num"><strong>{money(data.cash)}</strong></td></tr>
-                <tr><td>Mobile Money</td><td className="num">{money(data.mobile_money)}</td></tr>
-                <tr><td>Card</td><td className="num">{money(data.card)}</td></tr>
-                <tr><td><strong>Total</strong></td><td className="num"><strong>{money(data.total)}</strong></td></tr>
-              </tbody>
-            </table>
+          <Card className="mb-4">
+            <CardHead><CardTitle>Hand-over summary</CardTitle></CardHead>
+            <TableWrap>
+              <Table>
+                <tbody>
+                  <Tr><Td>Cashier</Td><Td num>{data.cashier}</Td></Tr>
+                  <Tr><Td>Date</Td><Td num>{data.date}</Td></Tr>
+                  <Tr>
+                    <Td className="font-medium text-ink">Cash in the till</Td>
+                    <Td num className="font-bold text-ink">{money(data.cash)}</Td>
+                  </Tr>
+                  <Tr><Td>Mobile Money</Td><Td num>{money(data.mobile_money)}</Td></Tr>
+                  <Tr><Td>Card</Td><Td num>{money(data.card)}</Td></Tr>
+                  <tr className="bg-surface-2">
+                    <Td className="font-bold text-ink">Total</Td>
+                    <Td num className="font-display text-[15px] font-extrabold text-ink">{money(data.total)}</Td>
+                  </tr>
+                </tbody>
+              </Table>
+            </TableWrap>
           </Card>
 
-          <button className="btn btn-navy no-print" onClick={() => window.print()}>
+          <Button className="print:hidden" onClick={() => window.print()}>
             Print hand-over sheet
-          </button>
+          </Button>
         </>
       )}
     </>

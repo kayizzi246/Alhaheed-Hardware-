@@ -1,8 +1,12 @@
 'use client';
+
 import { useCallback, useEffect, useState } from 'react';
 import { api, downloadCsv, getUser } from '@/lib/api';
-import { money, methodLabel, statusLabel, today } from '@/lib/format';
-import { Stat, Card, Alert, Empty } from '@/components/ui';
+import { money, methodLabel, statusLabel, today, list } from '@/lib/format';
+import {
+  Alert, Button, Card, CardBody, CardHead, CardTitle, Chip, Empty, Field,
+  Input, Loading, PageHead, Select, Stat, Stats, Table, TableWrap, Td, Th, Tr,
+} from '@/components/ui';
 
 const PERIODS = [
   ['daily', 'Today'],
@@ -11,9 +15,19 @@ const PERIODS = [
   ['custom', 'Custom range'],
 ];
 
+const EXPORTS = [
+  ['sales', 'Sales'],
+  ['orders', 'Orders'],
+  ['cash-book', 'Cash book'],
+  ['stock', 'Stock'],
+];
+
 /**
  * Sales, best sellers, stock movement and staff activity.
- * Shared by the Accounts and Manager sides — the API allows both.
+ *
+ * Shared by the Accounts and Manager sides — the API allows both, and
+ * staff activity is the one section a manager sees that accounts does
+ * not.
  */
 export default function ReportsView() {
   const [period, setPeriod] = useState('weekly');
@@ -49,7 +63,9 @@ export default function ReportsView() {
       ]);
       setData({ sales, best, stock, stage, staff });
       setError('');
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      setError(e.message);
+    }
   }, [query]);
 
   useEffect(() => { load(); }, [load]);
@@ -60,219 +76,236 @@ export default function ReportsView() {
       .catch((e) => setError(e.message));
   };
 
-  if (!data) return <div className="loading">Building reports…</div>;
+  if (!data) return <Loading>Building reports…</Loading>;
 
   const { sales, best, stock, stage, staff } = data;
-  const maxDay = Math.max(1, ...sales.byDay.map((d) => d.total));
+  const byDay = list(sales.byDay);
+  const stages = list(stage.stages);
+  const maxDay = Math.max(1, ...byDay.map((d) => d.total));
 
-  // Group staff activity: one row per person, one column per action.
-  const actions = [...new Set(staff.staff.map((s) => s.action))];
+  // One row per person, one column per action.
+  const rows = list(staff.staff);
+  const actions = [...new Set(rows.map((s) => s.action))];
   const byPerson = {};
-  for (const row of staff.staff) {
+  for (const row of rows) {
     byPerson[row.full_name] ??= { role: row.role, counts: {} };
     byPerson[row.full_name].counts[row.action] = row.count;
   }
 
   return (
     <>
-      <div className="page-head">
-        <h1>Reports</h1>
-        <div className="btn-row">
-          <button className="btn btn-ghost" onClick={() => exportCsv('sales')}>Export sales</button>
-          <button className="btn btn-ghost" onClick={() => exportCsv('orders')}>Export orders</button>
-          <button className="btn btn-ghost" onClick={() => exportCsv('cash-book')}>Export cash book</button>
-          <button className="btn btn-ghost" onClick={() => exportCsv('stock')}>Export stock</button>
-          <button className="btn btn-navy no-print" onClick={() => window.print()}>Save as PDF</button>
-        </div>
-      </div>
+      <PageHead title="Reports" sub={`${sales.from} to ${sales.to}`}>
+        {EXPORTS.map(([key, label]) => (
+          <Button key={key} variant="outline" size="sm" onClick={() => exportCsv(key)}>
+            {label}
+          </Button>
+        ))}
+        <Button size="sm" className="print:hidden" onClick={() => window.print()}>Save as PDF</Button>
+      </PageHead>
 
       <Alert>{error}</Alert>
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
-      <div className="card" style={{ padding: 14 }}>
-        <div className="filters">
-          <div className="field">
-            <label htmlFor="pd">Period</label>
-            <select id="pd" value={period} onChange={(e) => setPeriod(e.target.value)}>
+      <Card className="mb-4">
+        <CardBody className="flex flex-wrap items-end gap-3">
+          <Field label="Period">
+            <Select value={period} onChange={(e) => setPeriod(e.target.value)} className="w-[170px]">
               {PERIODS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </div>
+            </Select>
+          </Field>
           {period === 'custom' && (
             <>
-              <div className="field">
-                <label htmlFor="fr">From</label>
-                <input id="fr" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-              </div>
-              <div className="field">
-                <label htmlFor="to">To</label>
-                <input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-              </div>
+              <Field label="From">
+                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="tnum w-[170px]" />
+              </Field>
+              <Field label="To">
+                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="tnum w-[170px]" />
+              </Field>
             </>
           )}
-          <div className="page-meta" style={{ marginBottom: 4 }}>
-            {sales.from} to {sales.to}
-          </div>
-        </div>
-      </div>
+        </CardBody>
+      </Card>
 
-      <div className="stats">
-        <Stat label="Gross sales (verified)" value={money(sales.totals.gross)} tone="green" />
+      <Stats>
+        <Stat label="Gross sales (verified)" value={money(sales.totals.gross)} lead />
         <Stat label="Receipts" value={sales.totals.receipts} />
         <Stat
           label="Average receipt"
           value={money(sales.totals.receipts ? Math.round(sales.totals.gross / sales.totals.receipts) : 0)}
         />
-        <Stat label="Orders in period" value={stage.stages.reduce((s, x) => s + x.orders, 0)} />
-      </div>
+        <Stat label="Orders in period" value={stages.reduce((s, x) => s + x.orders, 0)} />
+      </Stats>
 
-      <Card title="Sales by day">
-        {sales.byDay.length === 0 ? (
-          <Empty>No verified sales in this period.</Empty>
+      <Card className="mb-4">
+        <CardHead><CardTitle>Sales by day</CardTitle></CardHead>
+        {byDay.length === 0 ? (
+          <Empty title="No verified sales in this period">Try a longer period.</Empty>
         ) : (
-          <div style={{ padding: '18px 16px' }}>
-            {sales.byDay.map((d) => (
-              <div key={d.day} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 9 }}>
-                <span style={{ width: 86, fontSize: 12, color: 'var(--muted)' }}>{d.day.slice(5)}</span>
-                <div style={{ flex: 1, background: '#eef2f6', borderRadius: 4, height: 22, overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${(d.total / maxDay) * 100}%`,
-                    background: 'var(--orange)',
-                    height: '100%',
-                    minWidth: d.total > 0 ? 3 : 0,
-                  }} />
+          <CardBody className="space-y-2.5">
+            {byDay.map((d) => (
+              <div key={d.day} className="flex items-center gap-3">
+                <span className="tnum w-[70px] shrink-0 text-xs text-ink-muted">{d.day.slice(5)}</span>
+                <div className="h-5 flex-1 overflow-hidden rounded-sm bg-surface-sunk">
+                  <div
+                    className="h-full rounded-sm bg-brand"
+                    style={{ width: `${(d.total / maxDay) * 100}%`, minWidth: d.total > 0 ? 3 : 0 }}
+                  />
                 </div>
-                <span style={{ width: 70, textAlign: 'right', fontSize: 12, color: 'var(--muted)' }}>
+                <span className="tnum w-[64px] shrink-0 text-right text-xs text-ink-muted">
                   {d.receipts} rcpt
                 </span>
-                <span style={{ width: 130, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                <span className="tnum w-[120px] shrink-0 text-right text-sm font-semibold text-ink">
                   {money(d.total)}
                 </span>
               </div>
             ))}
-          </div>
+          </CardBody>
         )}
       </Card>
 
-      <div className="detail-grid">
-        <Card title="Payments by method">
-          {sales.byMethod.length === 0 ? (
-            <Empty>Nothing collected in this period.</Empty>
+      <div className="mb-4 grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHead><CardTitle>Payments by method</CardTitle></CardHead>
+          {list(sales.byMethod).length === 0 ? (
+            <Empty title="Nothing collected in this period" />
           ) : (
-            <table>
-              <thead>
-                <tr><th>Method</th><th className="num">Receipts</th><th className="num">Total</th></tr>
-              </thead>
-              <tbody>
-                {sales.byMethod.map((m) => (
-                  <tr key={m.method}>
-                    <td>{methodLabel(m.method)}</td>
-                    <td className="num">{m.receipts}</td>
-                    <td className="num"><strong>{money(m.total)}</strong></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <TableWrap>
+              <Table>
+                <thead>
+                  <tr><Th>Method</Th><Th num>Receipts</Th><Th num>Total</Th></tr>
+                </thead>
+                <tbody>
+                  {list(sales.byMethod).map((m) => (
+                    <Tr key={m.method}>
+                      <Td className="font-medium text-ink">{methodLabel(m.method)}</Td>
+                      <Td num>{m.receipts}</Td>
+                      <Td num className="font-semibold text-ink">{money(m.total)}</Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            </TableWrap>
           )}
         </Card>
 
-        <Card title="Orders by stage">
-          {stage.stages.length === 0 ? (
-            <Empty>No orders in this period.</Empty>
+        <Card>
+          <CardHead><CardTitle>Orders by stage</CardTitle></CardHead>
+          {stages.length === 0 ? (
+            <Empty title="No orders in this period" />
           ) : (
-            <table>
-              <thead>
-                <tr><th>Stage</th><th className="num">Orders</th><th className="num">Value</th></tr>
-              </thead>
-              <tbody>
-                {stage.stages.map((s) => (
-                  <tr key={s.status}>
-                    <td>{statusLabel(s.status)}</td>
-                    <td className="num">{s.orders}</td>
-                    <td className="num">{money(s.value)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <TableWrap>
+              <Table>
+                <thead>
+                  <tr><Th>Stage</Th><Th num>Orders</Th><Th num>Value</Th></tr>
+                </thead>
+                <tbody>
+                  {stages.map((s) => (
+                    <Tr key={s.status}>
+                      <Td className="font-medium text-ink">{statusLabel(s.status)}</Td>
+                      <Td num>{s.orders}</Td>
+                      <Td num>{money(s.value)}</Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            </TableWrap>
           )}
         </Card>
       </div>
 
-      <Card title="Best selling items">
-        {best.products.length === 0 ? (
-          <Empty>No items sold in this period.</Empty>
+      <Card className="mb-4">
+        <CardHead><CardTitle>Best selling items</CardTitle></CardHead>
+        {list(best.products).length === 0 ? (
+          <Empty title="No items sold in this period" />
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th><th className="num">Quantity sold</th>
-                <th className="num">Orders</th><th className="num">Revenue</th>
-              </tr>
-            </thead>
-            <tbody>
-              {best.products.slice(0, 15).map((p) => (
-                <tr key={p.product_id}>
-                  <td>{p.product_name}</td>
-                  <td className="num">{p.qty_sold} {p.unit}</td>
-                  <td className="num">{p.orders}</td>
-                  <td className="num"><strong>{money(p.revenue)}</strong></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Card>
-
-      <Card title="Stock movement">
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th><th className="num">Received</th><th className="num">Released</th>
-              <th className="num">Adjusted</th><th className="num">In stock</th><th />
-            </tr>
-          </thead>
-          <tbody>
-            {stock.movements.slice(0, 25).map((m) => (
-              <tr key={m.code}>
-                <td>{m.name}<div className="sub">{m.code}</div></td>
-                <td className="num">{m.received}</td>
-                <td className="num">{m.released}</td>
-                <td className="num">{m.adjusted}</td>
-                <td className="num"><strong>{m.stock_available}</strong> {m.unit}</td>
-                <td>{m.stock_available <= m.reorder_level && <span className="chip rejected">Low</span>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-
-      {isManager && (
-        <Card title="Staff activity">
-          {Object.keys(byPerson).length === 0 ? (
-            <Empty>No staff activity in this period.</Empty>
-          ) : (
-            <table>
+          <TableWrap>
+            <Table>
               <thead>
                 <tr>
-                  <th>Staff</th><th>Role</th>
-                  {actions.map((a) => (
-                    <th key={a} className="num" style={{ textTransform: 'capitalize' }}>
-                      {a.replace(/_/g, ' ')}
-                    </th>
-                  ))}
+                  <Th>Product</Th><Th num>Quantity sold</Th><Th num>Orders</Th><Th num>Revenue</Th>
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(byPerson).map(([name, row]) => (
-                  <tr key={name}>
-                    <td><strong>{name}</strong></td>
-                    <td style={{ textTransform: 'capitalize' }}>{row.role}</td>
-                    {actions.map((a) => (
-                      <td key={a} className="num">{row.counts[a] || '—'}</td>
-                    ))}
-                  </tr>
+                {list(best.products).slice(0, 15).map((p) => (
+                  <Tr key={p.product_id}>
+                    <Td className="font-medium text-ink">{p.product_name}</Td>
+                    <Td num>{p.qty_sold} {p.unit}</Td>
+                    <Td num>{p.orders}</Td>
+                    <Td num className="font-semibold text-ink">{money(p.revenue)}</Td>
+                  </Tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
+          </TableWrap>
+        )}
+      </Card>
+
+      <Card className="mb-4">
+        <CardHead><CardTitle>Stock movement</CardTitle></CardHead>
+        {list(stock.movements).length === 0 ? (
+          <Empty title="Nothing moved in this period" />
+        ) : (
+          <TableWrap>
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Product</Th><Th num>Received</Th><Th num>Released</Th>
+                  <Th num>Adjusted</Th><Th num>In stock</Th><Th />
+                </tr>
+              </thead>
+              <tbody>
+                {list(stock.movements).slice(0, 25).map((m) => (
+                  <Tr key={m.code}>
+                    <Td>
+                      <span className="font-medium text-ink">{m.name}</span>
+                      <span className="tnum block text-xs text-ink-muted">{m.code}</span>
+                    </Td>
+                    <Td num>{m.received}</Td>
+                    <Td num>{m.released}</Td>
+                    <Td num>{m.adjusted}</Td>
+                    <Td num className="font-semibold text-ink">{m.stock_available} {m.unit}</Td>
+                    <Td>{m.stock_available <= m.reorder_level && <Chip tone="bad">Low</Chip>}</Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
+          </TableWrap>
+        )}
+      </Card>
+
+      {isManager && (
+        <Card>
+          <CardHead><CardTitle>Staff activity</CardTitle></CardHead>
+          {Object.keys(byPerson).length === 0 ? (
+            <Empty title="No staff activity in this period" />
+          ) : (
+            <TableWrap>
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>Staff</Th><Th>Desk</Th>
+                    {actions.map((a) => (
+                      <Th key={a} num className="normal-case tracking-normal">
+                        {a.replace(/_/g, ' ')}
+                      </Th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(byPerson).map(([name, row]) => (
+                    <Tr key={name}>
+                      <Td className="font-semibold text-ink">{name}</Td>
+                      <Td className="capitalize text-ink-muted">{row.role}</Td>
+                      {actions.map((a) => (
+                        <Td key={a} num className={row.counts[a] ? undefined : 'text-ink-faint'}>
+                          {row.counts[a] || '—'}
+                        </Td>
+                      ))}
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            </TableWrap>
           )}
         </Card>
       )}

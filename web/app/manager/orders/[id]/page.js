@@ -1,10 +1,14 @@
 'use client';
+
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { money, dateTime, statusLabel, methodLabel } from '@/lib/format';
-import { Card, Chip, Alert, Modal } from '@/components/ui';
+import { money, dateTime, statusLabel, methodLabel, list } from '@/lib/format';
+import {
+  Alert, Button, Card, CardHead, CardTitle, Field, Input, Loading, Modal,
+  StatusChip, Table, TableWrap, Td, Th, Tr,
+} from '@/components/ui';
 
 /** One order in full: the items, the receipt, and who touched it. */
 export default function ManagerOrderDetail() {
@@ -16,8 +20,12 @@ export default function ManagerOrderDetail() {
   const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
-    try { setOrder((await api(`/api/orders/${id}`)).order); setError(''); }
-    catch (e) { setError(e.message); }
+    try {
+      setOrder((await api(`/api/orders/${id}`)).order);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    }
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -28,134 +36,165 @@ export default function ManagerOrderDetail() {
       setCancelling(false);
       setNotice('Order cancelled. The customer has been texted.');
       load();
-    } catch (e) { setError(e.message); setCancelling(false); }
+    } catch (e) {
+      setError(e.message);
+      setCancelling(false);
+    }
   }
 
   if (error && !order) return <Alert>{error}</Alert>;
-  if (!order) return <div className="loading">Loading order…</div>;
+  if (!order) return <Loading>Loading the order…</Loading>;
 
   const canCancel = !['released', 'cancelled', 'refunded'].includes(order.status);
 
   return (
     <>
-      <div className="page-head">
-        <h1>Order {order.order_no}</h1>
-        <div className="btn-row">
-          <Link href="/manager/orders" className="btn btn-ghost">← All orders</Link>
-          {canCancel && (
-            <button className="btn btn-danger" onClick={() => setCancelling(true)}>Cancel order</button>
-          )}
-          <button className="btn btn-navy no-print" onClick={() => window.print()}>Print</button>
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="tnum text-[26px] font-bold leading-tight text-ink">Order {order.order_no}</h1>
+          <p className="mt-1 text-sm text-ink-muted">{dateTime(order.created_at)}</p>
         </div>
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="ghost" size="sm"><Link href="/manager/orders">← All orders</Link></Button>
+          {canCancel && (
+            <Button variant="danger" size="sm" onClick={() => setCancelling(true)}>Cancel order</Button>
+          )}
+          <Button size="sm" className="print:hidden" onClick={() => window.print()}>Print</Button>
+        </div>
+      </header>
 
       <Alert>{error}</Alert>
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
-      <Card title="The order">
-        <table>
-          <tbody>
-            <tr><th>Status</th><td><Chip status={order.status}>{statusLabel(order.status)}</Chip></td></tr>
-            <tr><th>Customer</th><td>{order.company_name || order.ordered_by_name}</td></tr>
-            {order.company_name && <tr><th>Ordered by</th><td>{order.ordered_by_name}</td></tr>}
-            <tr><th>Phone</th><td>{order.ordered_by_phone || '—'}</td></tr>
-            <tr><th>Fulfilment</th><td>{order.fulfilment === 'delivery' ? 'Delivery' : 'Pick-up'}</td></tr>
-            {order.delivery_address && <tr><th>Address</th><td>{order.delivery_address}</td></tr>}
-            <tr><th>Placed</th><td>{dateTime(order.created_at)}</td></tr>
-            {order.notes && <tr><th>Notes</th><td>{order.notes}</td></tr>}
-            {order.cancel_reason && <tr><th>Cancelled because</th><td>{order.cancel_reason}</td></tr>}
-          </tbody>
-        </table>
-      </Card>
-
-      <Card title="Items">
-        <table>
-          <thead>
-            <tr><th>Product</th><th className="num">Qty</th><th className="num">Unit price</th><th className="num">Line total</th></tr>
-          </thead>
-          <tbody>
-            {order.items.map((i) => (
-              <tr key={i.id}>
-                <td>{i.product_name} {i.code && <code>{i.code}</code>}</td>
-                <td className="num">{i.quantity} {i.unit}</td>
-                <td className="num">{money(i.unit_price)}</td>
-                <td className="num">{money(i.line_total)}</td>
-              </tr>
-            ))}
-            <tr>
-              <td colSpan={3}><strong>Total</strong></td>
-              <td className="num"><strong>{money(order.total)}</strong></td>
-            </tr>
-          </tbody>
-        </table>
-      </Card>
-
-      {order.payment && (
-        <Card title="Payment">
-          <table>
-            <tbody>
-              <tr><th>Receipt</th><td><strong>{order.payment.receipt_no}</strong></td></tr>
-              <tr><th>Method</th><td>{methodLabel(order.payment.method)}</td></tr>
-              {order.payment.transaction_ref && (
-                <tr><th>Transaction ref</th><td><code>{order.payment.transaction_ref}</code></td></tr>
-              )}
-              <tr><th>Paid</th><td>{money(order.payment.amount_paid)}</td></tr>
-              <tr><th>Taken by</th><td>{order.payment.cashier_name}</td></tr>
-              <tr>
-                <th>Verified</th>
-                <td>
-                  {order.payment.verified === 1 && <>Yes, by {order.payment.verifier_name}</>}
-                  {order.payment.verified === 0 && 'Not yet'}
-                  {order.payment.verified === -1 && <span style={{ color: 'var(--red)' }}>Rejected</span>}
-                </td>
-              </tr>
-              {order.payment.verify_remarks && (
-                <tr><th>Remarks</th><td>{order.payment.verify_remarks}</td></tr>
-              )}
-            </tbody>
-          </table>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHead><CardTitle>The order</CardTitle></CardHead>
+          <TableWrap>
+            <Table>
+              <tbody>
+                <Row k="Status"><StatusChip status={order.status}>{statusLabel(order.status)}</StatusChip></Row>
+                <Row k="Customer">{order.company_name || order.ordered_by_name}</Row>
+                {order.company_name && <Row k="Ordered by">{order.ordered_by_name}</Row>}
+                <Row k="Phone"><span className="tnum">{order.ordered_by_phone || '—'}</span></Row>
+                <Row k="Fulfilment">{order.fulfilment === 'delivery' ? 'Delivery' : 'Pick-up'}</Row>
+                {order.delivery_address && <Row k="Address">{order.delivery_address}</Row>}
+                <Row k="Placed"><span className="tnum">{dateTime(order.created_at)}</span></Row>
+                {order.notes && <Row k="Notes">{order.notes}</Row>}
+                {order.cancel_reason && <Row k="Cancelled because">{order.cancel_reason}</Row>}
+              </tbody>
+            </Table>
+          </TableWrap>
         </Card>
-      )}
 
-      <Card title="Audit trail">
-        <table>
-          <thead>
-            <tr><th>When</th><th>Desk</th><th>What</th><th>Who</th><th>Notes</th></tr>
-          </thead>
-          <tbody>
-            {order.events.map((e) => (
-              <tr key={e.id}>
-                <td>{dateTime(e.created_at)}</td>
-                <td>{e.stage}</td>
-                <td>{String(e.action).replace(/_/g, ' ')}</td>
-                <td>{e.handler_name || '—'}</td>
-                <td>{e.notes || ''}</td>
+        {order.payment && (
+          <Card>
+            <CardHead><CardTitle>Payment</CardTitle></CardHead>
+            <TableWrap>
+              <Table>
+                <tbody>
+                  <Row k="Receipt"><span className="tnum font-bold text-ink">{order.payment.receipt_no}</span></Row>
+                  <Row k="Method">{methodLabel(order.payment.method)}</Row>
+                  {order.payment.transaction_ref && (
+                    <Row k="Transaction ref"><span className="tnum">{order.payment.transaction_ref}</span></Row>
+                  )}
+                  <Row k="Paid"><span className="tnum font-semibold text-ink">{money(order.payment.amount_paid)}</span></Row>
+                  <Row k="Taken by">{order.payment.cashier_name}</Row>
+                  <Row k="Verified">
+                    {order.payment.verified === 1 && <span className="text-ok">Yes, by {order.payment.verifier_name}</span>}
+                    {order.payment.verified === 0 && <span className="text-ink-muted">Not yet</span>}
+                    {order.payment.verified === -1 && <span className="font-semibold text-bad">Rejected</span>}
+                  </Row>
+                  {order.payment.verify_remarks && <Row k="Remarks">{order.payment.verify_remarks}</Row>}
+                </tbody>
+              </Table>
+            </TableWrap>
+          </Card>
+        )}
+      </div>
+
+      <Card className="mt-4">
+        <CardHead><CardTitle>Items</CardTitle></CardHead>
+        <TableWrap>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Product</Th><Th num>Qty</Th><Th num>Unit price</Th><Th num>Line total</Th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {list(order.items).map((i) => (
+                <Tr key={i.id}>
+                  <Td>
+                    <span className="font-medium text-ink">{i.product_name}</span>
+                    {i.code && <span className="tnum ml-2 text-ink-muted">{i.code}</span>}
+                  </Td>
+                  <Td num>{i.quantity} {i.unit}</Td>
+                  <Td num>{money(i.unit_price)}</Td>
+                  <Td num className="font-semibold text-ink">{money(i.line_total)}</Td>
+                </Tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-surface-2">
+                <Td colSpan={3} className="font-bold text-ink">Total</Td>
+                <Td num className="font-display text-[15px] font-extrabold text-ink">{money(order.total)}</Td>
+              </tr>
+            </tfoot>
+          </Table>
+        </TableWrap>
       </Card>
 
-      <Modal open={cancelling} title={`Cancel ${order.order_no}?`} onClose={() => setCancelling(false)}>
-        <p>
-          The customer is texted. If money has already been taken, the cashier
-          and accounts will need to sort the refund out between them — the app
-          cannot move money back on its own.
-        </p>
-        <div className="field">
-          <label htmlFor="why">Why</label>
-          <input
-            id="why"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Goods out of stock, customer changed their mind…"
-          />
-        </div>
-        <div className="btn-row">
-          <button className="btn btn-ghost" onClick={() => setCancelling(false)}>Keep it</button>
-          <button className="btn btn-danger" onClick={cancel}>Cancel order</button>
-        </div>
-      </Modal>
+      <Card className="mt-4">
+        <CardHead><CardTitle>Audit trail</CardTitle></CardHead>
+        <TableWrap>
+          <Table>
+            <thead>
+              <tr><Th>When</Th><Th>Desk</Th><Th>What</Th><Th>Who</Th><Th>Notes</Th></tr>
+            </thead>
+            <tbody>
+              {list(order.events).map((e) => (
+                <Tr key={e.id}>
+                  <Td className="tnum whitespace-nowrap text-ink-muted">{dateTime(e.created_at)}</Td>
+                  <Td className="capitalize text-ink-muted">{e.stage}</Td>
+                  <Td className="font-medium capitalize text-ink">{String(e.action).replace(/_/g, ' ')}</Td>
+                  <Td>{e.handler_name || '—'}</Td>
+                  <Td className="text-ink-muted">{e.notes || ''}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableWrap>
+      </Card>
+
+      {cancelling && (
+        <Modal
+          title={`Cancel ${order.order_no}?`}
+          description="The customer is texted. If money has already been taken, the cashier and accounts will need to sort the refund out between them — the panel cannot move money back on its own."
+          onClose={() => setCancelling(false)}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setCancelling(false)}>Keep it</Button>
+              <Button variant="danger" onClick={cancel}>Cancel order</Button>
+            </>
+          }
+        >
+          <Field label="Why">
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Goods out of stock, customer changed their mind…"
+              autoFocus
+            />
+          </Field>
+        </Modal>
+      )}
     </>
   );
 }
+
+const Row = ({ k, children }) => (
+  <Tr>
+    <Th className="w-[150px] border-b border-line bg-transparent normal-case tracking-normal">{k}</Th>
+    <Td>{children}</Td>
+  </Tr>
+);

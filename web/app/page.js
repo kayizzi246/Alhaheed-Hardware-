@@ -1,5 +1,6 @@
 'use client';
 import { ThemeToggle } from '@/components/Theme';
+import { Alert, Button, Checkbox, Field, Input, Spinner } from '@/components/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, setSession, getUser, clearSession } from '@/lib/api';
@@ -119,86 +120,110 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth">
+    <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       {/* ── The shop ─────────────────────────────────────────────── */}
-      <aside className="auth-brand">
-        <div className="auth-brand-inner">
-          <span className="auth-badge">
-            <i className={`auth-pulse ${reachable === false ? 'down' : ''}`} />
+      <aside className="relative hidden overflow-hidden bg-navy px-12 py-14 text-white lg:flex lg:items-center xl:px-16">
+        {/* A warm wash from the top-left, so the panel is not a flat slab. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_12%_0%,rgba(232,134,42,.22),transparent_60%)]"
+        />
+
+        <div className="relative w-full max-w-lg">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.06] px-3 py-1.5 text-[11.5px] font-semibold tracking-wide text-white/85">
+            <i
+              className={[
+                'size-1.5 rounded-full',
+                reachable === false ? 'bg-bad' : 'bg-ok',
+                reachable === null ? 'animate-pulse' : '',
+              ].join(' ')}
+            />
             {reachable === null && 'Connecting…'}
             {reachable === true && 'Shop online'}
             {reachable === false && 'Shop unreachable'}
           </span>
 
-          <h2 className="auth-headline">
+          <h2 className="mt-7 font-display text-[44px] font-extrabold leading-[1.08] tracking-[-.025em] xl:text-[52px]">
             Run the counter
             <br />
-            <span>without paper</span>
+            <span className="text-brand">without paper</span>
           </h2>
 
-          <p className="auth-lede">
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/70">
             Orders move from the customer&rsquo;s phone to the cashier, to accounts,
             to the store &mdash; and nobody writes a slip.
           </p>
 
-          <div className="auth-stats">
+          <div className="mt-9 grid grid-cols-3 gap-3">
             <Figure value={shop ? String(shop.products) : '—'} label="Products" />
             <Figure value={shop ? String(shop.inStock) : '—'} label="In stock" />
             <Figure value={shop?.currency ?? 'UGX'} label="Currency" />
           </div>
 
-          <span className="auth-k">How an order moves</span>
-          <ol className="auth-flow">
+          <span className="mt-10 block font-display text-[10.5px] font-bold uppercase tracking-[.09em] text-white/40">
+            How an order moves
+          </span>
+
+          <ol className="mt-3.5 space-y-2.5">
             {[
               ['Customer', 'orders on the app'],
               ['Cashier', 'takes the money'],
               ['Accounts', 'checks the till'],
               ['Store', 'releases the goods'],
             ].map(([who, what], i) => (
-              <li key={who}>
-                <span className="auth-flow-n">{i + 1}</span>
-                <strong>{who}</strong>
-                <em>{what}</em>
+              <li key={who} className="flex items-center gap-3">
+                <span className="tnum grid size-6 shrink-0 place-items-center rounded-md bg-white/10 text-[11.5px] font-bold text-white/75">
+                  {i + 1}
+                </span>
+                <strong className="min-w-[88px] text-sm font-semibold">{who}</strong>
+                <em className="text-[13.5px] not-italic text-white/55">{what}</em>
               </li>
             ))}
           </ol>
 
-          <div className="auth-note">
-            <strong>Customers and the Store Manager use the phone app.</strong>
-            <span>This panel is the Cashier, Accounts and Manager desks.</span>
+          <div className="mt-10 border-t border-white/10 pt-5 text-[13px] leading-relaxed">
+            <strong className="block font-semibold text-white/85">
+              Customers and the Store Manager use the phone app.
+            </strong>
+            <span className="text-white/50">
+              This panel is the Cashier, Accounts and Manager desks.
+            </span>
           </div>
         </div>
       </aside>
 
       {/* ── The form ─────────────────────────────────────────────── */}
-      <main className="auth-pane">
-        <ThemeToggle />
+      <main className="relative flex items-center justify-center bg-bg px-6 py-12">
+        <div className="absolute right-5 top-5">
+          <ThemeToggle />
+        </div>
 
-        <div className="auth-form">
-          <div className="auth-logo">
-            <span className="auth-mark">AH</span>
-            <span className="auth-word">
-              AL HADEED <b>HARDWARE</b>
+        <div className="w-full max-w-[380px]">
+          <div className="mb-8 flex items-center gap-2.5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-brand text-sm font-extrabold text-white">
+              AH
+            </span>
+            <span className="font-display text-[13px] font-extrabold leading-[1.15] tracking-[.04em] text-ink">
+              AL HADEED
+              <br />
+              <b className="text-brand">HARDWARE</b>
             </span>
           </div>
 
-          <h1>Sign in to your account</h1>
-          <p className="auth-tag">{shop?.name ?? 'Staff panel'}</p>
+          <h1 className="text-[27px] font-bold leading-tight text-ink">Sign in to your account</h1>
+          <p className="mb-7 mt-1.5 text-sm text-ink-muted">{shop?.name ?? 'Staff panel'}</p>
 
           <div aria-live="polite">
-            {error && <div className="alert error">{error}</div>}
+            {error && <Alert>{error}</Alert>}
             {reachable === false && !error && (
-              <div className="alert error">
-                Can&rsquo;t reach the shop. Check the connection, then try again.
-              </div>
+              <Alert>Can&rsquo;t reach the shop. Check the connection, then try again.</Alert>
             )}
           </div>
 
           {mode === 'password' ? (
-            <form onSubmit={signInWithPassword} noValidate>
-              <div className="field">
-                <label htmlFor="identifier">Phone or email</label>
-                <input
+            <form onSubmit={signInWithPassword} noValidate className="space-y-4">
+              <Field label="Phone or email">
+                <Input
                   id="identifier"
                   ref={firstField}
                   value={identifier}
@@ -210,64 +235,62 @@ export default function LoginPage() {
                   enterKeyHint="next"
                   required
                 />
-              </div>
+              </Field>
 
-              <div className="field">
-                <label htmlFor="password">Password</label>
-                <div className="input-affix">
-                  <input
+              <Field label="Password">
+                <div className="relative">
+                  <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
                     enterKeyHint="go"
+                    className="pr-16"
                     required
                   />
                   <button
                     type="button"
-                    className="affix-btn"
                     onClick={() => setShowPassword((s) => !s)}
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                     aria-pressed={showPassword}
                     tabIndex={-1}
+                    className="absolute inset-y-0 right-0 px-3 text-xs font-semibold text-ink-muted transition-colors hover:text-ink"
                   >
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
-              </div>
+              </Field>
 
-              <div className="auth-row">
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                  />
-                  <span>Keep me signed in</span>
-                </label>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Checkbox
+                  label="Keep me signed in"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
                 <button
                   type="button"
-                  className="linkish inline"
                   onClick={() => { setMode('code'); setError(''); }}
+                  className="text-[13px] font-semibold text-brand-dark underline-offset-2 hover:underline"
                 >
                   Forgot password?
                 </button>
               </div>
 
-              <button
-                className="btn btn-navy btn-block btn-tall"
+              <Button
+                size="lg"
+                block
+                className="bg-navy hover:bg-navy-soft"
                 disabled={busy || !identifier.trim() || !password}
               >
-                {busy && <span className="spinner" aria-hidden="true" />}
+                {busy && <Spinner />}
                 {busy ? 'Signing in…' : 'Sign in'}
-              </button>
+              </Button>
             </form>
           ) : (
-            <form onSubmit={codeSent ? signInWithCode : requestCode} noValidate>
-              <div className="field">
-                <label htmlFor="phone">Phone number on your account</label>
-                <input
+            <form onSubmit={codeSent ? signInWithCode : requestCode} noValidate className="space-y-4">
+              <Field label="Phone number on your account">
+                <Input
                   id="phone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -278,14 +301,15 @@ export default function LoginPage() {
                   enterKeyHint="go"
                   required
                 />
-              </div>
+              </Field>
 
               {codeSent && (
-                <div className="field">
-                  <label htmlFor="code">The 6-digit code we texted you</label>
-                  <input
+                <Field
+                  label="The 6-digit code we texted you"
+                  hint={devCode ? `Test mode: your code is ${devCode}` : null}
+                >
+                  <Input
                     id="code"
-                    className="code-input"
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     inputMode="numeric"
@@ -293,24 +317,25 @@ export default function LoginPage() {
                     maxLength={6}
                     autoFocus
                     required
+                    className="tnum text-center text-[22px] font-bold tracking-[.4em]"
                   />
-                  {devCode && (
-                    <p className="field-note">Test mode: your code is <b>{devCode}</b></p>
-                  )}
-                </div>
+                </Field>
               )}
 
-              <button
-                className="btn btn-navy btn-block btn-tall"
+              <Button
+                size="lg"
+                block
+                className="bg-navy hover:bg-navy-soft"
                 disabled={busy || (codeSent ? code.length !== 6 : phone.trim().length < 9)}
               >
-                {busy && <span className="spinner" aria-hidden="true" />}
+                {busy && <Spinner />}
                 {busy ? 'Please wait…' : codeSent ? 'Verify and sign in' : 'Text me a code'}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
-                className="linkish"
+                variant="ghost"
+                block
                 onClick={() => {
                   if (codeSent) { setCodeSent(false); setCode(''); setDevCode(''); }
                   else { setMode('password'); }
@@ -318,26 +343,33 @@ export default function LoginPage() {
                 }}
               >
                 {codeSent ? 'Use a different number' : 'Back to password'}
-              </button>
+              </Button>
             </form>
           )}
 
           {mode === 'password' && (
             <>
-              <div className="auth-or"><span>or</span></div>
-              <button
+              <div className="my-5 flex items-center gap-3 text-xs text-ink-faint">
+                <span className="h-px flex-1 bg-line" />
+                or
+                <span className="h-px flex-1 bg-line" />
+              </div>
+
+              <Button
                 type="button"
-                className="btn btn-ghost btn-block btn-tall"
+                variant="outline"
+                size="lg"
+                block
                 onClick={() => { setMode('code'); setError(''); }}
               >
-                <span className="auth-sms" aria-hidden="true">✆</span>
+                <span aria-hidden="true">✆</span>
                 Sign in with a code by SMS
-              </button>
+              </Button>
             </>
           )}
 
-          <p className="auth-foot">
-            No account? Ask the manager to add you under <b>Users</b> in WordPress.
+          <p className="mt-8 text-center text-[12.5px] leading-relaxed text-ink-muted">
+            No account? Ask the manager to add you under <b className="font-semibold text-ink-2">Users</b> in WordPress.
           </p>
         </div>
       </main>
@@ -345,12 +377,12 @@ export default function LoginPage() {
   );
 }
 
+/** One figure on the brand panel: the number, then what it counts. */
 function Figure({ value, label }) {
   return (
-    <div className="auth-fig">
-      <strong>{value}</strong>
-      <span>{label}</span>
+    <div className="rounded-lg border border-white/10 bg-white/[.04] px-3.5 py-3">
+      <strong className="tnum block font-display text-[22px] font-extrabold leading-none">{value}</strong>
+      <span className="mt-1 block text-[11.5px] text-white/50">{label}</span>
     </div>
   );
 }
-

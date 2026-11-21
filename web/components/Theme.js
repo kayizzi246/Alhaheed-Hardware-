@@ -66,22 +66,31 @@ export function ThemeChoice() {
   const pick = (next) => { setTheme(next); saveTheme(next); };
 
   return (
-    <div className="theme-choice">
-      <span className="theme-choice-label">Appearance</span>
-      <div className="theme-choice-row" role="radiogroup" aria-label="Appearance">
-        {OPTIONS.map(([value, label, glyph]) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={theme === value}
-            className={theme === value ? 'theme-opt on' : 'theme-opt'}
-            onClick={() => pick(value)}
-          >
-            <b aria-hidden="true">{glyph}</b>
-            {label}
-          </button>
-        ))}
+    <div className="border-b border-line px-3.5 py-3">
+      <span className="mb-2 block font-display text-[10.5px] font-bold uppercase tracking-[.07em] text-ink-faint">
+        Appearance
+      </span>
+      <div className="grid grid-cols-3 gap-1 rounded-sm bg-surface-sunk p-[3px]" role="radiogroup" aria-label="Appearance">
+        {OPTIONS.map(([value, label, glyph]) => {
+          const on = theme === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => pick(value)}
+              className={[
+                'flex flex-col items-center gap-0.5 rounded-[7px] px-1 pb-1.5 pt-[7px]',
+                'text-[11px] font-semibold transition-[background-color,color,transform] duration-150 ease-out active:scale-[.97]',
+                on ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink',
+              ].join(' ')}
+            >
+              <b className="text-[13px] font-normal leading-none" aria-hidden="true">{glyph}</b>
+              {label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -102,7 +111,17 @@ export function ThemeToggle() {
   const label = theme === 'system' ? 'Appearance: follows your device' : `Appearance: ${theme}`;
 
   return (
-    <button type="button" className="theme-toggle" onClick={cycle} aria-label={label} title={label}>
+    <button
+      type="button"
+      onClick={cycle}
+      aria-label={label}
+      title={label}
+      className={[
+        'grid size-9 place-items-center rounded-sm border border-line bg-surface text-sm text-ink-2',
+        'transition-[border-color,color,transform] duration-150 ease-out',
+        'hover:border-line-firm hover:text-ink active:scale-95',
+      ].join(' ')}
+    >
       {theme === 'light' ? '☀' : theme === 'dark' ? '☾' : '◐'}
     </button>
   );

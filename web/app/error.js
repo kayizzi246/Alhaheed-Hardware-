@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { Button } from '@/components/ui';
 
 /**
  * What a broken screen looks like.
@@ -24,30 +25,28 @@ export default function PageError({ error, reset }) {
   }, [error]);
 
   return (
-    <div className="screen-error">
-      <h2>This screen could not be drawn</h2>
-      <p>
-        Nothing has been changed and the shop's records are safe. Try it again —
+    <div className="mx-auto my-10 max-w-xl rounded-lg border border-line bg-surface px-7 py-8 text-center shadow-sm">
+      <h2 className="text-[19px] font-bold text-ink">This screen could not be drawn</h2>
+      <p className="mx-auto mb-5 mt-2 max-w-md text-sm leading-relaxed text-ink-muted">
+        Nothing has been changed and the shop&rsquo;s records are safe. Try it again —
         it usually works the second time.
       </p>
 
-      <div className="screen-error-actions">
-        <button type="button" className="btn btn-primary" onClick={reset}>
-          Try again
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => window.location.reload()}
-        >
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button onClick={reset}>Try again</Button>
+        <Button variant="outline" onClick={() => window.location.reload()}>
           Reload the page
-        </button>
+        </Button>
       </div>
 
-      <details>
-        <summary>What went wrong</summary>
-        <code>{String(error?.message || error) || 'No message was given.'}</code>
-        <p className="sub">Show this to whoever looks after the website.</p>
+      <details className="mt-6 text-left">
+        <summary className="cursor-pointer list-none text-[12.5px] font-semibold text-ink-muted marker:hidden">
+          <span className="select-none">▸ </span>What went wrong
+        </summary>
+        <code className="mt-2.5 block break-words rounded-sm border border-line bg-surface-sunk px-3.5 py-3 text-xs leading-relaxed text-ink-2">
+          {String(error?.message || error) || 'No message was given.'}
+        </code>
+        <p className="mt-2 text-xs text-ink-faint">Show this to whoever looks after the website.</p>
       </details>
     </div>
   );

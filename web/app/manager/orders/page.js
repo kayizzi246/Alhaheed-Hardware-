@@ -1,10 +1,14 @@
 'use client';
+
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { money, dateTime, statusLabel } from '@/lib/format';
-import { Card, Chip, Alert, Empty } from '@/components/ui';
+import { money, dateTime, statusLabel, list } from '@/lib/format';
+import {
+  Alert, Button, Card, Empty, Input, Loading, PageHead, Select,
+  StatusChip, Table, TableWrap, Td, Th, Tr,
+} from '@/components/ui';
 
 const STATUSES = [
   ['all', 'All'],
@@ -26,7 +30,7 @@ const STATUSES = [
  */
 export default function ManagerOrdersPage() {
   return (
-    <Suspense fallback={<div className="loading">Loading orders…</div>}>
+    <Suspense fallback={<Loading>Loading orders…</Loading>}>
       <ManagerOrders />
     </Suspense>
   );
@@ -54,7 +58,7 @@ function ManagerOrders() {
       // an older plugin, a login page where JSON was expected — must
       // leave this screen saying "no orders", not throwing on .map and
       // taking the whole panel down with it.
-      setOrders(Array.isArray(r?.orders) ? r.orders : []);
+      setOrders(list(r?.orders));
       setError('');
     } catch (e) {
       setOrders([]);
@@ -71,56 +75,56 @@ function ManagerOrders() {
 
   return (
     <>
-      <div className="page-head">
-        <h1>All orders</h1>
-        <div className="filters">
-          <div className="field">
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
-              {STATUSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </div>
-          <div className="field">
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Order no, customer or company"
-            />
-          </div>
-        </div>
-      </div>
+      <PageHead title="All orders" sub={orders ? `${orders.length} shown` : null}>
+        <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-[170px]">
+          {STATUSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </Select>
+        <Input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Order no, customer or company"
+          className="w-[260px]"
+        />
+      </PageHead>
 
       <Alert>{error}</Alert>
 
       <Card>
         {!orders ? (
-          <div className="loading">Loading orders…</div>
+          <Loading>Loading orders…</Loading>
         ) : orders.length === 0 ? (
-          <Empty>No orders match.</Empty>
+          <Empty title="No orders match">
+            Try a different status, or clear the search box.
+          </Empty>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Order</th><th>Customer</th><th>Status</th>
-                <th className="num">Items</th><th className="num">Total</th><th>Placed</th><th />
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id}>
-                  <td><strong>{o.order_no}</strong></td>
-                  <td>{o.company_name || o.ordered_by_name}</td>
-                  <td><Chip status={o.status}>{statusLabel(o.status)}</Chip></td>
-                  <td className="num">{o.item_count}</td>
-                  <td className="num">{money(o.total)}</td>
-                  <td>{dateTime(o.created_at)}</td>
-                  <td className="num">
-                    <Link className="btn btn-ghost" href={`/manager/orders/${o.id}`}>Open</Link>
-                  </td>
+          <TableWrap>
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Order</Th><Th>Customer</Th><Th>Status</Th>
+                  <Th num>Items</Th><Th num>Total</Th><Th>Placed</Th><Th />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <Tr key={o.id}>
+                    <Td className="tnum font-bold text-ink">{o.order_no}</Td>
+                    <Td className="font-medium text-ink">{o.company_name || o.ordered_by_name}</Td>
+                    <Td><StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip></Td>
+                    <Td num>{o.item_count}</Td>
+                    <Td num className="font-semibold text-ink">{money(o.total)}</Td>
+                    <Td className="tnum whitespace-nowrap text-ink-muted">{dateTime(o.created_at)}</Td>
+                    <Td className="text-right">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/manager/orders/${o.id}`}>Open</Link>
+                      </Button>
+                    </Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
+          </TableWrap>
         )}
       </Card>
     </>

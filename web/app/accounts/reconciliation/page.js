@@ -1,98 +1,115 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { money, today, methodLabel } from '@/lib/format';
-import { Stat, Card, Alert, Empty } from '@/components/ui';
+import { money, today, methodLabel, list } from '@/lib/format';
+import {
+  Alert, Card, CardBody, CardHead, CardTitle, Empty, Input, Loading,
+  PageHead, Stat, Stats, Table, TableWrap, Td, Th, Tr,
+} from '@/components/ui';
 
-/** Daily reconciliation: what was collected against what the cash book shows. */
+/** What was collected, against what the cash book shows. */
 export default function ReconciliationPage() {
   const [date, setDate] = useState(today());
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api(`/api/accounts/reconciliation?date=${date}`).then(setData).catch((e) => setError(e.message));
+    setData(null);
+    api(`/api/accounts/reconciliation?date=${date}`)
+      .then(setData)
+      .catch((e) => setError(e.message));
   }, [date]);
 
-  const collected = data?.byMethod.reduce((s, m) => s + m.collected, 0) || 0;
-  const verified = data?.byMethod.reduce((s, m) => s + m.verified, 0) || 0;
-  const pending = data?.byMethod.reduce((s, m) => s + m.pending, 0) || 0;
+  const methods = list(data?.byMethod);
+  const sum = (k) => methods.reduce((s, m) => s + (m[k] || 0), 0);
+  const collected = sum('collected');
+  const verified = sum('verified');
+  const pending = sum('pending');
 
   return (
     <>
-      <div className="page-head">
-        <h1>Reconciliation</h1>
-        <div className="filters">
-          <div className="field">
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-        </div>
-      </div>
+      <PageHead title="Reconciliation" sub="Payments taken against the cash book, for one day.">
+        <Input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="tnum w-[170px]"
+        />
+      </PageHead>
 
       <Alert>{error}</Alert>
 
+      {!data && !error && <Loading>Reconciling…</Loading>}
+
       {data && (
         <>
-          <div className="stats">
+          <Stats>
             <Stat label="Collected" value={money(collected)} />
-            <Stat label="Verified" value={money(verified)} tone="green" />
+            <Stat label="Verified" value={money(verified)} tone="ok" />
             <Stat label="Still pending" value={money(pending)} />
             <Stat
               label="Cash book difference"
               value={money(Math.abs(data.difference))}
-              tone={data.difference === 0 ? 'green' : 'red'}
+              tone={data.difference === 0 ? 'ok' : 'bad'}
+              note={data.difference === 0 ? 'balanced' : 'needs a look'}
             />
-          </div>
+          </Stats>
 
-          <Card title="By payment method">
-            {data.byMethod.length === 0 ? (
-              <Empty>No payments were taken on this date.</Empty>
+          <Card className="mb-4">
+            <CardHead><CardTitle>By payment method</CardTitle></CardHead>
+            {methods.length === 0 ? (
+              <Empty title="No payments on this date">Pick another day.</Empty>
             ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Method</th><th className="num">Receipts</th><th className="num">Collected</th>
-                    <th className="num">Verified</th><th className="num">Pending</th><th className="num">Rejected</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.byMethod.map((m) => (
-                    <tr key={m.method}>
-                      <td>{methodLabel(m.method)}</td>
-                      <td className="num">{m.count}</td>
-                      <td className="num">{money(m.collected)}</td>
-                      <td className="num" style={{ color: 'var(--green)' }}>{money(m.verified)}</td>
-                      <td className="num">{money(m.pending)}</td>
-                      <td className="num" style={{ color: 'var(--red)' }}>{money(m.rejected)}</td>
+              <TableWrap>
+                <Table>
+                  <thead>
+                    <tr>
+                      <Th>Method</Th><Th num>Receipts</Th><Th num>Collected</Th>
+                      <Th num>Verified</Th><Th num>Pending</Th><Th num>Rejected</Th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {methods.map((m) => (
+                      <Tr key={m.method}>
+                        <Td className="font-medium text-ink">{methodLabel(m.method)}</Td>
+                        <Td num>{m.count}</Td>
+                        <Td num className="font-semibold text-ink">{money(m.collected)}</Td>
+                        <Td num className="text-ok">{money(m.verified)}</Td>
+                        <Td num>{money(m.pending)}</Td>
+                        <Td num className={m.rejected ? 'text-bad' : 'text-ink-faint'}>{money(m.rejected)}</Td>
+                      </Tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </TableWrap>
             )}
           </Card>
 
-          <Card title="Against the cash book">
-            <table>
-              <tbody>
-                <tr><td>Verified payments</td><td className="num">{money(verified)}</td></tr>
-                <tr><td>Cash book: cash in</td><td className="num">{money(data.cashBook.cash_in)}</td></tr>
-                <tr><td>Cash book: cash out</td><td className="num">{money(data.cashBook.cash_out)}</td></tr>
-                <tr>
-                  <td><strong>Difference</strong></td>
-                  <td className="num">
-                    <strong style={{ color: data.difference === 0 ? 'var(--green)' : 'var(--red)' }}>
+          <Card>
+            <CardHead><CardTitle>Against the cash book</CardTitle></CardHead>
+            <TableWrap>
+              <Table>
+                <tbody>
+                  <Tr><Td>Verified payments</Td><Td num>{money(verified)}</Td></Tr>
+                  <Tr><Td>Cash book: cash in</Td><Td num>{money(data.cashBook.cash_in)}</Td></Tr>
+                  <Tr><Td>Cash book: cash out</Td><Td num>{money(data.cashBook.cash_out)}</Td></Tr>
+                  <tr className="bg-surface-2">
+                    <Td className="font-bold text-ink">Difference</Td>
+                    <Td num className={data.difference === 0 ? 'font-bold text-ok' : 'font-bold text-bad'}>
                       {money(data.difference)}
-                    </strong>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    </Td>
+                  </tr>
+                </tbody>
+              </Table>
+            </TableWrap>
+
             {data.difference !== 0 && (
-              <div style={{ padding: '12px 16px', fontSize: 12.5, color: 'var(--muted)' }}>
-                A difference here usually means a manual cash book entry (such as an opening
-                balance or an expense) that is not tied to a customer payment. Check the
-                cash book for the day.
-              </div>
+              <CardBody className="border-t border-line pt-4 text-[12.5px] leading-relaxed text-ink-muted">
+                A difference here usually means a manual cash book entry — an opening balance
+                or an expense — that is not tied to a customer payment. Check the cash book
+                for the day.
+              </CardBody>
             )}
           </Card>
         </>

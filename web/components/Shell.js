@@ -1,4 +1,5 @@
 'use client';
+
 import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,6 +9,8 @@ import { Icon } from '@/components/icons';
 import { usePoll, freshness } from '@/lib/live';
 import { time, list } from '@/lib/format';
 import { ThemeChoice } from '@/components/Theme';
+import { cn } from '@/lib/cn';
+import { Button, IconButton, Spinner } from '@/components/ui';
 
 /**
  * The chrome every desk sits in: a light rail on the left, a bar across
@@ -30,7 +33,7 @@ export default function Shell({ allow, children }) {
 
   const [user, setUser] = useState(null);
   const [unread, setUnread] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);   // the phone rail
+  const [menuOpen, setMenuOpen] = useState(false); // the phone rail
   const [accountOpen, setAccountOpen] = useState(false);
 
   const loadUnread = useCallback(async () => {
@@ -75,112 +78,154 @@ export default function Shell({ allow, children }) {
     router.replace('/');
   };
 
-  if (!user) return <div className="boot"><span className="spinner dark" /></div>;
+  if (!user) {
+    return (
+      <div className="grid min-h-dvh place-items-center text-ink-muted">
+        <Spinner className="size-6" />
+      </div>
+    );
+  }
 
   const items = NAV[user.role] || [];
+
   // The longest matching nav item wins, not the first one found.
   // "/manager/orders" starts with "/manager/", so a first-match search
   // picked the dashboard and every sub-page was titled "Dashboard".
   const current = items
     .filter((i) => i.href && (pathname === i.href || (i.href !== '/' && pathname.startsWith(i.href + '/'))))
     .sort((a, b) => b.href.length - a.href.length)[0];
+
   const title = current?.label || DESK_LABEL[user.role];
 
   return (
-    <div className={`shell ${menuOpen ? 'rail-open' : ''}`}>
+    <div className="min-h-dvh lg:pl-rail">
       {/* ── The rail ──────────────────────────────────────────────── */}
-      <aside className="rail">
-        <div className="rail-brand">
-          <span className="mark">AH</span>
-          <span className="wordmark">
-            AL HADEED<b>HARDWARE</b>
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex w-rail flex-col border-r border-line bg-surface',
+          'transition-transform duration-200 ease-out',
+          'max-lg:shadow-lg',
+          menuOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'
+        )}
+      >
+        <div className="flex items-center gap-2.5 border-b border-line px-4 py-4">
+          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand text-[13px] font-extrabold text-white">
+            AH
+          </span>
+          <span className="font-display text-[12.5px] font-extrabold leading-[1.15] tracking-[.04em] text-ink">
+            AL HADEED
+            <br />
+            <b className="text-brand">HARDWARE</b>
           </span>
         </div>
 
-        <nav className="rail-nav">
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3">
           {items.map((item, i) =>
             item.group ? (
-              <span className="rail-group" key={`g${i}`}>{item.group}</span>
+              <p
+                key={`g${i}`}
+                className="mb-1.5 mt-4 px-3 font-display text-[10.5px] font-bold uppercase tracking-[.08em] text-ink-faint"
+              >
+                {item.group}
+              </p>
             ) : (
               <Link
                 key={item.href}
                 href={item.href}
-                className={item === current ? 'on' : ''}
                 aria-current={item === current ? 'page' : undefined}
+                className={cn(
+                  'mb-0.5 flex items-center gap-2.5 rounded-sm px-3 py-2.5',
+                  'font-display text-[14.5px] font-medium transition-colors duration-150 ease-out',
+                  item === current
+                    ? 'bg-brand-soft font-semibold text-brand-dark'
+                    : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
+                )}
               >
-                {Icon[item.icon]?.()}
-                <span>{item.label}</span>              </Link>
+                <span className={cn('shrink-0', item === current ? 'text-brand' : 'text-ink-muted')}>
+                  {Icon[item.icon]?.()}
+                </span>
+                {item.label}
+              </Link>
             )
           )}
         </nav>
 
-        <div className="rail-foot">
+        <div className="border-t border-line px-4 py-3">
           <span
-            className={`conn ${failing ? 'off' : ''}`}
             title="These screens re-check the shop on their own"
+            className={cn('inline-flex items-center gap-2 text-xs', failing ? 'text-bad' : 'text-ink-muted')}
           >
-            <i />
+            <i className={cn('size-1.5 rounded-full', failing ? 'bg-bad' : 'bg-ok')} />
             {freshness(at, failing)}
           </span>
         </div>
       </aside>
 
       {/* ── The bar ───────────────────────────────────────────────── */}
-      <div className="frame">
-        <header className="topbar">
-          <button
-            type="button"
-            className="icon-btn only-phone"
-            onClick={() => setMenuOpen((m) => !m)}
-            aria-label="Menu"
-            aria-expanded={menuOpen}
-          >
-            {Icon.menu()}
-          </button>
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-surface/95 px-5 py-2.5 backdrop-blur max-lg:px-3.5">
+        <IconButton className="lg:hidden" onClick={() => setMenuOpen((m) => !m)} aria-label="Menu" aria-expanded={menuOpen}>
+          {Icon.menu()}
+        </IconButton>
 
-          <h1 className="topbar-title">{title}</h1>
+        <h1 className="min-w-0 flex-1 truncate font-display text-[18px] font-bold text-ink">{title}</h1>
 
-          <div className="topbar-right">
-            <Alerts
-              unread={unread}
-              home={HOME[user.role]}
-              onSeen={() => setUnread(0)}
-            />
+        <div className="flex items-center gap-2">
+          <Alerts unread={unread} home={HOME[user.role]} onSeen={() => setUnread(0)} />
 
-            <div className="account" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                className="account-btn"
-                onClick={() => setAccountOpen((o) => !o)}
-                aria-expanded={accountOpen}
-              >
-                <span className="avatar">{initials(user.fullName)}</span>
-                <span className="account-who">
-                  <b>{user.fullName}</b>
-                  <em>{DESK_LABEL[user.role]}</em>
-                </span>
-              </button>
-
-              {accountOpen && (
-                <div className="account-menu" role="menu">
-                  <div className="account-head">
-                    <b>{user.fullName}</b>
-                    <span>{user.phone || user.email}</span>
-                  </div>
-                  <ThemeChoice />
-                  <button type="button" className="account-item" onClick={signOut} role="menuitem">
-                    {Icon.logout()} Sign out
-                  </button>
-                </div>
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setAccountOpen((o) => !o)}
+              aria-expanded={accountOpen}
+              className={cn(
+                'flex items-center gap-2.5 rounded-full border border-line bg-surface py-1 pl-1 pr-2.5',
+                'transition-[border-color,transform] duration-150 ease-out hover:border-line-firm active:scale-[.98]'
               )}
-            </div>
+            >
+              <span className="grid size-[30px] shrink-0 place-items-center rounded-full bg-navy text-[11.5px] font-bold text-white">
+                {initials(user.fullName)}
+              </span>
+              <span className="hidden flex-col text-left leading-[1.25] sm:flex">
+                <b className="text-[13px] font-semibold text-ink">{user.fullName}</b>
+                <em className="text-[11.5px] not-italic text-ink-muted">{DESK_LABEL[user.role]}</em>
+              </span>
+            </button>
+
+            {accountOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-[calc(100%+8px)] z-30 w-56 origin-top-right animate-pop-in overflow-hidden rounded-lg border border-line bg-surface shadow-lg"
+              >
+                <div className="border-b border-line px-3.5 py-3">
+                  <b className="block text-[13.5px] font-semibold text-ink">{user.fullName}</b>
+                  <span className="text-xs text-ink-muted">{user.phone || user.email}</span>
+                </div>
+
+                <ThemeChoice />
+
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={signOut}
+                  className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left text-[13.5px] font-medium text-bad transition-colors hover:bg-surface-2"
+                >
+                  {Icon.logout()} Sign out
+                </button>
+              </div>
+            )}
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="main">{children}</main>
-      </div>
+      <main className="mx-auto max-w-[1800px] px-6 pb-16 pt-6 max-lg:px-3.5">{children}</main>
 
-      {menuOpen && <div className="rail-veil" onClick={() => setMenuOpen(false)} />}
+      {/* The veil only exists on a phone, where the rail slides over. */}
+      {menuOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-navy-deep/40 backdrop-blur-[1px] lg:hidden"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -236,112 +281,129 @@ function Alerts({ unread, home, onSeen }) {
   }, [open]);
 
   return (
-    <div className="alerts" onClick={(e) => e.stopPropagation()}>
-      <button
-        type="button"
-        className="icon-btn"
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
+      <IconButton
         onClick={() => (open ? setOpen(false) : openPanel())}
         aria-expanded={open}
         aria-haspopup="true"
         aria-label={unread ? `Alerts, ${unread} unread` : 'Alerts'}
       >
         {Icon.bell()}
-        {unread > 0 && <b className="pip dot" aria-hidden="true">{unread}</b>}
-      </button>
+        {unread > 0 && (
+          <b
+            aria-hidden="true"
+            className="tnum absolute right-[3px] top-[4px] grid h-[17px] min-w-[17px] place-items-center rounded-full border-2 border-surface bg-brand px-1 text-[10px] font-bold text-white"
+          >
+            {unread}
+          </b>
+        )}
+      </IconButton>
 
       {open && (
-        <div className="alerts-panel" role="dialog" aria-label="Alerts">
-          <div className="alerts-head">
+        <div
+          role="dialog"
+          aria-label="Alerts"
+          className="absolute right-0 top-[calc(100%+8px)] z-30 w-[370px] max-w-[calc(100vw-28px)] origin-top-right animate-pop-in overflow-hidden rounded-lg border border-line bg-surface shadow-lg"
+        >
+          <div className="flex items-center justify-between border-b border-line bg-surface-2 py-3 pl-4 pr-2.5">
             <div>
-              <b>Alerts</b>
-              <span className="alerts-count">
+              <b className="font-display text-[14.5px] font-bold text-ink">Alerts</b>
+              <span className="ml-2 text-[11.5px] text-ink-faint">
                 {rows === null ? '' : rows.length === 0 ? 'nothing new' : `last ${Math.min(rows.length, SHOWN)}`}
               </span>
             </div>
-            <button type="button" className="icon-btn sm" onClick={() => setOpen(false)} aria-label="Close">
+            <IconButton className="size-[30px]" onClick={() => setOpen(false)} aria-label="Close">
               {Icon.close()}
-            </button>
+            </IconButton>
           </div>
 
-          <div className="alerts-body">
+          <div className="max-h-[min(60vh,420px)] overflow-y-auto">
             {rows === null && !failed && (
-              <div className="alerts-loading">
-                <span className="line" /><span className="line" /><span className="line" />
+              <div className="space-y-2.5 px-4 py-4">
+                <div className="h-3 animate-shimmer rounded bg-surface-sunk" />
+                <div className="h-3 w-[72%] animate-shimmer rounded bg-surface-sunk" />
+                <div className="h-3 w-[54%] animate-shimmer rounded bg-surface-sunk" />
               </div>
             )}
 
             {failed && (
-              <p className="alerts-empty">
-                <b>Could not reach the shop.</b>
-                <span>The alerts are still there. Try again in a moment.</span>
+              <p className="px-6 py-8 text-center">
+                <b className="block text-sm font-semibold text-ink">Could not reach the shop.</b>
+                <span className="mt-1.5 block text-[12.5px] leading-relaxed text-ink-muted">
+                  The alerts are still there. Try again in a moment.
+                </span>
               </p>
             )}
 
             {rows !== null && rows.length === 0 && (
-              <p className="alerts-empty">
-                <b>Nothing to catch up on.</b>
-                <span>When an order moves between desks, it shows up here.</span>
+              <p className="px-6 py-8 text-center">
+                <b className="block text-sm font-semibold text-ink">Nothing to catch up on.</b>
+                <span className="mt-1.5 block text-[12.5px] leading-relaxed text-ink-muted">
+                  When an order moves between desks, it shows up here.
+                </span>
               </p>
             )}
 
-            {rows !== null && rows.length > 0 && (
-              <ul className="alerts-list">
-                {groupByDay(rows.slice(0, SHOWN)).map(([day, items]) => (
-                  <li key={day} className="alert-day">
-                    <p className="alert-day-head">{day}</p>
-                    <ul>
-                      {items.map((n) => renderRow(n))}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {rows !== null && rows.length > 0 &&
+              groupByDay(rows.slice(0, SHOWN)).map(([day, items]) => (
+                <section key={day}>
+                  <p className="sticky top-0 z-[1] border-y border-line bg-surface-2/90 px-4 py-1.5 font-display text-[10.5px] font-bold uppercase tracking-[.07em] text-ink-faint backdrop-blur">
+                    {day}
+                  </p>
+                  {items.map((n) => {
+                    const body = (
+                      <>
+                        <b className="block text-[13.5px] font-semibold leading-snug text-ink">{n.title}</b>
+                        {n.body && <span className="mt-0.5 block text-[12.5px] leading-relaxed text-ink-muted">{n.body}</span>}
+                        <em className="tnum mt-1 block text-[11.5px] not-italic text-ink-faint">
+                          {n.order_no ? `${n.order_no} · ` : ''}
+                          {time(n.created_at)}
+                        </em>
+                      </>
+                    );
+                    const inner = cn(
+                      'block border-b border-line py-3 pl-[26px] pr-4 transition-colors duration-150',
+                      !n.read && 'bg-brand-soft'
+                    );
+                    return (
+                      <div key={n.id} className="relative">
+                        {/* A mark as well as a tint: colour alone is not
+                            a difference everyone can see. */}
+                        {!n.read && <span className="absolute left-3 top-[17px] size-1.5 rounded-full bg-brand" />}
+                        {n.order_id ? (
+                          <Link href={`${home}/orders/${n.order_id}`} onClick={() => setOpen(false)} className={cn(inner, 'hover:bg-surface-2')}>
+                            {body}
+                          </Link>
+                        ) : (
+                          <span className={inner}>{body}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </section>
+              ))}
           </div>
 
-          <div className="alerts-foot">
-            <Link href="/notifications" className="linkish" onClick={() => setOpen(false)}>
-              See everything
-            </Link>
+          <div className="border-t border-line bg-surface-2 px-4 py-2.5 text-center">
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/notifications" onClick={() => setOpen(false)}>See everything</Link>
+            </Button>
           </div>
         </div>
       )}
     </div>
   );
-
-  function renderRow(n) {
-    const body = (
-      <>
-        <b>{n.title}</b>
-        {n.body && <span className="alert-note">{n.body}</span>}
-        <em>
-          {n.order_no ? `${n.order_no} · ` : ''}
-          {time(n.created_at)}
-        </em>
-      </>
-    );
-    return (
-      <li key={n.id} className={n.read ? 'alert-row' : 'alert-row new'}>
-        {n.order_id ? (
-          <Link href={`${home}/orders/${n.order_id}`} onClick={() => setOpen(false)}>
-            {body}
-          </Link>
-        ) : (
-          <span>{body}</span>
-        )}
-      </li>
-    );
-  }
 }
 
 /** How many of the most recent alerts the panel shows. */
 const SHOWN = 15;
 
 /**
- * "Today", "Yesterday", then the date.
+ * "Today", "Yesterday", then the day, then the date.
  *
  * Fifteen lines of timestamps is a wall. Grouped under the day they
- * happened, the same fifteen lines read as "this morning" and "last
- * night", which is how people actually ask about them.
+ * happened, the same fifteen read as "this morning" and "last night",
+ * which is how people actually ask about them.
  */
 function groupByDay(rows) {
   const out = [];
@@ -374,7 +436,6 @@ function asDate(stamp) {
   const d = new Date(s.replace(' ', 'T') + (s.endsWith('Z') ? '' : 'Z'));
   return Number.isNaN(d.getTime()) ? null : d;
 }
-
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
