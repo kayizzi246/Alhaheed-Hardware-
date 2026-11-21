@@ -1040,3 +1040,439 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
   .modal, .login-card { animation: backdrop-in 150ms ease both; }
   .btn:active { transform: none; }
 }
+
+/* =====================================================================
+   THE DASHBOARD
+   ---------------------------------------------------------------------
+   Laid out as the three questions a manager actually asks, in order:
+   what did we take, where is the work stuck, what is running out.
+
+   Colour does one job here. Orange is the shop and marks the thing to
+   press. The payment mix uses a categorical trio — blue, burnt orange,
+   violet — ordered so no two adjacent slices collapse into each other
+   for a colour-blind reader; it was checked rather than guessed, in
+   both themes. Every slice is labelled with its amount anyway, because
+   a chart that can only be read in colour cannot be read.
+   ===================================================================== */
+
+:root {
+  /* Categorical. Order matters: the warm hue sits between the two
+     cool ones so adjacent pairs stay apart under protanopia. */
+  --cat-a: #2563a8;  /* cash          */
+  --cat-b: #c2410c;  /* mobile money  */
+  --cat-c: #9a4fc2;  /* card          */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cat-a: #4788c8;
+    --cat-b: #cf7430;
+    --cat-c: #a473cf;
+  }
+}
+
+/* --- 1. The headline ------------------------------------------------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 26px;
+}
+
+.hero-main,
+.hero-side {
+  background: var(--surface);
+  padding: 22px 24px;
+  min-width: 0;
+}
+
+.hero-main {
+  background:
+    radial-gradient(520px 200px at 0% 0%, color-mix(in srgb, var(--orange) 7%, transparent), transparent 70%),
+    var(--surface);
+}
+
+.hero-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hero-value {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: clamp(32px, 4.4vw, 44px);
+  font-weight: 750;
+  letter-spacing: -0.032em;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-sub { font-size: 13.5px; color: var(--muted); }
+
+.delta { font-weight: 650; }
+.delta.up   { color: var(--green); }
+.delta.down { color: var(--red); }
+
+.hero-none { margin: 12px 0 0; color: var(--muted); font-size: 13.5px; }
+
+/* The payment mix: one bar, because three numbers that add up to the
+   total are a composition and not three separate facts. */
+.mix {
+  display: flex;
+  gap: 2px;              /* a hairline of surface between slices */
+  height: 11px;
+  margin: 14px 0 14px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mix-part { display: block; min-width: 4px; }
+
+.mix-a { background: var(--cat-a); }
+.mix-b { background: var(--cat-b); }
+.mix-c { background: var(--cat-c); }
+
+.mix-key { list-style: none; margin: 0; padding: 0; }
+
+.mix-key li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.mix-name { color: var(--text-2); }
+
+.mix-val {
+  margin-left: auto;
+  font-weight: 650;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- 2. The pipeline -------------------------------------------------- */
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 680;
+  letter-spacing: -0.012em;
+  color: var(--text);
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.pipe {
+  position: relative;
+  display: block;
+  padding: 16px 17px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out),
+              border-color 180ms var(--ease-out);
+}
+
+.pipe-step {
+  position: absolute;
+  top: 14px;
+  right: 15px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--surface-sunk);
+  color: var(--faint);
+  font-size: 10.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.pipe-count {
+  display: block;
+  font-size: 31px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.pipe-label {
+  display: block;
+  margin-top: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pipe-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* A desk with work on it earns the orange; an empty one stays quiet.
+   This is the one place colour is doing a job on this page. */
+.pipe-busy {
+  border-color: color-mix(in srgb, var(--orange) 40%, var(--border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--orange) 5%, transparent), transparent 60%),
+    var(--surface);
+}
+
+.pipe-busy .pipe-count { color: var(--orange-dark); }
+.pipe-busy .pipe-step { background: var(--orange-soft); color: var(--orange-dark); }
+
+@media (hover: hover) and (pointer: fine) {
+  .pipe:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    border-color: var(--border-firm);
+  }
+  .pipe-busy:hover { border-color: var(--orange); }
+}
+
+.pipe:active { transform: scale(0.985); }
+
+/* --- 3. Low stock ----------------------------------------------------- */
+
+.low  { color: var(--amber); font-weight: 700; }
+.out  { color: var(--red);   font-weight: 700; }
+
+/* --- The seven-day chart ---------------------------------------------- */
+
+.chart { padding: 18px 20px 16px; }
+
+/* The amount for the selected day, written out. The bars are orange,
+   which does not carry 3:1 against this surface, so the figures are
+   never left to colour alone. */
+.chart-read {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.chart-read strong {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.022em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-read span { font-size: 12.5px; color: var(--muted); }
+
+.bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 148px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bar-col {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  border-radius: 4px 4px 0 0;   /* rounded at the data end only */
+  background: color-mix(in srgb, var(--orange) 34%, transparent);
+  transition: background-color 160ms var(--ease-out);
+}
+
+.bar-col.on .bar { background: var(--orange); }
+
+@media (hover: hover) and (pointer: fine) {
+  .bar-col:hover .bar { background: color-mix(in srgb, var(--orange) 62%, transparent); }
+}
+
+.bar-day {
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.bar-col.on .bar-day { color: var(--text); font-weight: 650; }
+
+/* The average, so "is today normal?" has something to be normal against. */
+.avg-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--border-firm);
+  pointer-events: none;
+}
+
+.avg-line span {
+  position: absolute;
+  right: 0;
+  top: -8px;
+  padding: 0 5px;
+  background: var(--surface);
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.chart-note {
+  margin: 14px 0 0;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+/* --- Loading ---------------------------------------------------------- */
+
+.skel-block {
+  background: linear-gradient(
+    100deg,
+    var(--surface-sunk) 30%,
+    color-mix(in srgb, var(--surface) 70%, var(--surface-sunk)) 50%,
+    var(--surface-sunk) 70%
+  );
+  background-size: 220% 100%;
+  animation: skel 1.4s linear infinite;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+@keyframes skel { to { background-position: -220% 0; } }
+
+/* --- Sign in ---------------------------------------------------------- */
+
+.login-mark {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 16px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, var(--orange), var(--orange-dark));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--orange) 70%, transparent);
+}
+
+.login-tag {
+  margin: 5px 0 24px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.btn-tall { height: 46px; font-size: 14.5px; margin-top: 4px; }
+
+.input-affix { position: relative; }
+
+.input-affix input { padding-right: 66px; }
+
+.affix-btn {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  translate: 0 -50%;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 7px;
+  background: var(--surface-sunk);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms var(--ease-out), color 140ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .affix-btn:hover { background: var(--border); color: var(--text-2); }
+}
+
+.spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+
+/* Deliberately quick: a fast spinner makes the wait feel shorter than
+   a slow one, for the same wait. */
+@keyframes spin { to { rotate: 360deg; } }
+
+.login-foot {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; }
+  .pipeline { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel-block { animation: none; }
+  .pipe:hover { transform: none; }
+}

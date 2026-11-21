@@ -1,91 +1,133 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, setSession, getUser, clearSession } from '@/lib/api';
 import { HOME } from '@/lib/roles';
-import { Alert } from '@/components/ui';
 
 /**
- * Staff sign-in for the web panel.
+ * Signing in.
  *
- * The web panel is for the shop's desks only — Cashier, Accounts, Store
- * Manager and Manager. Customers order on the mobile app; there is no customer
- * sign-in here, and the API's staff login endpoint refuses customer accounts.
+ * One field, then another, then one button. A counter tool is opened at
+ * seven in the morning by somebody who has not had tea yet, so there is
+ * nothing on this page to read, decide or dismiss.
+ *
+ * The web panel is for the desks that work sitting down — Cashier,
+ * Accounts and the Manager. Customers and the Store Manager are on the
+ * phone, and the API's staff login turns their accounts away, so this
+ * page never has to.
  */
 export default function LoginPage() {
   const router = useRouter();
+  const identifierRef = useRef(null);
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const u = getUser();
-    if (!u) return;
-    // A customer session (for example left over from an older build) has no
-    // home on the web panel, so it is cleared rather than followed.
+    if (!u) {
+      // Straight into the first field: nobody opens this page to look
+      // at it.
+      identifierRef.current?.focus();
+      return;
+    }
+    // A session with no home here can only be stale — clear it rather
+    // than following it somewhere that does not exist.
     if (!HOME[u.role]) { clearSession(); return; }
     router.replace(HOME[u.role]);
   }, [router]);
 
   async function signIn(e) {
     e.preventDefault();
-    setError(''); setBusy(true);
+    setError('');
+    setBusy(true);
     try {
-      const r = await api('/api/auth/staff/login', { method: 'POST', body: { identifier, password } });
-      if (!HOME[r.user.role]) throw new Error('This account has no access to the web panel.');
+      const r = await api('/api/auth/staff/login', {
+        method: 'POST',
+        body: { identifier: identifier.trim(), password },
+      });
+      if (!HOME[r.user.role]) throw new Error('This account has no desk on the web panel.');
       setSession(r.token, r.user);
       router.replace(HOME[r.user.role]);
-    } catch (err) { setError(err.message); setBusy(false); }
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+      setPassword('');
+    }
   }
 
   return (
     <div className="login-wrap">
-      <div className="login-card">
+      <main className="login-card">
+        <div className="login-mark" aria-hidden="true">AH</div>
+
         <h1>Al Hadeed Hardware</h1>
-        <div className="tag">Staff Panel</div>
+        <p className="login-tag">Staff panel</p>
 
-        <Alert>{error}</Alert>
+        {/* Announced to a screen reader the moment it appears, because
+            a failed sign-in is the one message on this page. */}
+        <div aria-live="polite">
+          {error && <div className="alert error">{error}</div>}
+        </div>
 
-        <form onSubmit={signIn}>
+        <form onSubmit={signIn} noValidate>
           <div className="field">
-            <label htmlFor="id">Phone or email</label>
+            <label htmlFor="identifier">Phone or email</label>
             <input
-              id="id"
+              id="identifier"
+              ref={identifierRef}
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder="cashier@alhadeed.ug"
               autoComplete="username"
+              autoCapitalize="none"
+              spellCheck="false"
+              enterKeyHint="next"
               required
             />
           </div>
 
           <div className="field">
-            <label htmlFor="pw">Password</label>
-            <input
-              id="pw"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
+            <label htmlFor="password">Password</label>
+            <div className="input-affix">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                enterKeyHint="go"
+                required
+              />
+              <button
+                type="button"
+                className="affix-btn"
+                onClick={() => setShowPassword((s) => !s)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                tabIndex={-1}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
 
-          <button className="btn btn-primary btn-block" disabled={busy}>
+          <button
+            className="btn btn-primary btn-block btn-tall"
+            disabled={busy || !identifier.trim() || !password}
+          >
+            {busy ? <span className="spinner" aria-hidden="true" /> : null}
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
-
-          <div className="hint">
-            Cashier, Accounts and the Manager sign in here with the phone
-            number or email on their staff account.
-          </div>
-
-          <div className="sub" style={{ marginTop: 14, textAlign: 'center' }}>
-            Customers and the Store Manager use the Al Hadeed mobile app.
-          </div>
         </form>
-      </div>
+
+        <p className="login-foot">
+          Customers and the Store Manager use the Al&nbsp;Hadeed mobile app.
+        </p>
+      </main>
     </div>
   );
 }

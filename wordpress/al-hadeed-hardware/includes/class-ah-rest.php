@@ -859,15 +859,35 @@ class AH_Rest {
 			$by_stage[ $stage ] = count( AH_Flow::queue_for( $stage, 500 ) );
 		}
 
-		$last7 = $wpdb->get_results(
-			"SELECT DATE(created_at) AS day, COALESCE(SUM(amount_paid),0) AS total
+		$rows = $wpdb->get_results(
+			"SELECT DATE(created_at) AS day,
+			        COALESCE(SUM(amount_paid),0) AS total,
+			        COUNT(*) AS receipts
 			   FROM {$pay}
 			  WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND verified = 1
 			  GROUP BY day ORDER BY day",
 			ARRAY_A
 		);
-		foreach ( $last7 as $i => $row ) {
-			$last7[ $i ]['total'] = (int) $row['total'];
+
+		// Days with no sales are still days. A chart of seven bars with
+		// three of them missing reads as a quiet week rather than a
+		// week with three quiet days, and the gaps shift the ones that
+		// are there into the wrong place.
+		$by_day = array();
+		foreach ( $rows as $r ) {
+			$by_day[ $r['day'] ] = array(
+				'day'      => $r['day'],
+				'total'    => (int) $r['total'],
+				'receipts' => (int) $r['receipts'],
+			);
+		}
+
+		$last7 = array();
+		for ( $i = 6; $i >= 0; $i-- ) {
+			$day     = gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . " -{$i} days" ) );
+			$last7[] = isset( $by_day[ $day ] )
+				? $by_day[ $day ]
+				: array( 'day' => $day, 'total' => 0, 'receipts' => 0 );
 		}
 
 		$low = array();
