@@ -6,6 +6,7 @@ import { api, getUser, clearSession } from '@/lib/api';
 import { NAV, HOME, DESK_LABEL } from '@/lib/roles';
 import { Icon } from '@/components/icons';
 import { usePoll, freshness } from '@/lib/live';
+import { time, dateTime } from '@/lib/format';
 
 /**
  * The chrome every desk sits in: a light rail on the left, a bar across
@@ -138,14 +139,11 @@ export default function Shell({ allow, children }) {
           <h1 className="topbar-title">{title}</h1>
 
           <div className="topbar-right">
-            <Link
-              href="/notifications"
-              className="icon-btn"
-              aria-label={unread ? `Alerts, ${unread} unread` : 'Alerts'}
-            >
-              {Icon.bell()}
-              {unread > 0 && <b className="pip dot" aria-hidden="true">{unread}</b>}
-            </Link>
+            <Alerts
+              unread={unread}
+              home={HOME[user.role]}
+              onSeen={() => setUnread(0)}
+            />
 
             <div className="account" onClick={(e) => e.stopPropagation()}>
               <button
@@ -182,6 +180,160 @@ export default function Shell({ allow, children }) {
       {menuOpen && <div className="rail-veil" onClick={() => setMenuOpen(false)} />}
     </div>
   );
+}
+
+/**
+ * The bell, and what is behind it.
+ *
+ * A separate page for "three things happened" is a page too many: you
+ * glance, you see, you carry on. So the bell opens a panel in place and
+ * the list is read where you are standing.
+ *
+ * The list is only fetched when the panel opens. A badge that polls is
+ * cheap; forty rows of text pulled down every twenty seconds for a
+ * panel nobody has opened is not.
+ *
+ * Opening it marks everything read, because opening it is what reading
+ * means. The pip clears immediately rather than after the round trip —
+ * if the call fails the next poll puts it back, and in the meantime the
+ * screen has told the truth about what the person just did.
+ */
+function Alerts({ unread, home, onSeen }) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState(null);
+  const [failed, setFailed] = useState(false);
+
+  const openPanel = async () => {
+    setOpen(true);
+    setFailed(false);
+    try {
+      const r = await api('/api/notifications');
+      setRows(r.notifications || []);
+      if (r.unread) {
+        onSeen();
+        api('/api/notifications/read-all', { method: 'POST' }).catch(() => {});
+      }
+    } catch {
+      setFailed(true);
+    }
+  };
+
+  // Clicking anywhere else, or pressing Escape, closes it — the two
+  // things every menu on every other site does.
+  useEffect(() => {
+    if (!open) return;
+    const away = () => setOpen(false);
+    const key = (e) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('click', away);
+    window.addEventListener('keydown', key);
+    return () => {
+      window.removeEventListener('click', away);
+      window.removeEventListener('keydown', key);
+    };
+  }, [open]);
+
+  return (
+    <div className="alerts" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        className="icon-btn"
+        onClick={() => (open ? setOpen(false) : openPanel())}
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label={unread ? `Alerts, ${unread} unread` : 'Alerts'}
+      >
+        {Icon.bell()}
+        {unread > 0 && <b className="pip dot" aria-hidden="true">{unread}</b>}
+      </button>
+
+      {open && (
+        <div className="alerts-panel" role="dialog" aria-label="Alerts">
+          <div className="alerts-head">
+            <b>Alerts</b>
+            <button type="button" className="icon-btn sm" onClick={() => setOpen(false)} aria-label="Close">
+              {Icon.close ? Icon.close() : '×'}
+            </button>
+          </div>
+
+          <div className="alerts-body">
+            {rows === null && !failed && (
+              <div className="alerts-loading">
+                <span className="line" /><span className="line" /><span className="line" />
+              </div>
+            )}
+
+            {failed && (
+              <p className="alerts-empty">
+                <b>Could not reach the shop.</b>
+                <span>The alerts are still there. Try again in a moment.</span>
+              </p>
+            )}
+
+            {rows !== null && rows.length === 0 && (
+              <p className="alerts-empty">
+                <b>Nothing to catch up on.</b>
+                <span>When an order moves between desks, it shows up here.</span>
+              </p>
+            )}
+
+            {rows !== null && rows.length > 0 && (
+              <ul className="alerts-list">
+                {rows.slice(0, 12).map((n) => {
+                  const body = (
+                    <>
+                      <b>{n.title}</b>
+                      {n.body && <span className="alert-note">{n.body}</span>}
+                      <em>
+                        {n.order_no ? `${n.order_no} · ` : ''}
+                        {when(n.created_at)}
+                      </em>
+                    </>
+                  );
+                  return (
+                    <li key={n.id} className={n.read ? 'alert-row' : 'alert-row new'}>
+                      {n.order_id ? (
+                        <Link href={`${home}/orders/${n.order_id}`} onClick={() => setOpen(false)}>
+                          {body}
+                        </Link>
+                      ) : (
+                        <span>{body}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <div className="alerts-foot">
+            <Link href="/notifications" className="linkish" onClick={() => setOpen(false)}>
+              See everything
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * "14:31" for today, "20 Nov 16:09" for anything older.
+ *
+ * Through the shared helpers, not a private copy: the API sends times
+ * in UTC without saying so, and `time()` is where that is handled. A
+ * second formatter here printed every alert three hours behind the
+ * same event in the orders list beside it.
+ */
+function when(stamp) {
+  if (!stamp) return '';
+  const d = new Date(String(stamp).replace(' ', 'T') + (String(stamp).endsWith('Z') ? '' : 'Z'));
+  if (Number.isNaN(d.getTime())) return '';
+  const now = new Date();
+  const sameDay =
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
+  return sameDay ? time(stamp) : dateTime(stamp);
 }
 
 function initials(name) {

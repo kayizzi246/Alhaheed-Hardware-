@@ -91,6 +91,11 @@ export const Icon = {
       <path d="M13.7 20a2 2 0 0 1-3.4 0" />
     </svg>
   ),
+  close: (p) => (
+    <svg {...base} {...p}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  ),
   user: (p) => (
     <svg {...base} {...p}>
       <circle cx="12" cy="8.5" r="3.6" />

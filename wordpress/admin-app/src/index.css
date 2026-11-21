@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================================
+   The desk app's tokens.
+   ---------------------------------------------------------------------
+   shadcn's variable names, with the shop's palette in them: warm dark
+   chrome, orange for the thing to press, red beside it. Scoped to
+   #ah-app so nothing here can touch the rest of wp-admin.
+
+   Everything is HSL triplets because that is what the Tailwind config
+   expects to wrap in hsl(), and it makes a hover state one number
+   rather than a new hex.
+   ===================================================================== */
+
+#ah-app {
+  --ah-background: 220 20% 97%;
+  --ah-foreground: 210 57% 14%;
+
+  --ah-card: 0 0% 100%;
+  --ah-card-foreground: 210 57% 14%;
+
+  --ah-muted: 215 25% 96%;
+  --ah-muted-foreground: 210 16% 51%;
+
+  --ah-accent: 28 60% 96%;
+  --ah-accent-foreground: 27 78% 44%;
+
+  /* Orange is the action. It is the only saturated thing on a screen
+     unless something has gone wrong. */
+  --ah-primary: 28 81% 54%;
+  --ah-primary-foreground: 0 0% 100%;
+
+  --ah-secondary: 215 25% 96%;
+  --ah-secondary-foreground: 210 40% 25%;
+
+  --ah-destructive: 5 64% 46%;
+  --ah-destructive-foreground: 0 0% 100%;
+
+  --ah-success: 142 69% 29%;
+  --ah-success-foreground: 0 0% 100%;
+
+  --ah-warning: 32 94% 37%;
+  --ah-warning-foreground: 0 0% 100%;
+
+  --ah-border: 214 32% 92%;
+  --ah-input: 213 27% 86%;
+  --ah-ring: 28 81% 54%;
+
+  --ah-radius: 0.75rem;
+
+  /* Categorical, for the payment mix. Checked rather than guessed: two
+     warm hues are the same colour to a protan reader, so the third
+     steps out of the family. */
+  --ah-cat-a: 31 87% 56%;
+  --ah-cat-b: 5 64% 46%;
+  --ah-cat-c: 286 51% 37%;
+
+  font-family: theme('fontFamily.sans');
+  font-size: 15px;
+  line-height: 1.5;
+  color: hsl(var(--ah-foreground));
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* wp-admin wraps everything in #wpbody-content with its own padding
+   and a white background; this takes the page back. */
+#ah-app {
+  margin: 10px 22px 0 2px;
+  padding: 0;
+}
+
+/* Figures must be the same width or a column of them cannot be read. */
+#ah-app .tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* WordPress styles bare inputs and buttons globally; these win it back
+   without every component carrying overrides. */
+#ah-app input,
+#ah-app select,
+#ah-app textarea,
+#ah-app button {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  box-shadow: none;
+}
+
+#ah-app input:focus,
+#ah-app select:focus,
+#ah-app textarea:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/* Tailwind's preflight is off — it would repaint the whole of wp-admin
+   — so bare elements keep WordPress's styling. A <button> used as a
+   row, a tab or an icon would otherwise arrive wearing wp-admin's grey
+   box. These take them back to nothing; the utility classes, which are
+   scoped to #ah-app and so outrank these, put the styling on. */
+#ah-app button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+#ah-app a {
+  color: inherit;
+  text-decoration: none;
+  box-shadow: none;
+  transition: none;
+}
+
+#ah-app a:focus,
+#ah-app button:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/* Taken away above, so it has to come back for keyboard users. */
+#ah-app a:focus-visible,
+#ah-app button:focus-visible {
+  outline: 2px solid hsl(var(--ah-ring));
+  outline-offset: 1px;
+}
+
+#ah-app p,
+#ah-app code {
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+#ah-app h1,
+#ah-app h2,
+#ah-app h3 {
+  margin: 0;
+  padding: 0;
+  font-weight: inherit;
+  color: inherit;
+}
+
+#ah-app ul,
+#ah-app ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#ah-app table { border-collapse: collapse; }
+
+@media (prefers-reduced-motion: reduce) {
+  #ah-app *,
+  #ah-app *::before {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

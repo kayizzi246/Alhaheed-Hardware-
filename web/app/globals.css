@@ -44,7 +44,6 @@
 
   /* ── Ink ─────────────────────────────────────────────────────────── */
   --text:        #10243a;
-  --text-2:      #3d5argb;
   --text-2:      #3d566f;
   --muted:       #6b8299;
   --faint:       #9bacc0;
@@ -470,9 +469,14 @@ a { color: inherit; text-decoration: none; }
   .account-item:hover { background: var(--red-bg); }
 }
 
+/* The console is dense on purpose, so it uses the whole window rather
+   than sitting in a column with a gutter of dead space beside it. The
+   cap is wide enough to stop a line of table text running to 2000px on
+   an ultrawide, and generous enough that a normal monitor never sees
+   it. */
 .main {
-  padding: 26px 24px 64px;
-  max-width: 1280px;
+  padding: 26px 28px 64px;
+  max-width: 1800px;
   width: 100%;
 }
 
@@ -513,9 +517,151 @@ a { color: inherit; text-decoration: none; }
   .main { padding: 18px 14px 56px; }
 }
 
+/* --- Alerts, under the bell ------------------------------------------- */
+
+/* A panel rather than a page. You glance, you see, you carry on — and
+   the work you were doing is still behind it. */
+
+.alerts { position: relative; }
+
+.alerts-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 370px;
+  max-width: calc(100vw - 28px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 30;
+  /* Grows from the bell, not from its own middle. */
+  transform-origin: top right;
+  animation: menu-in 160ms var(--ease-out) both;
+}
+
+.alerts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 10px 11px 15px;
+  border-bottom: 1px solid var(--border);
+}
+
+.alerts-head b { font-size: 14px; color: var(--text); }
+
+.icon-btn.sm { width: 30px; height: 30px; }
+.icon-btn.sm svg { width: 15px; height: 15px; }
+
+/* Tall enough for a handful of rows, capped so the panel never runs
+   off the bottom of a laptop screen. */
+.alerts-body { max-height: min(60vh, 420px); overflow-y: auto; }
+
+.alerts-list { list-style: none; margin: 0; padding: 0; }
+
+.alert-row + .alert-row { border-top: 1px solid var(--border); }
+
+.alert-row a,
+.alert-row span {
+  display: block;
+  padding: 11px 15px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.alert-row a { transition: background-color 130ms var(--ease-out); }
+
+@media (hover: hover) and (pointer: fine) {
+  .alert-row a:hover { background: var(--surface-2); }
+}
+
+.alert-row b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.alert-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.alert-row em {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Unread carries a mark as well as weight: a bolder line alone is not
+   a difference everyone can see. */
+.alert-row.new { position: relative; background: var(--orange-soft); }
+
+.alert-row.new::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 17px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--orange);
+}
+
+.alerts-empty {
+  margin: 0;
+  padding: 30px 22px 34px;
+  text-align: center;
+}
+
+.alerts-empty b { display: block; font-size: 14px; color: var(--text); }
+
+.alerts-empty span {
+  display: block;
+  margin-top: 5px;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.alerts-loading { padding: 14px 15px; }
+
+.alerts-loading .line {
+  display: block;
+  height: 11px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  animation: alert-shimmer 1.1s linear infinite;
+}
+
+.alerts-loading .line + .line { margin-top: 10px; }
+.alerts-loading .line:nth-child(2) { width: 72%; }
+.alerts-loading .line:nth-child(3) { width: 54%; }
+
+@keyframes alert-shimmer {
+  50% { opacity: 0.55; }
+}
+
+.alerts-foot {
+  padding: 10px 15px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  text-align: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rail { transition: none; }
-  .account-menu { animation: none; }
+  .account-menu,
+  .alerts-panel { animation: none; }
+  .alerts-loading .line { animation: none; }
 }
 
 
@@ -2548,4 +2694,39 @@ td .sub { margin-top: 2px; }
   .feed .fd-at, .feed .chip { display: none; }
   .ranked li { grid-template-columns: minmax(0, 1fr) auto; }
   .ranked .rk-track, .ranked .rk-qty { display: none; }
+}
+
+/* --- The chart readout -------------------------------------------------
+   The figure for whichever day is selected, written out. The bars are
+   brand orange, which does not carry 3:1 on this surface, so the number
+   is never left to colour alone. */
+
+.read {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.read strong {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.022em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.read span { font-size: 12.5px; color: var(--muted); }
+
+/* The average sits above the bars rather than in among them, where it
+   collided with the day labels. */
+.panel .bars { height: 132px; margin-top: 2px; }
+
+.panel .avg-line span {
+  right: auto;
+  left: 0;
+  top: -9px;
+  background: var(--surface);
+  padding: 0 6px 0 0;
 }

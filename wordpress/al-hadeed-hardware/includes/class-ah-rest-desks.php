@@ -581,6 +581,7 @@ class AH_Rest_Desks {
 				'id'         => (int) $r['id'],
 				'title'      => self::event_title( $r, $order ),
 				'body'       => $r['notes'],
+				'order_id'   => $order ? $order->get_id() : null,
 				'order_no'   => $order ? AH_Shape::order_no( $order ) : null,
 				'read'       => (int) $r['id'] <= $seen ? 1 : 0,
 				'created_at' => $r['created_at'],

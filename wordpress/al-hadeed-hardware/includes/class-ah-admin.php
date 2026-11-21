@@ -123,8 +123,113 @@ class AH_Admin {
 		if ( false === strpos( $hook, 'al-hadeed' ) ) {
 			return;
 		}
+
+		// The settings and import pages are server-rendered WordPress
+		// forms and want the plain stylesheet, not the app.
 		wp_enqueue_style( 'ah-admin', AH_URL . 'assets/admin.css', array(), AH_VERSION );
-		wp_enqueue_script( 'ah-admin', AH_URL . 'assets/admin.js', array(), AH_VERSION, true );
+
+		if ( ! self::is_desk_page() ) {
+			wp_enqueue_script( 'ah-admin', AH_URL . 'assets/admin.js', array(), AH_VERSION, true );
+			return;
+		}
+
+		// A desk page is the React app. It is built into the plugin, so
+		// a shop installing the zip never needs Node; the plugin version
+		// on the enqueue is the cache buster, because the bundle only
+		// changes when the plugin does.
+		if ( ! self::app_built() ) {
+			wp_enqueue_script( 'ah-admin', AH_URL . 'assets/admin.js', array(), AH_VERSION, true );
+			return;
+		}
+
+		wp_enqueue_style( 'ah-app', AH_URL . 'assets/app/app.css', array(), AH_VERSION );
+		wp_enqueue_script( 'ah-app', AH_URL . 'assets/app/app.js', array(), AH_VERSION, true );
+
+		// Vite builds an ES module, so the tag needs type="module".
+		add_filter(
+			'script_loader_tag',
+			function ( $tag, $handle ) {
+				if ( 'ah-app' !== $handle ) {
+					return $tag;
+				}
+				$tag = str_replace( ' src=', ' type="module" src=', $tag );
+				return str_replace( " type='text/javascript'", '', $tag );
+			},
+			10,
+			2
+		);
+
+		$user = wp_get_current_user();
+
+		// Which desks this person may look at, and where each one is.
+		// Only a manager sees more than their own, and the server
+		// decides it — the tabs in the app are a convenience, not the
+		// permission: every endpoint checks again.
+		$can_see = array();
+		$desks   = array();
+		foreach ( array( 'cashier', 'accounts', 'store', 'manager' ) as $d ) {
+			if ( user_can( $user, 'ah_desk_' . $d ) ) {
+				$can_see[]   = $d;
+				$desks[ $d ] = admin_url( 'admin.php?page=al-hadeed-' . $d );
+			}
+		}
+
+		// The screen to draw is the page they opened, not the desk they
+		// belong to. A manager clicking "Cashier" in the sidebar means
+		// the cashier's queue; anything else makes the sidebar a liar.
+		$page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+		$desk = str_replace( 'al-hadeed-', '', $page );
+		if ( ! in_array( $desk, $can_see, true ) ) {
+			$desk = AH_Roles::desk_of( $user );
+		}
+
+		wp_add_inline_script(
+			'ah-app',
+			'window.AH_BOOT = ' . wp_json_encode(
+				array(
+					'root'  => esc_url_raw( rest_url( AH_Rest::NS ) ),
+					'nonce' => wp_create_nonce( 'wp_rest' ),
+					'user'  => array(
+						'id'     => $user->ID,
+						'name'   => $user->display_name,
+						'desk'   => $desk ? $desk : '',
+						'canSee' => $can_see,
+					),
+					'shop'  => array(
+						'name'     => AH_Sms::shop_name(),
+						'currency' => AH_Sms::option( 'currency', 'UGX' ),
+					),
+					'desks' => $desks,
+					'links' => array(
+						'settings' => admin_url( 'admin.php?page=al-hadeed-settings' ),
+						'import'   => admin_url( 'admin.php?page=al-hadeed-import' ),
+						'products' => admin_url( 'edit.php?post_type=product' ),
+					),
+				)
+			) . ';',
+			'before'
+		);
+	}
+
+	/** True on one of the four desk screens. */
+	private static function is_desk_page() {
+		$page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+		return in_array(
+			$page,
+			array( 'al-hadeed', 'al-hadeed-cashier', 'al-hadeed-accounts', 'al-hadeed-store', 'al-hadeed-manager' ),
+			true
+		);
+	}
+
+	/**
+	 * Whether the built bundle is actually in the plugin.
+	 *
+	 * Someone working from a git checkout may not have run the build.
+	 * Rather than serve a blank page, the server-rendered desks below
+	 * take over — they are a complete way to run the shop on their own.
+	 */
+	private static function app_built() {
+		return file_exists( AH_PATH . 'assets/app/app.js' );
 	}
 
 	// -----------------------------------------------------------------
@@ -142,9 +247,27 @@ class AH_Admin {
 			wp_die( 'You do not have access to this desk.' );
 		}
 
+		// The React app draws every desk. The server-rendered screens
+		// below stay as the fallback: no JavaScript, or a checkout with
+		// no built bundle, still gets a working shop rather than an
+		// empty page.
+		if ( self::app_built() ) {
+			echo '<div id="ah-app"></div>';
+			echo '<noscript><div class="wrap ah-wrap">';
+			echo '<div class="notice notice-warning"><p>JavaScript is switched off, so this is the plain version of the desk. It does everything the normal one does.</p></div>';
+			self::render_desk( $desk );
+			echo '</div></noscript>';
+			return;
+		}
+
 		echo '<div class="wrap ah-wrap">';
 		self::notice();
+		self::render_desk( $desk );
+		echo '</div>';
+	}
 
+	/** The server-rendered version of one desk. */
+	private static function render_desk( $desk ) {
 		switch ( $desk ) {
 			case 'accounts':
 				self::accounts();
@@ -158,7 +281,6 @@ class AH_Admin {
 			default:
 				self::cashier();
 		}
-		echo '</div>';
 	}
 
 	// -----------------------------------------------------------------

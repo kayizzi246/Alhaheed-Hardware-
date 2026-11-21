@@ -101,7 +101,11 @@ class AH_Statuses {
 		$labels = array(
 			'pending_payment'  => 'Pending payment',
 			'paid'             => 'Paid',
-			'payment_verified' => 'Verifying',
+			// The payment has been checked; what is still to happen is
+			// the packing. "Verifying" read as though accounts were
+			// still looking at it, which is the wrong desk and the
+			// wrong worry — for staff and for the customer.
+			'payment_verified' => 'Being packed',
 			'released'         => 'Released / Completed',
 			'rejected'         => 'Payment rejected',
 			'cancelled'        => 'Cancelled',
