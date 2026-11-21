@@ -297,6 +297,11 @@ class AH_Rest {
 		// The rest of the desks' API lives in its own class.
 		AH_Rest_Desks::routes();
 
+		// Company accounts: the contractor who buys on account and the
+		// people they let order on it. Only the phone app uses these.
+		AH_Rest_Company::routes();
+		AH_Rest_Company::routes();
+
 		register_rest_route(
 			$ns, '/manager/dashboard',
 			array(

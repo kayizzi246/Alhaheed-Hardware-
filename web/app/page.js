@@ -1,4 +1,5 @@
 'use client';
+import { ThemeToggle } from '@/components/Theme';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, setSession, getUser, clearSession } from '@/lib/api';
@@ -353,40 +354,3 @@ function Figure({ value, label }) {
   );
 }
 
-/**
- * Light, dark, or whatever the machine is set to.
- *
- * The counter is usually under a fluorescent tube and wants light; the
- * back office at night does not. The choice is kept per browser, and
- * "system" is the default so most people never touch it.
- */
-function ThemeToggle() {
-  const [theme, setTheme] = useState('system');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('alhadeed.theme') || 'system';
-    setTheme(saved);
-    apply(saved);
-  }, []);
-
-  function apply(next) {
-    const root = document.documentElement;
-    if (next === 'system') root.removeAttribute('data-theme');
-    else root.setAttribute('data-theme', next);
-  }
-
-  function cycle() {
-    const next = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system';
-    setTheme(next);
-    apply(next);
-    try { localStorage.setItem('alhadeed.theme', next); } catch { /* private window */ }
-  }
-
-  const label = theme === 'system' ? 'Theme: follows your device' : `Theme: ${theme}`;
-
-  return (
-    <button type="button" className="theme-toggle" onClick={cycle} aria-label={label} title={label}>
-      {theme === 'light' ? '☀' : theme === 'dark' ? '☾' : '◐'}
-    </button>
-  );
-}

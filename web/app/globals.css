@@ -128,7 +128,7 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter var", Inter, -apple-system, BlinkMacSystemFont,
+  font-family: var(--font-sans), Inter, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 16px;
   line-height: 1.55;
@@ -140,6 +140,43 @@ html, body {
 
 /* Money, counts, dates. Figures must be the same width or a column of
    them cannot be compared at a glance. */
+/* --- The two typefaces ------------------------------------------------- */
+
+/* Manrope carries the headings, the navigation and the titles. Inter,
+   set on <body> above, does the reading: body text, forms, tables,
+   buttons and labels.
+
+   The split is by role, not by size. A number in a table is read the
+   same way as the text beside it, so it stays in Inter; the figure on
+   a KPI tile is a headline, so it does not. */
+h1, h2, h3, h4,
+.brand,
+.rail-nav a,
+.rail-group,
+.topbar-title,
+.page-head h1,
+.card-head h2,
+.card-head h3,
+.stat .value,
+.kpi-value,
+.panel-head h2,
+.panel-head h3,
+.auth-hero h1,
+.auth-form h1,
+.empty b,
+.alerts-head b,
+.alerts-empty b {
+  font-family: var(--font-display), var(--font-sans), "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.015em;
+}
+
+/* Both are loaded as variable fonts, so the weights the rules below
+   already ask for — 680 on the page title, 750 on a KPI figure — land
+   exactly rather than snapping to the nearest static cut. The weights
+   themselves stay where they are, beside the rules that set the size. */
+
+h1, h2, h3, h4 { font-weight: 700; }
+
 .num, .stat .value, .order-no, td.num, th.num, code {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
@@ -517,6 +554,123 @@ a { color: inherit; text-decoration: none; }
   .main { padding: 18px 14px 56px; }
 }
 
+/* --- Appearance, in the account menu ----------------------------------- */
+
+.theme-choice {
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.theme-choice-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.theme-choice-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunk);
+}
+
+.theme-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 2px 6px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms var(--ease-out), color 140ms var(--ease-out),
+              transform 140ms var(--ease-out);
+}
+
+.theme-opt b { font-size: 13px; font-weight: 400; line-height: 1; }
+
+.theme-opt:active { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .theme-opt:hover { color: var(--text); }
+}
+
+.theme-opt.on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* --- When a screen fails ----------------------------------------------- */
+
+.screen-error {
+  max-width: 34rem;
+  margin: 40px auto;
+  padding: 28px 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.screen-error h2 { font-size: 19px; margin: 0 0 8px; color: var(--text); }
+
+.screen-error > p {
+  margin: 0 auto 20px;
+  max-width: 28rem;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.screen-error-actions {
+  display: flex;
+  gap: 9px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.screen-error details { margin-top: 22px; text-align: left; }
+
+.screen-error summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  list-style: none;
+}
+
+.screen-error summary::-webkit-details-marker { display: none; }
+.screen-error summary::before { content: '▸ '; }
+.screen-error details[open] summary::before { content: '▾ '; }
+
+.screen-error code {
+  display: block;
+  margin-top: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunk);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
+  word-break: break-word;
+}
+
+.screen-error details .sub { margin-top: 8px; font-size: 12px; color: var(--faint); }
+
 /* --- Alerts, under the bell ------------------------------------------- */
 
 /* A panel rather than a page. You glance, you see, you carry on — and
@@ -545,11 +699,40 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 10px 11px 15px;
+  padding: 12px 10px 12px 16px;
   border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
 }
 
-.alerts-head b { font-size: 14px; color: var(--text); }
+.alerts-head b { font-size: 14.5px; color: var(--text); }
+
+.alerts-count {
+  margin-left: 8px;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+/* A day's worth at a time. Fifteen bare timestamps is a wall; the
+   same fifteen under "Today" and "Yesterday" is a story. */
+.alert-day > ul { list-style: none; margin: 0; padding: 0; }
+
+.alert-day-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 7px 16px 6px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.alert-day + .alert-day .alert-day-head { border-top: 1px solid var(--border); }
 
 .icon-btn.sm { width: 30px; height: 30px; }
 .icon-btn.sm svg { width: 15px; height: 15px; }
@@ -562,10 +745,10 @@ a { color: inherit; text-decoration: none; }
 
 .alert-row + .alert-row { border-top: 1px solid var(--border); }
 
-.alert-row a,
-.alert-row span {
+.alert-row > a,
+.alert-row > span {
   display: block;
-  padding: 11px 15px;
+  padding: 11px 16px 11px 26px;
   text-decoration: none;
   color: inherit;
 }
@@ -608,10 +791,10 @@ a { color: inherit; text-decoration: none; }
 .alert-row.new::before {
   content: '';
   position: absolute;
-  left: 6px;
+  left: 12px;
   top: 17px;
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--orange);
 }
@@ -1586,6 +1769,18 @@ input::placeholder, textarea::placeholder { color: var(--faint); }
 .bar-col.on .bar-day { color: var(--text); font-weight: 650; }
 
 /* The average, so "is today normal?" has something to be normal against. */
+/* Exactly the area the bars stand in: the chart's height less the
+   strip the day names sit in. The average line is positioned inside
+   this, so a percentage means what it says. */
+.bar-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 22px;
+  pointer-events: none;
+}
+
 .avg-line {
   position: absolute;
   left: 0;
@@ -2719,9 +2914,8 @@ td .sub { margin-top: 2px; }
 
 .read span { font-size: 12.5px; color: var(--muted); }
 
-/* The average sits above the bars rather than in among them, where it
-   collided with the day labels. */
 .panel .bars { height: 132px; margin-top: 2px; }
+.panel .bar-track { bottom: 22px; }
 
 .panel .avg-line span {
   right: auto;

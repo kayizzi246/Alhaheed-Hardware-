@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { money } from '@/lib/format';
+import { money, list } from '@/lib/format';
 import { Card, Chip, Alert, Empty, Stat } from '@/components/ui';
 
 /** Who buys here, and how much of it. */
@@ -13,7 +13,7 @@ export default function ManagerCustomers() {
   const load = useCallback(async () => {
     try {
       const qs = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
-      setCustomers((await api(`/api/manager/customers${qs}`)).customers);
+      setCustomers(list((await api(`/api/manager/customers${qs}`)).customers));
       setError('');
     } catch (e) { setError(e.message); }
   }, [q]);

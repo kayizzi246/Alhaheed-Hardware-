@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { dateTime } from '@/lib/format';
+import { dateTime, list } from '@/lib/format';
 import { Card, Alert, Empty } from '@/components/ui';
 
 const ACTION_LABEL = {
@@ -30,7 +30,7 @@ export default function ManagerAudit() {
 
   useEffect(() => {
     api('/api/manager/audit?limit=300')
-      .then((r) => setEvents(r.events))
+      .then((r) => setEvents(list(r.events)))
       .catch((e) => setError(e.message));
   }, []);
 

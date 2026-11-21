@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { list } from '@/lib/format';
 import { Card, Chip, Alert, Empty, Stat } from '@/components/ui';
 
 const ROLE_LABEL = {
@@ -23,7 +24,7 @@ export default function ManagerStaff() {
 
   useEffect(() => {
     api('/api/manager/staff')
-      .then((r) => setStaff(r.staff))
+      .then((r) => setStaff(list(r.staff)))
       .catch((e) => setError(e.message));
   }, []);
 

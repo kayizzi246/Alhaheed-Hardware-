@@ -202,8 +202,13 @@ function Trajectory({ days, average }) {
       </div>
       <div className="bars">
         {average > 0 && (
-          <div className="avg-line" style={{ bottom: `${(average / max) * 100}%` }}>
-            <span>avg {shortMoney(average)}</span>
+          // The line lives in its own track, which stops above the day
+          // names. Measured against the whole chart it came out 22px
+          // low every time and printed "avg UGX 121K" across "Sun".
+          <div className="bar-track">
+            <div className="avg-line" style={{ bottom: `${(average / max) * 100}%` }}>
+              <span>avg {shortMoney(average)}</span>
+            </div>
           </div>
         )}
         {days.map((d, i) => (

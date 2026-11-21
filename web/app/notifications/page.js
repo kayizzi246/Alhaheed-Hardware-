@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { usePoll } from '@/lib/live';
-import { dateTime } from '@/lib/format';
+import { dateTime, list } from '@/lib/format';
 import { Card, Alert, Empty } from '@/components/ui';
 
 /** Order status changes for customers, queue alerts for staff. */
@@ -37,12 +37,12 @@ export default function NotificationsPage() {
       <Alert>{error}</Alert>
 
       <Card title={data.unread > 0 ? `${data.unread} unread` : 'All caught up'}>
-        {data.notifications.length === 0 ? (
+        {list(data.notifications).length === 0 ? (
           <Empty>No notifications yet.</Empty>
         ) : (
           <table>
             <tbody>
-              {data.notifications.map((n) => (
+              {list(data.notifications).map((n) => (
                 <tr key={n.id} className={n.read ? '' : 'unread-row'}>
                   <td>
                     <strong>{n.title}</strong>

@@ -6,7 +6,8 @@ import { api, getUser, clearSession } from '@/lib/api';
 import { NAV, HOME, DESK_LABEL } from '@/lib/roles';
 import { Icon } from '@/components/icons';
 import { usePoll, freshness } from '@/lib/live';
-import { time, dateTime } from '@/lib/format';
+import { time, list } from '@/lib/format';
+import { ThemeChoice } from '@/components/Theme';
 
 /**
  * The chrome every desk sits in: a light rail on the left, a bar across
@@ -77,9 +78,12 @@ export default function Shell({ allow, children }) {
   if (!user) return <div className="boot"><span className="spinner dark" /></div>;
 
   const items = NAV[user.role] || [];
-  const current = items.find(
-    (i) => i.href && (pathname === i.href || (i.href !== '/' && pathname.startsWith(i.href + '/')))
-  );
+  // The longest matching nav item wins, not the first one found.
+  // "/manager/orders" starts with "/manager/", so a first-match search
+  // picked the dashboard and every sub-page was titled "Dashboard".
+  const current = items
+    .filter((i) => i.href && (pathname === i.href || (i.href !== '/' && pathname.startsWith(i.href + '/'))))
+    .sort((a, b) => b.href.length - a.href.length)[0];
   const title = current?.label || DESK_LABEL[user.role];
 
   return (
@@ -105,9 +109,7 @@ export default function Shell({ allow, children }) {
                 aria-current={item === current ? 'page' : undefined}
               >
                 {Icon[item.icon]?.()}
-                <span>{item.label}</span>
-                {item.badge === 'alerts' && unread > 0 && <b className="pip">{unread}</b>}
-              </Link>
+                <span>{item.label}</span>              </Link>
             )
           )}
         </nav>
@@ -165,6 +167,7 @@ export default function Shell({ allow, children }) {
                     <b>{user.fullName}</b>
                     <span>{user.phone || user.email}</span>
                   </div>
+                  <ThemeChoice />
                   <button type="button" className="account-item" onClick={signOut} role="menuitem">
                     {Icon.logout()} Sign out
                   </button>
@@ -208,7 +211,7 @@ function Alerts({ unread, home, onSeen }) {
     setFailed(false);
     try {
       const r = await api('/api/notifications');
-      setRows(r.notifications || []);
+      setRows(list(r.notifications));
       if (r.unread) {
         onSeen();
         api('/api/notifications/read-all', { method: 'POST' }).catch(() => {});
@@ -249,9 +252,14 @@ function Alerts({ unread, home, onSeen }) {
       {open && (
         <div className="alerts-panel" role="dialog" aria-label="Alerts">
           <div className="alerts-head">
-            <b>Alerts</b>
+            <div>
+              <b>Alerts</b>
+              <span className="alerts-count">
+                {rows === null ? '' : rows.length === 0 ? 'nothing new' : `last ${Math.min(rows.length, SHOWN)}`}
+              </span>
+            </div>
             <button type="button" className="icon-btn sm" onClick={() => setOpen(false)} aria-label="Close">
-              {Icon.close ? Icon.close() : '×'}
+              {Icon.close()}
             </button>
           </div>
 
@@ -278,29 +286,14 @@ function Alerts({ unread, home, onSeen }) {
 
             {rows !== null && rows.length > 0 && (
               <ul className="alerts-list">
-                {rows.slice(0, 12).map((n) => {
-                  const body = (
-                    <>
-                      <b>{n.title}</b>
-                      {n.body && <span className="alert-note">{n.body}</span>}
-                      <em>
-                        {n.order_no ? `${n.order_no} · ` : ''}
-                        {when(n.created_at)}
-                      </em>
-                    </>
-                  );
-                  return (
-                    <li key={n.id} className={n.read ? 'alert-row' : 'alert-row new'}>
-                      {n.order_id ? (
-                        <Link href={`${home}/orders/${n.order_id}`} onClick={() => setOpen(false)}>
-                          {body}
-                        </Link>
-                      ) : (
-                        <span>{body}</span>
-                      )}
-                    </li>
-                  );
-                })}
+                {groupByDay(rows.slice(0, SHOWN)).map(([day, items]) => (
+                  <li key={day} className="alert-day">
+                    <p className="alert-day-head">{day}</p>
+                    <ul>
+                      {items.map((n) => renderRow(n))}
+                    </ul>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -314,27 +307,74 @@ function Alerts({ unread, home, onSeen }) {
       )}
     </div>
   );
+
+  function renderRow(n) {
+    const body = (
+      <>
+        <b>{n.title}</b>
+        {n.body && <span className="alert-note">{n.body}</span>}
+        <em>
+          {n.order_no ? `${n.order_no} · ` : ''}
+          {time(n.created_at)}
+        </em>
+      </>
+    );
+    return (
+      <li key={n.id} className={n.read ? 'alert-row' : 'alert-row new'}>
+        {n.order_id ? (
+          <Link href={`${home}/orders/${n.order_id}`} onClick={() => setOpen(false)}>
+            {body}
+          </Link>
+        ) : (
+          <span>{body}</span>
+        )}
+      </li>
+    );
+  }
 }
 
+/** How many of the most recent alerts the panel shows. */
+const SHOWN = 15;
+
 /**
- * "14:31" for today, "20 Nov 16:09" for anything older.
+ * "Today", "Yesterday", then the date.
  *
- * Through the shared helpers, not a private copy: the API sends times
- * in UTC without saying so, and `time()` is where that is handled. A
- * second formatter here printed every alert three hours behind the
- * same event in the orders list beside it.
+ * Fifteen lines of timestamps is a wall. Grouped under the day they
+ * happened, the same fifteen lines read as "this morning" and "last
+ * night", which is how people actually ask about them.
  */
-function when(stamp) {
-  if (!stamp) return '';
-  const d = new Date(String(stamp).replace(' ', 'T') + (String(stamp).endsWith('Z') ? '' : 'Z'));
-  if (Number.isNaN(d.getTime())) return '';
-  const now = new Date();
-  const sameDay =
-    d.getDate() === now.getDate() &&
-    d.getMonth() === now.getMonth() &&
-    d.getFullYear() === now.getFullYear();
-  return sameDay ? time(stamp) : dateTime(stamp);
+function groupByDay(rows) {
+  const out = [];
+  for (const n of rows) {
+    const label = dayLabel(n.created_at);
+    const last = out[out.length - 1];
+    if (last && last[0] === label) last[1].push(n);
+    else out.push([label, [n]]);
+  }
+  return out;
 }
+
+function dayLabel(stamp) {
+  const d = asDate(stamp);
+  if (!d) return 'Earlier';
+
+  const midnight = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((midnight(new Date()) - midnight(d)) / 86400000);
+
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return d.toLocaleDateString('en-GB', { weekday: 'long' });
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+}
+
+/** The API sends times in UTC without saying so. */
+function asDate(stamp) {
+  if (!stamp) return null;
+  const s = String(stamp);
+  const d = new Date(s.replace(' ', 'T') + (s.endsWith('Z') ? '' : 'Z'));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);

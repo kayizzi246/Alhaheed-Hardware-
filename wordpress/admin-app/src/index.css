@@ -65,6 +65,77 @@
   font-feature-settings: 'cv11', 'ss01';
 }
 
+/* =====================================================================
+   Dark
+   ---------------------------------------------------------------------
+   Opt-in, not automatic. WordPress's own chrome around this app is
+   light unless the person has chosen one of its dark colour schemes,
+   and a dark panel sitting inside a white wp-admin reads as broken
+   rather than as a theme. So it is a switch in the top-right of each
+   desk, kept per browser, and light stays the default.
+
+   The surfaces are warm rather than blue-black, to match the brand
+   and because a cold grey next to orange looks like a mistake. The
+   two chart hues are lifted — a colour that reads well on white is
+   too dark to see on near-black.
+   ===================================================================== */
+
+#ah-app[data-theme='dark'] {
+  --ah-background: 220 18% 10%;
+  --ah-foreground: 210 20% 92%;
+
+  --ah-card: 215 20% 13%;
+  --ah-card-foreground: 210 20% 92%;
+
+  --ah-muted: 215 16% 18%;
+  --ah-muted-foreground: 214 14% 65%;
+
+  --ah-accent: 26 32% 17%;
+  --ah-accent-foreground: 30 85% 64%;
+
+  --ah-primary: 28 78% 52%;
+  --ah-primary-foreground: 0 0% 100%;
+
+  --ah-secondary: 215 16% 18%;
+  --ah-secondary-foreground: 210 20% 88%;
+
+  --ah-destructive: 5 72% 60%;
+  --ah-success: 142 48% 48%;
+  --ah-warning: 36 80% 58%;
+
+  --ah-border: 215 14% 23%;
+  --ah-input: 215 14% 28%;
+  --ah-ring: 28 81% 56%;
+
+  --ah-cat-a: 31 85% 58%;
+  --ah-cat-b: 348 68% 57%;
+  --ah-cat-c: 280 52% 62%;
+
+  background: hsl(var(--ah-background));
+}
+
+/* The app paints its own background in dark, so it needs the room to
+   do it in — otherwise a white wp-admin shows through around it. */
+#ah-app[data-theme='dark'] {
+  margin: 0;
+  padding: 10px 22px 40px 12px;
+  min-height: calc(100vh - 32px);
+}
+
+/* And the wrappers WordPress puts around it, or the white shows at the
+   edges and the whole thing reads as broken. Set from theme.js. */
+body.ah-dark #wpcontent,
+body.ah-dark #wpbody,
+body.ah-dark #wpbody-content,
+body.ah-dark #wpfooter {
+  background: hsl(220 18% 10%);
+}
+
+body.ah-dark #wpfooter,
+body.ah-dark #wpfooter a {
+  color: hsl(214 14% 45%);
+}
+
 /* wp-admin wraps everything in #wpbody-content with its own padding
    and a white background; this takes the page back. */
 #ah-app {

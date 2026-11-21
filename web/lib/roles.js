@@ -16,14 +16,12 @@ export const NAV = {
     { href: '/cashier/receipts', label: 'Receipts', icon: 'receipt' },
     { href: '/cashier/cash-book', label: 'Cash Book', icon: 'cash' },
     { href: '/cashier/end-of-day', label: 'End of Day', icon: 'clock' },
-    { href: '/notifications', label: 'Alerts', icon: 'bell', badge: 'alerts' },
   ],
   accounts: [
     { href: '/accounts', label: 'Verify Payments', icon: 'check' },
     { href: '/accounts/cash-book', label: 'Cash Book', icon: 'cash' },
     { href: '/accounts/reconciliation', label: 'Reconciliation', icon: 'scales' },
     { href: '/accounts/reports', label: 'Reports', icon: 'chart' },
-    { href: '/notifications', label: 'Alerts', icon: 'bell', badge: 'alerts' },
   ],
   manager: [
     { href: '/manager', label: 'Dashboard', icon: 'home' },
@@ -37,7 +35,6 @@ export const NAV = {
     { group: 'Records' },
     { href: '/manager/reports', label: 'Reports', icon: 'chart' },
     { href: '/manager/audit', label: 'Audit Trail', icon: 'clock' },
-    { href: '/notifications', label: 'Alerts', icon: 'bell', badge: 'alerts' },
   ],
 };
 

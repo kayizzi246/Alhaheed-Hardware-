@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { money } from '@/lib/format';
+import { money, list } from '@/lib/format';
 import { Card, Alert, Empty, Modal } from '@/components/ui';
 
 /**
@@ -20,7 +20,7 @@ export default function ManagerProducts() {
   const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
-    try { setProducts((await api('/api/manager/products')).products); setError(''); }
+    try { setProducts(list((await api('/api/manager/products')).products)); setError(''); }
     catch (e) { setError(e.message); }
   }, []);
 

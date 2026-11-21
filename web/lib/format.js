@@ -1,3 +1,15 @@
+/**
+ * A list, whatever the server said.
+ *
+ * Every screen here reads one array out of the response and maps over
+ * it. If that key is missing, or null, or an error page that parsed
+ * into something odd, `.map` throws during render — and a throw
+ * during render is the white "Application error" page, not a message
+ * in the corner. A screen that shows "nothing here" when the server
+ * misbehaves is a screen somebody can still work on.
+ */
+export const list = (value) => (Array.isArray(value) ? value : []);
+
 export const money = (n) => `UGX ${Number(n || 0).toLocaleString('en-UG')}`;
 
 export const shortMoney = (n) => {

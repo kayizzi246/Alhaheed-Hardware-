@@ -6,10 +6,11 @@
  * desk file can be about its own work rather than its furniture.
  */
 import * as React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api, CONFIG, money, at, dayMonth } from '@/lib/api';
-import { Badge, Card, Fresh, Skeleton, StatusBadge } from '@/ui';
+import { useTheme } from '@/lib/theme';
+import { Badge, Button, Card, Fresh, Skeleton, StatusBadge } from '@/ui';
 
 /* ── The band at the top ─────────────────────────────────────────── */
 
@@ -23,8 +24,27 @@ export function Head({ title, sub, fresh, children }) {
       <div className="flex items-center gap-2">
         {children}
         {fresh && <Fresh {...fresh} />}
+        <ThemeButton />
       </div>
     </header>
+  );
+}
+
+/** Light or dark for this desk. See lib/theme for why there is no "system". */
+export function ThemeButton() {
+  const { theme, toggle } = useTheme();
+  const dark = theme === 'dark';
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={toggle}
+      aria-pressed={dark}
+      title={dark ? 'Switch to the light screen' : 'Switch to the dark screen'}
+      aria-label={dark ? 'Switch to the light screen' : 'Switch to the dark screen'}
+    >
+      {dark ? <Sun /> : <Moon />}
+    </Button>
   );
 }
 

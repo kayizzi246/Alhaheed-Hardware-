@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { money, dateTime, today, methodLabel } from '@/lib/format';
+import { money, dateTime, today, methodLabel, list } from '@/lib/format';
 import { Card, Empty, Alert, Modal } from '@/components/ui';
 
 /** Receipts issued at this desk, with a printable view. */
@@ -15,7 +15,7 @@ export default function ReceiptsPage() {
   const load = useCallback(async () => {
     try {
       const r = await api(`/api/cashier/receipts?date=${date}&mine=${mine ? 1 : 0}`);
-      setReceipts(r.receipts);
+      setReceipts(list(r.receipts));
     } catch (e) { setError(e.message); }
   }, [date, mine]);
 

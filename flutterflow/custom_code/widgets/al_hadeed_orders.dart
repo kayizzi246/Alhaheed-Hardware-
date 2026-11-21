@@ -7,6 +7,26 @@ import 'package:flutter/material.dart' hide RepeatMode;
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
+// ╔═══════════════════════════════════════════════════════════════╗
+// ║  NAME THIS CUSTOM WIDGET:   AlHadeedOrders                    ║
+// ╚═══════════════════════════════════════════════════════════════╝
+//
+// FlutterFlow looks for a class with exactly the name typed in the
+// "Custom Widget" box. The default is "NewCustomWidget", and leaving
+// it there is what produces:
+//
+//     No widget "NewCustomWidget" found.
+//
+// So set the name field to:
+//
+//     AlHadeedOrders
+//
+// Spelling and capitals both matter. Then switch on "Width and Height
+// (required)" — this widget already accepts them — and Save.
+//
+// The customer's own orders and where each one has reached.
+
+
 // The shared core below is identical in all five screen files, so each
 // file carries a few helpers it does not use itself. That is an analyzer
 // warning, not an error, and silencing it keeps real warnings visible.
