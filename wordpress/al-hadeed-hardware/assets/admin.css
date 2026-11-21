@@ -1,109 +1,231 @@
 /* =====================================================================
-   AL HADEED HARDWARE — the desk screens, inside wp-admin
+   AL HADEED HARDWARE — the desk screens inside wp-admin
    ---------------------------------------------------------------------
-   Same design as the web panel, fitted into WordPress. The constraint
-   here is that wp-admin brings its own opinions about everything, so
-   this scopes hard to .ah-wrap and overrides only what it must.
+   The same design as the web panel, fitted into WordPress. Everything
+   is scoped to .ah-wrap: wp-admin has an opinion about every element,
+   and this overrides only what it must.
 
-   Built for a counter: the order number and the amount are the two
-   things readable across a desk, the action is one orange button, and
-   nothing animates except the press — the queue reloads every ten
-   seconds and a page that also twitches is a page nobody can work at.
+   Built for a counter. The order number and the amount are the two
+   things readable across a desk, set in tabular figures so a column of
+   them can be compared at a glance. Colour does one job — orange marks
+   the thing to press — and status chips carry a dot as well as a hue,
+   because colour alone is not a signal everybody can read.
+
+   Nothing animates except the press. The queue reloads itself every ten
+   seconds, and a screen that also twitches is one people stop watching.
    ===================================================================== */
 
 .ah-wrap {
-  --ah-navy: #122c48;
-  --ah-navy-deep: #0b1d31;
-  --ah-brand: #e8862a;
-  --ah-brand-dark: #c96f18;
-  --ah-brand-soft: #fdf3e7;
-  --ah-ink: #10243a;
-  --ah-ink-2: #3d566f;
-  --ah-mid: #6b8299;
-  --ah-faint: #9bacc0;
-  --ah-line: #e3e9f0;
-  --ah-line-firm: #d2dce7;
-  --ah-surface: #fff;
-  --ah-surface-2: #f8fafc;
-  --ah-sunk: #eef2f7;
-  --ah-green: #15803d;
-  --ah-green-bg: #e8f6ed;
-  --ah-blue: #2563a8;
-  --ah-blue-bg: #e9f1fb;
-  --ah-amber: #b45309;
-  --ah-amber-bg: #fdf2e2;
-  --ah-red: #be3b3b;
-  --ah-red-bg: #fdeded;
+  --navy:      #122c48;
+  --navy-deep: #0b1d31;
+  --brand:     #e8862a;
+  --brand-dk:  #c96f18;
+  --brand-sf:  #fdf3e7;
+  --ink:       #10243a;
+  --ink-2:     #3d566f;
+  --mid:       #6b8299;
+  --faint:     #9bacc0;
+  --line:      #e3e9f0;
+  --line-firm: #d2dce7;
+  --surface:   #fff;
+  --surface-2: #f8fafc;
+  --sunk:      #eef2f7;
+  --green:     #15803d;
+  --green-bg:  #e8f6ed;
+  --blue:      #2563a8;
+  --blue-bg:   #e9f1fb;
+  --amber:     #b45309;
+  --amber-bg:  #fdf2e2;
+  --red:       #be3b3b;
+  --red-bg:    #fdeded;
 
-  --ah-radius: 12px;
-  --ah-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Categorical, for the payment mix. Checked rather than guessed:
+     the warm hue sits between the two cool ones so no adjacent pair
+     collapses for a colour-blind reader. */
+  --cat-a: #2563a8;
+  --cat-b: #c2410c;
+  --cat-c: #9a4fc2;
 
-  --ah-shadow-sm: 0 1px 2px rgba(16, 36, 58, .05), 0 1px 1px rgba(16, 36, 58, .04);
-  --ah-shadow: 0 1px 2px rgba(16, 36, 58, .05), 0 6px 20px -6px rgba(16, 36, 58, .1);
+  --r:  12px;
+  --r-s: 9px;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --sh-sm: 0 1px 2px rgba(16,36,58,.05), 0 1px 1px rgba(16,36,58,.04);
+  --sh:    0 1px 2px rgba(16,36,58,.05), 0 6px 20px -6px rgba(16,36,58,.10);
 
   max-width: 1120px;
+  margin-right: 20px;
   font-feature-settings: "cv11", "ss01";
+  color: var(--ink-2);
 }
 
-.ah-wrap h1 {
-  color: var(--ah-ink);
-  font-size: 25px;
-  font-weight: 700;
-  letter-spacing: -0.021em;
-  padding: 0;
-  margin: 4px 0 2px;
-}
-
-.ah-sub {
-  color: var(--ah-mid);
-  font-size: 13px;
-  margin: 0 0 18px;
-}
-
-/* Money and counts in tabular figures, or a column of them cannot be
-   compared at a glance. */
-.ah-total,
-.ah-tile strong,
-.ah-wrap table td:last-child,
-.ah-picklist li strong {
+/* Figures must be the same width or a column of them cannot be read. */
+.ah-wrap .ah-total,
+.ah-wrap .ah-tile strong,
+.ah-wrap .ah-hero-value,
+.ah-wrap .ah-pipe strong,
+.ah-wrap .ah-qty,
+.ah-wrap .ah-line-total,
+.ah-wrap .ah-r,
+.ah-wrap input[type="number"] {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
+/* --- The band at the top -------------------------------------------- */
+
+.ah-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 6px 0 20px;
+}
+
+.ah-wrap .ah-head h1 {
+  margin: 0;
+  padding: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+}
+
+.ah-sub { margin: 4px 0 0; color: var(--mid); font-size: 13.5px; }
+
+.ah-who { text-align: right; font-size: 12.5px; line-height: 1.5; }
+.ah-who-name { display: block; font-weight: 650; color: var(--ink); }
+.ah-who-meta { display: block; color: var(--mid); }
+
+/* Says the page keeps itself current, without a spinner implying work. */
+.ah-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.ah-live i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 3px rgba(52,211,153,.18);
+}
+
+.ah-section {
+  margin: 26px 0 12px;
+  font-size: 15px;
+  font-weight: 680;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.ah-section em {
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--mid);
+}
+
+/* --- Flash messages -------------------------------------------------- */
+
+.ah-flash {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 15px;
+  border-radius: var(--r-s);
+  border: 1px solid transparent;
+  margin: 10px 0 16px;
+}
+
+.ah-flash p { margin: 0; font-size: 13.5px; }
+.ah-flash .dashicons { flex: none; }
+.ah-flash-ok  { background: var(--green-bg); color: var(--green); border-color: rgba(21,128,61,.22); }
+.ah-flash-bad { background: var(--red-bg);   color: var(--red);   border-color: rgba(190,59,59,.22); }
+
 /* --- Cards ----------------------------------------------------------- */
 
 .ah-card {
-  background: var(--ah-surface);
-  border: 1px solid var(--ah-line);
-  border-radius: var(--ah-radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
   padding: 18px;
   margin: 0 0 14px;
-  box-shadow: var(--ah-shadow-sm);
+  box-shadow: var(--sh-sm);
 }
 
-.ah-card h2 {
-  margin: 0 0 14px;
-  font-size: 14px;
-  font-weight: 650;
-  color: var(--ah-ink);
-  letter-spacing: -0.005em;
-}
+.ah-flush { padding: 0; overflow: hidden; }
 
 .ah-empty {
-  color: var(--ah-mid);
   text-align: center;
-  padding: 30px 10px;
+  padding: 46px 24px;
+  color: var(--mid);
 }
 
-/* --- One order in a queue -------------------------------------------- */
-
-.ah-order {
-  transition: border-color 180ms var(--ah-ease), box-shadow 180ms var(--ah-ease);
+.ah-empty .dashicons {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  color: var(--green);
+  margin-bottom: 10px;
 }
 
-.ah-order:hover {
-  border-color: var(--ah-line-firm);
-  box-shadow: var(--ah-shadow);
+.ah-empty strong { display: block; font-size: 16px; color: var(--ink); margin-bottom: 5px; }
+.ah-empty p { margin: 0; font-size: 13.5px; }
+
+.ah-fine { margin: 10px 0 0; font-size: 11.5px; color: var(--faint); }
+.ah-none { color: var(--mid); font-size: 13.5px; margin: 12px 0 0; }
+.ah-t { display: block; font-size: 11.5px; color: var(--faint); margin-top: 2px; }
+
+/* --- Tiles ----------------------------------------------------------- */
+
+.ah-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 10px;
+  margin: 0 0 8px;
+}
+
+.ah-tile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  box-shadow: var(--sh-sm);
+}
+
+.ah-tile span {
+  display: block;
+  color: var(--mid);
+  font-size: 11.5px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.ah-tile strong {
+  font-size: 23px;
+  font-weight: 750;
+  letter-spacing: -0.024em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.ah-tile strong.ah-green { color: var(--green); }
+.ah-tile strong.ah-red   { color: var(--red); }
+
+/* --- An order on a queue --------------------------------------------- */
+
+.ah-order { transition: border-color 180ms var(--ease), box-shadow 180ms var(--ease); }
+
+@media (hover: hover) and (pointer: fine) {
+  .ah-order:hover { border-color: var(--line-firm); box-shadow: var(--sh); }
 }
 
 .ah-order-head {
@@ -114,25 +236,21 @@
 }
 
 .ah-order-head strong {
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 750;
-  letter-spacing: -0.018em;
-  color: var(--ah-ink);
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
 .ah-total {
   margin-left: auto;
+  font-size: 22px;
   font-weight: 750;
-  font-size: 21px;
-  letter-spacing: -0.018em;
-  color: var(--ah-ink);
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
-.ah-meta {
-  color: var(--ah-mid);
-  margin: 7px 0 14px;
-  font-size: 12.5px;
-}
+.ah-meta { color: var(--mid); font-size: 12.5px; margin: 7px 0 0; }
 
 /* --- Chips ----------------------------------------------------------- */
 
@@ -144,239 +262,505 @@
   font-weight: 650;
   padding: 3px 9px;
   border-radius: 7px;
-  background: var(--ah-sunk);
-  color: var(--ah-mid);
+  background: var(--sunk);
+  color: var(--mid);
   border: 1px solid transparent;
   white-space: nowrap;
 }
 
-/* A dot as well as a colour — colour alone is not a signal everybody
-   can read. */
+/* A dot as well as a colour. */
 .ah-chip::before {
   content: "";
-  width: 5px;
-  height: 5px;
+  width: 5px; height: 5px;
   border-radius: 50%;
   background: currentColor;
+}
+
+.ah-chip-amber { background: var(--amber-bg); color: var(--amber); border-color: rgba(180,83,9,.18); }
+.ah-chip-blue  { background: var(--blue-bg);  color: var(--blue);  border-color: rgba(37,99,168,.18); }
+.ah-chip-green { background: var(--green-bg); color: var(--green); border-color: rgba(21,128,61,.2); }
+
+/* --- Order lines and pick lists -------------------------------------- */
+
+.ah-lines, .ah-picklist {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  background: var(--sunk);
+  border-radius: 10px;
+}
+
+.ah-lines li, .ah-picklist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.ah-qty {
+  min-width: 30px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line-firm);
+  font-weight: 750;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
 }
 
-.ah-chip-amber { background: var(--ah-amber-bg); color: var(--ah-amber); border-color: rgba(180, 83, 9, .18); }
-.ah-chip-blue  { background: var(--ah-blue-bg);  color: var(--ah-blue);  border-color: rgba(37, 99, 168, .18); }
-.ah-chip-green { background: var(--ah-green-bg); color: var(--ah-green); border-color: rgba(21, 128, 61, .2); }
+.ah-line-total { margin-left: auto; font-weight: 650; }
 
-/* --- Forms ----------------------------------------------------------- */
+/* The pick list is the point of the store screen, so it is bigger. */
+.ah-picklist li { font-size: 15.5px; padding: 7px 0; }
+.ah-pick-name { font-weight: 600; }
 
-.ah-form { margin-top: 10px; }
-
-.ah-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+.ah-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--mid);
+  background: var(--surface);
+  padding: 1px 6px;
+  border-radius: 5px;
 }
 
-.ah-wrap .ah-row input[type="text"],
-.ah-wrap .ah-row input[type="number"],
-.ah-wrap .ah-row select {
-  height: 40px;
-  min-width: 170px;
-  border-radius: 9px;
-  border: 1px solid var(--ah-line-firm);
+/* --- Facts list (Accounts) ------------------------------------------- */
+
+.ah-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 13px 15px;
+  background: var(--sunk);
+  border-radius: 10px;
+}
+
+.ah-facts div { min-width: 0; }
+.ah-facts dt { font-size: 11px; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--mid); }
+.ah-facts dd { margin: 3px 0 0; font-size: 14px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+
+/* --- Taking a payment ------------------------------------------------- */
+
+.ah-pay { margin-top: 14px; }
+
+/* Three choices belong on screen, not inside a dropdown. */
+.ah-seg {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--sunk);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.ah-seg-opt { position: relative; }
+.ah-seg-opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+
+.ah-seg-opt span {
+  display: block;
+  padding: 8px 15px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--mid);
+  cursor: pointer;
+  transition: background-color 150ms var(--ease), color 150ms var(--ease);
+}
+
+.ah-seg-opt input:checked + span {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--sh-sm);
+}
+
+.ah-seg-opt input:focus-visible + span {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.ah-pay-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.ah-pay-row label { display: block; }
+.ah-pay-row label span {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--mid);
+  margin-bottom: 5px;
+}
+
+.ah-amount { flex: 0 0 180px; }
+.ah-ref { flex: 1 1 240px; }
+
+/* --- Inputs ----------------------------------------------------------- */
+
+.ah-wrap input[type="text"],
+.ah-wrap input[type="number"],
+.ah-wrap select {
+  width: 100%;
+  height: 42px;
+  border-radius: var(--r-s);
+  border: 1px solid var(--line-firm);
   padding: 0 12px;
   font-size: 14px;
-  color: var(--ah-ink);
-  background: var(--ah-surface);
+  color: var(--ink);
+  background: var(--surface);
   box-shadow: none;
-  transition: border-color 140ms var(--ah-ease), box-shadow 140ms var(--ah-ease);
+  transition: border-color 140ms var(--ease), box-shadow 140ms var(--ease);
 }
 
-.ah-wrap .ah-row input:focus,
-.ah-wrap .ah-row select:focus {
-  border-color: var(--ah-brand);
-  box-shadow: 0 0 0 3px rgba(232, 134, 42, .18);
+.ah-wrap input:focus,
+.ah-wrap select:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(232,134,42,.18);
   outline: none;
 }
 
-/* The amount is what the cashier is counting out; it gets the weight. */
-.ah-wrap .ah-row input[type="number"] {
-  font-weight: 700;
-  font-size: 15.5px;
-  font-variant-numeric: tabular-nums;
+/* The amount is what the cashier is counting out. */
+.ah-wrap .ah-amount input {
+  font-weight: 750;
+  font-size: 17px;
+  letter-spacing: -0.01em;
 }
 
-/* --- Buttons --------------------------------------------------------- */
+.ah-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.ah-row input[type="text"] { flex: 1 1 220px; width: auto; }
+
+.ah-decide { margin-top: 6px; }
+
+/* --- Buttons ---------------------------------------------------------- */
 
 .ah-wrap .button,
 .ah-wrap .button-primary {
-  height: 40px;
+  height: 42px;
   padding: 0 18px;
-  border-radius: 9px;
+  border-radius: var(--r-s);
   font-size: 13.5px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Never `all` — only what is free to animate. */
-  transition: transform 150ms var(--ah-ease), background-color 150ms var(--ah-ease),
-              border-color 150ms var(--ah-ease);
+  transition: transform 150ms var(--ease), background-color 150ms var(--ease),
+              border-color 150ms var(--ease);
 }
 
 /* The press. Without it the screen does not feel like it heard you. */
 .ah-wrap .button:active,
-.ah-wrap .button-primary:active {
-  transform: scale(0.97);
-}
+.ah-wrap .button-primary:active { transform: scale(0.97); }
 
 .ah-wrap .button-primary {
-  background: var(--ah-brand);
-  border-color: var(--ah-brand);
+  background: var(--brand);
+  border-color: var(--brand);
   color: #fff;
   text-shadow: none;
-  box-shadow: 0 1px 2px rgba(16, 36, 58, .12);
+  box-shadow: 0 1px 2px rgba(16,36,58,.12);
 }
 
 .ah-wrap .button-primary:hover,
 .ah-wrap .button-primary:focus {
-  background: var(--ah-brand-dark);
-  border-color: var(--ah-brand-dark);
+  background: var(--brand-dk);
+  border-color: var(--brand-dk);
   color: #fff;
 }
 
+.ah-wrap .ah-go { padding: 0 22px; }
+
 .ah-wrap .ah-danger {
-  color: var(--ah-red);
-  background: var(--ah-red-bg);
-  border-color: rgba(190, 59, 59, .22);
+  color: var(--red);
+  background: var(--red-bg);
+  border-color: rgba(190,59,59,.22);
 }
 
-.ah-wrap .ah-danger:hover { background: #fbe0e0; color: var(--ah-red); }
+.ah-wrap .ah-danger:hover { background: #fbe0e0; color: var(--red); border-color: rgba(190,59,59,.4); }
 
-/* --- Pick list ------------------------------------------------------- */
+/* --- Tables ----------------------------------------------------------- */
 
-.ah-picklist {
-  margin: 0 0 12px;
-  padding: 13px 16px;
-  background: var(--ah-sunk);
-  border-radius: 10px;
-  list-style: none;
-}
+.ah-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 
-.ah-picklist li {
-  padding: 5px 0;
-  font-size: 14.5px;
-  color: var(--ah-ink);
-}
-
-.ah-picklist li strong {
-  display: inline-block;
-  min-width: 28px;
-  font-weight: 750;
-}
-
-.ah-code {
-  color: var(--ah-mid);
-  font-size: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  background: var(--ah-surface);
-  padding: 1px 6px;
-  border-radius: 5px;
-}
-
-/* --- Tiles ----------------------------------------------------------- */
-
-.ah-tiles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 14px 0;
-}
-
-.ah-tile {
-  flex: 1 1 160px;
-  background: var(--ah-surface);
-  border: 1px solid var(--ah-line);
-  border-radius: var(--ah-radius);
-  padding: 15px 16px;
-  box-shadow: var(--ah-shadow-sm);
-}
-
-.ah-tile span {
-  display: block;
-  color: var(--ah-mid);
-  font-size: 11.5px;
-  font-weight: 500;
-  margin-bottom: 7px;
-}
-
-.ah-tile strong {
-  font-size: 23px;
-  color: var(--ah-ink);
-  font-weight: 750;
-  letter-spacing: -0.024em;
-  line-height: 1.1;
-}
-
-/* --- Tables ---------------------------------------------------------- */
-
-.ah-wrap table.widefat {
-  border: 1px solid var(--ah-line);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: none;
-}
-
-.ah-wrap table.widefat thead th {
-  background: var(--ah-surface-2);
-  color: var(--ah-mid);
+.ah-table th {
+  text-align: left;
+  padding: 11px 16px;
   font-size: 11px;
   font-weight: 650;
   letter-spacing: .06em;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--ah-line);
+  color: var(--mid);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
 }
 
-.ah-wrap table.widefat td {
-  color: var(--ah-ink-2);
-  padding: 11px 12px;
-  border-top: 1px solid var(--ah-line);
+.ah-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
 }
 
-.ah-in  { color: var(--ah-green); font-weight: 650; }
-.ah-out { color: var(--ah-red); font-weight: 650; }
-
-/* --- Settings -------------------------------------------------------- */
-
-.ah-wrap .form-table th {
-  color: var(--ah-ink-2);
-  font-weight: 600;
-  font-size: 13.5px;
+.ah-table tbody tr:last-child td { border-bottom: none; }
+.ah-table .ah-r { text-align: right; }
+.ah-table tfoot td {
+  background: var(--surface-2);
+  border-top: 1px solid var(--line);
+  font-weight: 650;
+  color: var(--ink);
 }
 
-.ah-wrap .form-table code {
-  background: var(--ah-sunk);
-  border-radius: 5px;
-  padding: 2px 6px;
-  font-size: 12.5px;
+.ah-opening td { color: var(--mid); }
+.ah-none { text-align: center; color: var(--mid); padding: 26px 16px; }
+
+.ah-in  { color: var(--green); font-weight: 650; }
+.ah-out { color: var(--red);   font-weight: 700; }
+.ah-low { color: var(--amber); font-weight: 700; }
+
+/* --- Manager: the headline -------------------------------------------- */
+
+.ah-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: var(--sh-sm);
+  margin-bottom: 8px;
 }
 
-/* --- Notices --------------------------------------------------------- */
+.ah-hero-main, .ah-hero-side { background: var(--surface); padding: 20px 22px; min-width: 0; }
 
-.ah-wrap + .notice,
-.ah-wrap .notice {
-  border-radius: 9px;
-  border-left-width: 3px;
+.ah-hero-main {
+  background:
+    radial-gradient(500px 190px at 0% 0%, rgba(232,134,42,.07), transparent 70%),
+    var(--surface);
 }
 
-/* --- Phone ----------------------------------------------------------- */
+.ah-k {
+  display: block;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+
+.ah-hero-value {
+  display: block;
+  margin: 9px 0 5px;
+  font-size: 40px;
+  font-weight: 750;
+  letter-spacing: -0.032em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.ah-hero-sub { font-size: 13.5px; color: var(--mid); }
+.ah-up   { color: var(--green); font-weight: 650; }
+.ah-down { color: var(--red);   font-weight: 650; }
+
+/* Three figures that add to the total are a composition, not three
+   separate facts — so they are one bar. */
+.ah-mix {
+  display: flex;
+  gap: 2px;
+  height: 11px;
+  margin: 13px 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ah-mix span { display: block; min-width: 4px; }
+.ah-mix-a { background: var(--cat-a); }
+.ah-mix-b { background: var(--cat-b); }
+.ah-mix-c { background: var(--cat-c); }
+
+.ah-mix-key { list-style: none; margin: 0; padding: 0; }
+
+.ah-mix-key li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 3px 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.ah-mix-key b { margin-left: auto; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.ah-dot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+
+/* --- Manager: the pipeline -------------------------------------------- */
+
+.ah-pipeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 10px;
+}
+
+.ah-pipe {
+  position: relative;
+  display: block;
+  padding: 15px 16px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
+  text-decoration: none;
+  transition: transform 180ms var(--ease), box-shadow 180ms var(--ease), border-color 180ms var(--ease);
+}
+
+.ah-pipe:focus { box-shadow: 0 0 0 3px rgba(232,134,42,.25); }
+
+.ah-pipe-step {
+  position: absolute;
+  top: 13px; right: 14px;
+  width: 19px; height: 19px;
+  border-radius: 50%;
+  background: var(--sunk);
+  color: var(--faint);
+  font-size: 10.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.ah-pipe strong {
+  display: block;
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.ah-pipe-label { display: block; margin-top: 7px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.ah-pipe-hint  { display: block; margin-top: 2px; font-size: 12px; color: var(--mid); }
+
+/* A desk with work on it earns the orange; an empty one stays quiet. */
+.ah-pipe-busy {
+  border-color: rgba(232,134,42,.45);
+  background: linear-gradient(180deg, rgba(232,134,42,.05), transparent 60%), var(--surface);
+}
+
+.ah-pipe-busy strong { color: var(--brand-dk); }
+.ah-pipe-busy .ah-pipe-step { background: var(--brand-sf); color: var(--brand-dk); }
+
+@media (hover: hover) and (pointer: fine) {
+  .ah-pipe:hover { transform: translateY(-2px); box-shadow: var(--sh); border-color: var(--line-firm); }
+  .ah-pipe-busy:hover { border-color: var(--brand); }
+}
+
+.ah-pipe:active { transform: scale(0.985); }
+
+/* --- Manager: the week ------------------------------------------------ */
+
+.ah-chart { padding: 20px 22px 16px; }
+
+.ah-bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 160px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ah-bar-col {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.ah-bar {
+  display: block;
+  width: 100%;
+  border-radius: 4px 4px 0 0;   /* rounded at the data end only */
+  background: var(--brand);
+}
+
+/* The bars are orange, which does not carry 3:1 on this surface, so
+   the figure is written above every one of them: the chart never
+   depends on colour to be read. */
+.ah-bar-amt {
+  position: absolute;
+  top: -2px;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ah-bar-day {
+  position: absolute;
+  bottom: -20px;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--mid);
+}
+
+/* Something for "is today normal?" to be normal against. */
+.ah-avg {
+  position: absolute;
+  left: 0; right: 0;
+  border-top: 1px dashed var(--line-firm);
+  pointer-events: none;
+}
+
+.ah-avg span {
+  position: absolute;
+  right: 0; top: -8px;
+  padding: 0 5px;
+  background: var(--surface);
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+/* --- Settings ---------------------------------------------------------- */
+
+.ah-wrap .form-table th { color: var(--ink-2); font-weight: 600; font-size: 13.5px; }
+.ah-wrap .form-table code { background: var(--sunk); border-radius: 5px; padding: 2px 6px; font-size: 12.5px; }
+.ah-wrap .form-table input[type="checkbox"] { width: auto; height: auto; }
+
+/* --- Phone -------------------------------------------------------------- */
 
 @media (max-width: 782px) {
+  .ah-wrap { margin-right: 10px; }
+  .ah-hero { grid-template-columns: 1fr; }
   .ah-order-head { flex-wrap: wrap; }
   .ah-total { margin-left: 0; width: 100%; }
-  .ah-row input, .ah-row select { flex: 1 1 100%; min-width: 0; }
+  .ah-pay-row { flex-direction: column; align-items: stretch; }
+  .ah-amount, .ah-ref { flex: 1 1 auto; }
   .ah-wrap .button, .ah-wrap .button-primary { width: 100%; }
+  .ah-row input[type="text"] { flex: 1 1 100%; }
+  .ah-bar-amt { display: none; }   /* no room; the day labels remain */
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ah-wrap *, .ah-wrap *::before { transition-duration: .01ms !important; }
-  .ah-wrap .button:active, .ah-wrap .button-primary:active { transform: none; }
+  .ah-wrap .button:active, .ah-wrap .button-primary:active, .ah-pipe:active { transform: none; }
+  .ah-pipe:hover { transform: none; }
 }
