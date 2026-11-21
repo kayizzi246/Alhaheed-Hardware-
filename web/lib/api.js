@@ -5,22 +5,47 @@ const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 export const TOKEN_KEY = 'alhadeed.token';
 export const USER_KEY = 'alhadeed.user';
 
-export const getToken = () =>
-  typeof window === 'undefined' ? null : localStorage.getItem(TOKEN_KEY);
+/**
+ * Where the session lives.
+ *
+ * "Keep me signed in" is the difference between localStorage, which
+ * survives closing the browser, and sessionStorage, which does not.
+ * On a shared counter machine the second is the safer answer, so it is
+ * offered rather than assumed — both are read on the way back out, so
+ * it does not matter which one holds it.
+ */
+const stores = () =>
+  typeof window === 'undefined' ? [] : [window.localStorage, window.sessionStorage];
 
-export const getUser = () => {
-  if (typeof window === 'undefined') return null;
-  try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch { return null; }
+const read = (key) => {
+  for (const s of stores()) {
+    try {
+      const v = s.getItem(key);
+      if (v) return v;
+    } catch { /* blocked storage in a private window */ }
+  }
+  return null;
 };
 
-export function setSession(token, user) {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+export const getToken = () => read(TOKEN_KEY);
+
+export const getUser = () => {
+  try { return JSON.parse(read(USER_KEY) || 'null'); } catch { return null; }
+};
+
+export function setSession(token, user, { remember = true } = {}) {
+  clearSession();
+  const store = remember ? window.localStorage : window.sessionStorage;
+  try {
+    store.setItem(TOKEN_KEY, token);
+    store.setItem(USER_KEY, JSON.stringify(user));
+  } catch { /* nothing to be done if storage is blocked */ }
 }
 
 export function clearSession() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+  for (const s of stores()) {
+    try { s.removeItem(TOKEN_KEY); s.removeItem(USER_KEY); } catch { /* ignore */ }
+  }
 }
 
 /** Thin fetch wrapper that attaches the bearer token and unwraps errors. */

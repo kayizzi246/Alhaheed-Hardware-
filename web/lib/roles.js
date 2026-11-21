@@ -5,31 +5,39 @@
  * Customers and the Store Manager are app-only: a customer never sees
  * this panel, and the store's work happens walking the aisles with a
  * phone, not sitting at a counter.
+ *
+ * Each entry carries the icon it shows and, where a desk has more than
+ * a handful of screens, the group it belongs under. The manager has
+ * nine; without grouping that is a list nobody reads to the bottom of.
  */
 export const NAV = {
   cashier: [
-    { href: '/cashier', label: 'Payment Queue' },
-    { href: '/cashier/receipts', label: 'Receipts' },
-    { href: '/cashier/cash-book', label: 'Cash Book' },
-    { href: '/cashier/end-of-day', label: 'End of Day' },
-    { href: '/notifications', label: 'Alerts', badge: 'alerts' },
+    { href: '/cashier', label: 'Payment Queue', icon: 'queue' },
+    { href: '/cashier/receipts', label: 'Receipts', icon: 'receipt' },
+    { href: '/cashier/cash-book', label: 'Cash Book', icon: 'cash' },
+    { href: '/cashier/end-of-day', label: 'End of Day', icon: 'clock' },
+    { href: '/notifications', label: 'Alerts', icon: 'bell', badge: 'alerts' },
   ],
   accounts: [
-    { href: '/accounts', label: 'Verify Payments' },
-    { href: '/accounts/cash-book', label: 'Cash Book' },
-    { href: '/accounts/reconciliation', label: 'Reconciliation' },
-    { href: '/accounts/reports', label: 'Reports' },
-    { href: '/notifications', label: 'Alerts', badge: 'alerts' },
+    { href: '/accounts', label: 'Verify Payments', icon: 'check' },
+    { href: '/accounts/cash-book', label: 'Cash Book', icon: 'cash' },
+    { href: '/accounts/reconciliation', label: 'Reconciliation', icon: 'scales' },
+    { href: '/accounts/reports', label: 'Reports', icon: 'chart' },
+    { href: '/notifications', label: 'Alerts', icon: 'bell', badge: 'alerts' },
   ],
   manager: [
-    { href: '/manager', label: 'Dashboard' },
-    { href: '/manager/orders', label: 'All Orders' },
-    { href: '/manager/products', label: 'Products' },
-    { href: '/manager/staff', label: 'Staff' },
-    { href: '/manager/customers', label: 'Customers' },
-    { href: '/manager/reports', label: 'Reports' },
-    { href: '/manager/audit', label: 'Audit Trail' },
-    { href: '/notifications', label: 'Alerts', badge: 'alerts' },
+    { href: '/manager', label: 'Dashboard', icon: 'home' },
+    { href: '/manager/orders', label: 'All Orders', icon: 'queue' },
+
+    { group: 'The shop' },
+    { href: '/manager/products', label: 'Products', icon: 'box' },
+    { href: '/manager/customers', label: 'Customers', icon: 'people' },
+    { href: '/manager/staff', label: 'Staff', icon: 'user' },
+
+    { group: 'Records' },
+    { href: '/manager/reports', label: 'Reports', icon: 'chart' },
+    { href: '/manager/audit', label: 'Audit Trail', icon: 'clock' },
+    { href: '/notifications', label: 'Alerts', icon: 'bell', badge: 'alerts' },
   ],
 };
 
