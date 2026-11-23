@@ -656,6 +656,61 @@ class AH_Rest_Desks {
 		return array( 'staff' => $out );
 	}
 
+
+	/**
+	 * What each of these customers has spent, in one query.
+	 *
+	 * WooCommerce can store orders in its own table or as posts, and
+	 * the shop may be on either, so both are handled. Cancelled and
+	 * rejected orders are left out — a customer has not spent money on
+	 * an order that never completed.
+	 */
+	private static function spend_by_customer( $ids ) {
+		global $wpdb;
+		$ids = array_filter( array_map( 'intval', (array) $ids ) );
+		if ( ! $ids ) {
+			return array();
+		}
+
+		$in     = implode( ',', $ids );
+		$skip   = "'wc-cancelled','wc-ah-rejected','wc-refunded','trash'";
+		$hpos   = class_exists( 'AutomatticWooCommerceUtilitiesOrderUtil' )
+			&& AutomatticWooCommerceUtilitiesOrderUtil::custom_orders_table_usage_is_enabled();
+
+		if ( $hpos ) {
+			$rows = $wpdb->get_results(
+				"SELECT customer_id, COUNT(*) AS orders, COALESCE(SUM(total_amount),0) AS spent
+				   FROM {$wpdb->prefix}wc_orders
+				  WHERE customer_id IN ({$in}) AND status NOT IN ({$skip})
+				  GROUP BY customer_id",
+				ARRAY_A
+			);
+		} else {
+			$rows = $wpdb->get_results(
+				"SELECT cust.meta_value AS customer_id,
+				        COUNT(*) AS orders,
+				        COALESCE(SUM(tot.meta_value),0) AS spent
+				   FROM {$wpdb->posts} p
+				   JOIN {$wpdb->postmeta} cust ON cust.post_id = p.ID AND cust.meta_key = '_customer_user'
+				   LEFT JOIN {$wpdb->postmeta} tot ON tot.post_id = p.ID AND tot.meta_key = '_order_total'
+				  WHERE p.post_type = 'shop_order'
+				    AND p.post_status NOT IN ({$skip})
+				    AND cust.meta_value IN ({$in})
+				  GROUP BY cust.meta_value",
+				ARRAY_A
+			);
+		}
+
+		$out = array();
+		foreach ( (array) $rows as $r ) {
+			$out[ (int) $r['customer_id'] ] = array(
+				'orders' => (int) $r['orders'],
+				'spent'  => (int) round( (float) $r['spent'] ),
+			);
+		}
+		return $out;
+	}
+
 	public static function customers( $req ) {
 		$args = array( 'role' => 'customer', 'number' => 200 );
 		if ( $req->get_param( 'q' ) ) {
@@ -663,19 +718,23 @@ class AH_Rest_Desks {
 			$args['search_columns'] = array( 'display_name', 'user_email', 'user_login' );
 		}
 
+		$users = get_users( $args );
+		if ( ! $users ) {
+			return array( 'customers' => array() );
+		}
+
+		// One aggregate for everybody, rather than a pair of queries per
+		// customer and then a full order load for each of their orders.
+		// Two hundred customers with ten orders each used to be two
+		// thousand order loads to draw one table.
+		$totals = self::spend_by_customer( wp_list_pluck( $users, 'ID' ) );
+
 		$out = array();
-		foreach ( get_users( $args ) as $u ) {
-			$row           = AH_Shape::user( $u );
-			$orders        = wc_get_orders( array( 'customer_id' => $u->ID, 'limit' => -1, 'return' => 'ids' ) );
-			$row['orderCount'] = count( $orders );
-			$row['totalSpent'] = 0;
-			foreach ( $orders as $id ) {
-				$o = wc_get_order( $id );
-				if ( $o && ! in_array( AH_Statuses::to_api( $o->get_status() ), array( 'cancelled', 'rejected' ), true ) ) {
-					$row['totalSpent'] += AH_Shape::money( $o->get_total() );
-				}
-			}
-			$out[] = $row;
+		foreach ( $users as $u ) {
+			$row               = AH_Shape::user( $u );
+			$row['orderCount'] = isset( $totals[ $u->ID ] ) ? $totals[ $u->ID ]['orders'] : 0;
+			$row['totalSpent'] = isset( $totals[ $u->ID ] ) ? $totals[ $u->ID ]['spent'] : 0;
+			$out[]             = $row;
 		}
 		return array( 'customers' => $out );
 	}

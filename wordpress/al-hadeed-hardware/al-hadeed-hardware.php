@@ -89,6 +89,8 @@ require_once AH_PATH . 'includes/class-ah-rest-company.php';
 require_once AH_PATH . 'includes/class-ah-catalogue.php';
 require_once AH_PATH . 'includes/class-ah-staff.php';
 require_once AH_PATH . 'includes/class-ah-expenses.php';
+require_once AH_PATH . 'includes/class-ah-monthly.php';
+require_once AH_PATH . 'includes/class-ah-suppliers.php';
 require_once AH_PATH . 'includes/class-ah-settings.php';
 require_once AH_PATH . 'includes/class-ah-import.php';
 

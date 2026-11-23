@@ -308,13 +308,23 @@ class AH_Flow {
 	// The queues each desk looks at
 	// -----------------------------------------------------------------
 
-	public static function queue_for( $stage, $limit = 100 ) {
-		$by_stage = array(
+	/**
+	 * Which order statuses sit at which desk.
+	 *
+	 * Public, because counting what is at a desk and listing it are two
+	 * different jobs and only one of them should be loading orders.
+	 */
+	public static function stages() {
+		return array(
 			'cashier'  => array( 'wc-pending', 'wc-ah-rejected' ),
 			'accounts' => array( 'wc-ah-paid' ),
 			'store'    => array( 'wc-ah-verified' ),
 			'done'     => array( 'wc-completed' ),
 		);
+	}
+
+	public static function queue_for( $stage, $limit = 100 ) {
+		$by_stage = self::stages();
 		if ( ! isset( $by_stage[ $stage ] ) ) {
 			return array();
 		}

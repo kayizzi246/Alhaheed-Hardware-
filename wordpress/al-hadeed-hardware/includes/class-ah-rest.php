@@ -310,7 +310,13 @@ class AH_Rest {
 		// Internal spending: raised at a desk, approved by the manager,
 		// paid by the cashier. No customer ever sees any of it.
 		AH_Expenses::routes();
-		AH_Rest_Company::routes();
+
+		// The whole month on one page: sales, spending, the book.
+		AH_Monthly::routes();
+
+		// Writing to suppliers from inside the shop, instead of the
+		// cashier opening a mail app and typing it out again.
+		AH_Suppliers::routes();
 
 		register_rest_route(
 			$ns, '/manager/dashboard',
@@ -899,9 +905,20 @@ class AH_Rest {
 			);
 		}
 
+		// Counted, not loaded.
+		//
+		// This used to call queue_for() for each stage, which fetches up
+		// to 500 orders AND shapes every one of them — several meta
+		// reads apiece — so four integers cost up to two thousand
+		// orders' worth of work. On a shop with a year of trading behind
+		// it that is the dashboard timing out.
 		$by_stage = array();
-		foreach ( array( 'cashier', 'accounts', 'store', 'done' ) as $stage ) {
-			$by_stage[ $stage ] = count( AH_Flow::queue_for( $stage, 500 ) );
+		foreach ( AH_Flow::stages() as $stage => $statuses ) {
+			$total = 0;
+			foreach ( $statuses as $status ) {
+				$total += (int) wc_orders_count( substr( $status, 3 ) );
+			}
+			$by_stage[ $stage ] = $total;
 		}
 
 		$rows = $wpdb->get_results(

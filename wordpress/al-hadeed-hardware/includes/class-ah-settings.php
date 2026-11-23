@@ -25,6 +25,16 @@ class AH_Settings {
 			'sms_username'  => '',
 			'sms_sender_id' => '',
 			'sms_url'       => '',
+			// Mail. Without these, messages to suppliers go out through
+			// whatever the host provides, which on cheap hosting is
+			// usually nothing at all.
+			'smtp_host'     => '',
+			'smtp_port'     => '587',
+			'smtp_secure'   => 'tls',
+			'smtp_user'     => '',
+			'smtp_pass'     => '',
+			'from_email'    => '',
+			'reply_email'   => '',
 			'otp_dev_mode'  => 'yes',
 			'cors_origins'  => '*',
 		);
@@ -32,6 +42,51 @@ class AH_Settings {
 
 	public static function init() {
 		add_action( 'admin_init', array( __CLASS__, 'register' ) );
+		add_action( 'phpmailer_init', array( __CLASS__, 'mailer' ) );
+	}
+
+	/**
+	 * Point the mailer at a real mail service, if one is configured.
+	 *
+	 * Mail sent straight from a shared host is routinely refused by the
+	 * receiving server — no reverse DNS, no SPF record, a From address
+	 * on a domain the host does not own. The supplier never sees it and
+	 * nobody at the shop finds out. Configuring a mail service here is
+	 * the difference between a message that arrives and one that
+	 * quietly vanishes.
+	 *
+	 * @param PHPMailer $mail The mailer, handed over by reference.
+	 */
+	public static function mailer( $mail ) {
+		$o = wp_parse_args( get_option( self::OPTION, array() ), self::defaults() );
+
+		if ( empty( $o['smtp_host'] ) ) {
+			return;
+		}
+
+		$mail->isSMTP();
+		$mail->Host = $o['smtp_host'];
+		$mail->Port = (int) $o['smtp_port'] ? (int) $o['smtp_port'] : 587;
+
+		if ( in_array( $o['smtp_secure'], array( 'tls', 'ssl' ), true ) ) {
+			$mail->SMTPSecure = $o['smtp_secure'];
+		} else {
+			$mail->SMTPSecure  = '';
+			$mail->SMTPAutoTLS = false;
+		}
+
+		// Some services want a username and password; some accept the
+		// host's address alone and are given no credentials at all.
+		if ( ! empty( $o['smtp_user'] ) ) {
+			$mail->SMTPAuth = true;
+			$mail->Username = $o['smtp_user'];
+			$mail->Password = $o['smtp_pass'];
+		}
+
+		if ( ! empty( $o['from_email'] ) && is_email( $o['from_email'] ) ) {
+			$shop = $o['shop_name'] ? $o['shop_name'] : get_bloginfo( 'name' );
+			$mail->setFrom( $o['from_email'], $shop, false );
+		}
 	}
 
 	public static function register() {
@@ -45,8 +100,26 @@ class AH_Settings {
 	public static function sanitize( $input ) {
 		$out = array();
 		foreach ( self::defaults() as $key => $default ) {
-			$value       = isset( $input[ $key ] ) ? $input[ $key ] : $default;
-			$out[ $key ] = sanitize_text_field( $value );
+			$value = isset( $input[ $key ] ) ? $input[ $key ] : $default;
+
+			// sanitize_text_field() strips characters that are perfectly
+			// legal in a mail password, and a password silently altered
+			// on save is an afternoon lost to "but I typed it right".
+			$out[ $key ] = 'smtp_pass' === $key ? (string) $value : sanitize_text_field( $value );
+		}
+
+		// A mistyped address here means every message bounces, and the
+		// bounce goes somewhere nobody is watching. Better to refuse it
+		// at the point it was typed.
+		foreach ( array( 'from_email', 'reply_email' ) as $mail_key ) {
+			if ( '' !== $out[ $mail_key ] && ! is_email( $out[ $mail_key ] ) ) {
+				$out[ $mail_key ] = '';
+				add_settings_error(
+					self::OPTION,
+					'ah_bad_' . $mail_key,
+					'That mail address was not valid, so it has been left blank.'
+				);
+			}
 		}
 		// A blank origin list would lock every client out; '*' is the
 		// honest default and the settings page says what it means.
@@ -160,6 +233,86 @@ class AH_Settings {
 							<td><input id="ah_sms_url" class="regular-text" type="url"
 								name="<?php echo esc_attr( self::OPTION ); ?>[sms_url]"
 								value="<?php echo esc_attr( $o['sms_url'] ); ?>"></td>
+						</tr>
+					</table>
+				</div>
+
+				<div class="ah-card">
+					<h2 style="margin-top:0">Email to suppliers</h2>
+					<p class="description" style="margin-bottom:12px">
+						The cashier writes to suppliers from the Suppliers screen. Without a
+						mail service set up below, those messages are handed to the web host,
+						and most hosts either refuse them outright or deliver them into a spam
+						folder. Any mail service will do — the one that came with the shop's
+						email address, or a sending service. The Suppliers screen reports
+						whether messages are actually getting out.
+					</p>
+					<table class="form-table">
+						<tr>
+							<th><label for="ah_smtp_host">Mail server</label></th>
+							<td><input id="ah_smtp_host" class="regular-text" type="text"
+								name="<?php echo esc_attr( self::OPTION ); ?>[smtp_host]"
+								value="<?php echo esc_attr( $o['smtp_host'] ); ?>"
+								placeholder="smtp.yourprovider.com">
+								<p class="description">Leave this blank to use whatever the host provides.</p></td>
+						</tr>
+						<tr>
+							<th><label for="ah_smtp_port">Port</label></th>
+							<td><input id="ah_smtp_port" class="small-text" type="number"
+								name="<?php echo esc_attr( self::OPTION ); ?>[smtp_port]"
+								value="<?php echo esc_attr( $o['smtp_port'] ); ?>">
+								<p class="description">587 for TLS, 465 for SSL.</p></td>
+						</tr>
+						<tr>
+							<th><label for="ah_smtp_secure">Encryption</label></th>
+							<td>
+								<select id="ah_smtp_secure" name="<?php echo esc_attr( self::OPTION ); ?>[smtp_secure]">
+									<?php foreach ( array( 'tls' => 'TLS (usual)', 'ssl' => 'SSL', 'none' => 'None' ) as $value => $label ) : ?>
+										<option value="<?php echo esc_attr( $value ); ?>"
+											<?php selected( $o['smtp_secure'], $value ); ?>>
+											<?php echo esc_html( $label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th><label for="ah_smtp_user">Username</label></th>
+							<td><input id="ah_smtp_user" class="regular-text" type="text"
+								name="<?php echo esc_attr( self::OPTION ); ?>[smtp_user]"
+								value="<?php echo esc_attr( $o['smtp_user'] ); ?>"
+								autocomplete="off"></td>
+						</tr>
+						<tr>
+							<th><label for="ah_smtp_pass">Password</label></th>
+							<td><input id="ah_smtp_pass" class="regular-text" type="password"
+								name="<?php echo esc_attr( self::OPTION ); ?>[smtp_pass]"
+								value="<?php echo esc_attr( $o['smtp_pass'] ); ?>"
+								autocomplete="new-password">
+								<p class="description">
+									Kept on this site. Where the provider offers a sending key, use
+									that rather than the shop's own mail password.
+								</p></td>
+						</tr>
+						<tr>
+							<th><label for="ah_from_email">Send as</label></th>
+							<td><input id="ah_from_email" class="regular-text" type="email"
+								name="<?php echo esc_attr( self::OPTION ); ?>[from_email]"
+								value="<?php echo esc_attr( $o['from_email'] ); ?>"
+								placeholder="orders@alhadeedhardware.com">
+								<p class="description">
+									Must be an address on a domain the shop owns, or the receiving
+									server will treat it as forged.
+								</p></td>
+						</tr>
+						<tr>
+							<th><label for="ah_reply_email">Replies go to</label></th>
+							<td><input id="ah_reply_email" class="regular-text" type="email"
+								name="<?php echo esc_attr( self::OPTION ); ?>[reply_email]"
+								value="<?php echo esc_attr( $o['reply_email'] ); ?>"
+								placeholder="shop@alhadeedhardware.com">
+								<p class="description">
+									Where a supplier's reply lands. Somebody has to actually read it.
+								</p></td>
 						</tr>
 					</table>
 				</div>

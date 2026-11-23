@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.1.0';
+	const DB_VERSION = '1.2.0';
 
 	public static function activate() {
 		self::tables();
@@ -119,6 +119,49 @@ class AH_Install {
 			PRIMARY KEY (id),
 			UNIQUE KEY ref (ref),
 			KEY status (status),
+			KEY created_at (created_at)
+		) {$charset};";
+
+		// Who the shop buys from, and every message sent to them.
+		//
+		// The address lives here rather than on the product because a
+		// supplier sells more than one thing, and because an address
+		// typed into twenty products is an address corrected in
+		// nineteen of them.
+		$sql[] = "CREATE TABLE {$p}ah_suppliers (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name         VARCHAR(191)    NOT NULL,
+			contact_name VARCHAR(191)    NULL,
+			email        VARCHAR(191)    NOT NULL,
+			phone        VARCHAR(32)     NULL,
+			supplies     VARCHAR(191)    NULL,
+			notes        TEXT            NULL,
+			active       TINYINT         NOT NULL DEFAULT 1,
+			last_mail_at DATETIME        NULL,
+			created_by   BIGINT UNSIGNED NOT NULL,
+			created_at   DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY email (email),
+			KEY active (active)
+		) {$charset};";
+
+		// The record of what was actually sent, kept whether it
+		// succeeded or not. A failed send that leaves no trace is how a
+		// shop waits three weeks for cement that was never ordered.
+		$sql[] = "CREATE TABLE {$p}ah_supplier_mail (
+			id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			supplier_id BIGINT UNSIGNED NOT NULL,
+			to_email    VARCHAR(191)    NOT NULL,
+			subject     VARCHAR(255)    NOT NULL,
+			body        LONGTEXT        NOT NULL,
+			item_count  INT             NOT NULL DEFAULT 0,
+			sent_by     BIGINT UNSIGNED NOT NULL,
+			sent_name   VARCHAR(191)    NOT NULL,
+			status      VARCHAR(16)     NOT NULL DEFAULT 'sent',
+			error       TEXT            NULL,
+			created_at  DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			KEY supplier_id (supplier_id),
 			KEY created_at (created_at)
 		) {$charset};";
 
