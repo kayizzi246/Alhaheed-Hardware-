@@ -13,6 +13,10 @@ Built to the MVP scope in the concept paper (Annex 1).
 **Signing in:** who can use what, the test accounts, and how to make the
 real ones on the live shop — see [LOGINS.md](LOGINS.md).
 
+**Backups and security:** what to back up, how, and the handful of things
+that actually get a shop broken into — see
+[BACKUP-AND-SECURITY.md](BACKUP-AND-SECURITY.md).
+
 ---
 
 ## What is in this repository
