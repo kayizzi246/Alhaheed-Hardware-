@@ -8,8 +8,7 @@ import { cn } from '@/lib/cn';
 import { Icon } from '@/components/icons';
 import {
   Alert, Button, Card, CardBody, CardHead, CardNote, CardTitle,
-  Fresh, Skeleton, StatusChip, Table, TableWrap, Td, Th, Tr,
-} from '@/components/ui';
+  Fresh, Skeleton, StatusChip, Table, TableWrap, Td, Th, Tr, Stat } from '@/components/ui';
 import { usePoll } from '@/lib/live';
 
 /**
@@ -102,7 +101,7 @@ export default function ManagerConsole() {
       {/* Two across on a phone, the day's sales across the top. One per
           row put five tiles between the manager and everything else. */}
       <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
-        <Kpi
+        <Stat
           hero
           label="Sales today"
           value={money(d.salesToday)}
@@ -113,21 +112,21 @@ export default function ManagerConsole() {
           spark={days.map((x) => x.total)}
           className="col-span-2 sm:col-span-1"
         />
-        <Kpi
+        <Stat
           label="Orders today"
           value={String(d.ordersToday)}
           note={waiting ? `${waiting} still open` : 'all dealt with'}
           icon={Icon.receipt()}
           href="/manager/orders"
         />
-        <Kpi
+        <Stat
           label="Average order"
           value={money(avgOrder)}
           note="per order today"
           icon={Icon.chart()}
           tone="neutral"
         />
-        <Kpi
+        <Stat
           label="Waiting on a desk"
           value={String(waiting)}
           note={waiting ? 'at the cashier, accounts or store' : 'nothing waiting'}
@@ -135,7 +134,7 @@ export default function ManagerConsole() {
           tone={waiting ? 'warn' : 'ok'}
           href="/manager/orders"
         />
-        <Kpi
+        <Stat
           label="Low on stock"
           value={String(low.length)}
           note={low.length ? 'at or below the reorder level' : 'everything is stocked'}
@@ -208,140 +207,6 @@ export default function ManagerConsole() {
 
 /* ── Pieces ───────────────────────────────────────────────────────── */
 
-/**
- * One figure at the top of the dashboard.
- *
- * Read at a glance, then — if it is worth acting on — tapped: each
- * tile that leads somewhere is a link to the screen where you would
- * act on it. The icon's colour carries the state (amber when orders
- * are waiting, red when stock is low, green when all is well) so the
- * number itself stays the one thing to read. The day's sales is the
- * hero, with the week drawn behind it.
- */
-const TONES = {
-  brand: 'bg-brand-soft text-brand',
-  neutral: 'bg-surface-sunk text-ink-muted',
-  ok: 'bg-ok-bg text-ok',
-  warn: 'bg-warn-bg text-warn',
-  bad: 'bg-bad-bg text-bad',
-};
-
-function Kpi({ label, value, delta, note, tone = 'brand', icon, href, spark, hero, className }) {
-  const Box = href ? Link : 'div';
-  return (
-    <Box
-      {...(href ? { href } : {})}
-      className={cn(
-        'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl p-4 [container-type:inline-size] sm:p-5',
-        'transition-[transform,box-shadow,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
-        hero
-          ? 'bg-[linear-gradient(135deg,rgb(var(--brand))_0%,rgb(var(--brand-dark))_100%)] text-white shadow-[0_12px_32px_-12px_rgb(var(--brand)/0.55)]'
-          : 'border border-line bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.04),0_6px_20px_-12px_rgb(15_23_42/0.12)]',
-        href && (hero
-          ? 'hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgb(var(--brand)/0.65)] active:scale-[0.985]'
-          : 'hover:-translate-y-0.5 hover:border-line-firm hover:shadow-[0_2px_4px_rgb(15_23_42/0.05),0_14px_32px_-14px_rgb(15_23_42/0.22)] active:scale-[0.985]'),
-        'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand/30',
-        className
-      )}
-    >
-      {hero && (
-        // A soft light in the corner, so the blue has depth rather than
-        // being a flat slab.
-        <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 -z-10 size-56 rounded-full bg-white/15 blur-3xl" />
-      )}
-
-      <div className="flex items-start gap-2.5">
-        <span
-          className={cn(
-            'grid size-9 shrink-0 place-items-center rounded-xl [&>svg]:size-[18px]',
-            hero ? 'bg-white/15 text-white ring-1 ring-inset ring-white/20' : TONES[tone]
-          )}
-        >
-          {icon}
-        </span>
-        <span className={cn('min-w-0 flex-1 pt-[9px] text-[13px] font-semibold leading-tight [overflow-wrap:anywhere]', hero ? 'text-white/85' : 'text-ink-muted')}>
-          {label}
-        </span>
-        {href && (
-          <svg
-            viewBox="0 0 16 16"
-            aria-hidden="true"
-            className={cn(
-              'mt-[10px] size-4 shrink-0 -translate-x-1 opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100',
-              hero ? 'text-white/80' : 'text-ink-faint'
-            )}
-          >
-            <path d="M5 11l6-6M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-      </div>
-
-      <strong
-        className={cn(
-          'tnum mt-4 block font-display font-extrabold leading-none tracking-[-0.03em]',
-          String(value).length > 11 ? 'text-[clamp(18px,10.5cqi,30px)]' : 'text-[clamp(24px,15cqi,32px)]',
-          hero ? 'text-white' : 'text-ink'
-        )}
-      >
-        {value}
-      </strong>
-
-      <span className={cn('mt-3 flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px]', hero ? 'text-white/80' : 'text-ink-muted')}>
-        {delta !== null && delta !== undefined && (
-          <span
-            className={cn(
-              'tnum inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11.5px] font-bold',
-              hero
-                ? 'bg-white/20 text-white'
-                : delta >= 0 ? 'bg-ok-bg text-ok' : 'bg-bad-bg text-bad'
-            )}
-          >
-            <svg viewBox="0 0 12 12" aria-hidden="true" className={cn('size-3', delta < 0 && 'rotate-180')}>
-              <path d="M6 2.5v7M3 5.5l3-3 3 3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {Math.abs(delta)}%
-          </span>
-        )}
-        <span className="min-w-0">{note}</span>
-      </span>
-
-      {spark && <Sparkline values={spark} />}
-    </Box>
-  );
-}
-
-/**
- * The week, drawn faintly along the bottom of the hero tile. Not for
- * reading values from — the chart below does that — but for seeing at
- * a glance whether today is up or down on the days before it.
- */
-function Sparkline({ values }) {
-  const max = Math.max(...values, 1);
-  const pts = values.map((v, i) => [
-    values.length === 1 ? 50 : (i / (values.length - 1)) * 100,
-    30 - (v / max) * 24,
-  ]);
-  const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
-  const [lx, ly] = pts[pts.length - 1];
-  return (
-    <svg
-      viewBox="0 0 100 32"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      className="pointer-events-none absolute bottom-0 right-0 -z-10 h-[42%] w-[56%]"
-    >
-      <defs>
-        <linearGradient id="kpi-spark" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="white" stopOpacity="0.22" />
-          <stop offset="1" stopColor="white" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={`${line} L100,32 L0,32 Z`} fill="url(#kpi-spark)" />
-      <path d={line} fill="none" stroke="white" strokeOpacity="0.55" strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-      <circle cx={lx} cy={ly} r="1.6" fill="white" vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
-}
 
 function Panel({ title, note, link, flush, children }) {
   return (

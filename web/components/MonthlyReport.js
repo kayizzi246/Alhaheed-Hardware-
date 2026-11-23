@@ -7,6 +7,7 @@ import {
   Alert, Button, Card, CardBody, CardHead, CardNote, CardTitle, Empty, Field,
   Loading, PageHead, Select, Stat, Stats, Table, TableWrap, Td, Th, Tr,
 } from '@/components/ui';
+import { Icon } from '@/components/icons';
 
 const KIND_LABEL = {
   expense: 'Expense',
@@ -239,10 +240,10 @@ export default function MonthlyReport() {
       ) : (
         <>
           <Stats>
-            <Stat label="Gross sales" value={money(t.gross)} note={`${t.receipts} verified receipts`} lead />
-            <Stat label="Internal spending" value={money(t.expenses)} note="paid out this month" tone="bad" />
-            <Stat label="Sales less spending" value={money(t.net)} note="what the month left behind" tone="ok" />
-            <Stat label="Orders placed" value={t.orders} note={`average receipt ${money(t.average)}`} />
+            <Stat label="Gross sales" icon={Icon.cash()} value={money(t.gross)} note={`${t.receipts} verified receipts`} lead />
+            <Stat label="Internal spending" icon={Icon.cash()} value={money(t.expenses)} note="paid out this month" tone="bad" />
+            <Stat label="Sales less spending" icon={Icon.chart()} value={money(t.net)} note="what the month left behind" tone="ok" />
+            <Stat label="Orders placed" icon={Icon.receipt()} value={t.orders} note={`average receipt ${money(t.average)}`} />
           </Stats>
 
           <div className="mb-4 grid gap-4 xl:grid-cols-2">

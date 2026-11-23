@@ -7,6 +7,7 @@ import ReceivePayment from '@/components/ReceivePayment';
 import { usePoll } from '@/lib/live';
 import { money, shortMoney, time, methodLabel, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { Icon } from '@/components/icons';
 import {
   Alert, Button, Card, CardBody, CardHead, CardTitle, Chip, Empty, Field, Fresh,
   Input, Loading, Modal, PageHead, Segmented, Stat, Stats, StatusChip, LoadFailed } from '@/components/ui';
@@ -69,10 +70,19 @@ export default function CashierQueue() {
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
       <Stats>
-        <Stat label="Waiting for payment" value={s.waiting ?? 0} lead={orders.length > 0} note={orders.length ? 'oldest first' : 'queue is clear'} />
-        <Stat label="Paid today" value={s.paid_today ?? 0} />
-        <Stat label="Cash received" value={shortMoney(s.cash_today)} note={money(s.cash_today)} tone="ok" />
-        <Stat label="Mobile Money received" value={shortMoney(s.momo_today)} note={money(s.momo_today)} />
+        {/* Blue when somebody is waiting to pay — the one thing on this
+            screen that needs the cashier now. */}
+        <Stat
+          label="Waiting for payment"
+          value={s.waiting ?? 0}
+          lead={orders.length > 0}
+          note={orders.length ? 'oldest first' : 'queue is clear'}
+          icon={Icon.clock()}
+          tone={orders.length ? 'warn' : 'ok'}
+        />
+        <Stat label="Paid today" value={s.paid_today ?? 0} note="receipts issued" icon={Icon.receipt()} href="/cashier/receipts" />
+        <Stat label="Cash received" value={shortMoney(s.cash_today)} note={money(s.cash_today)} icon={Icon.cash()} tone="ok" href="/cashier/cash-book" />
+        <Stat label="Mobile Money received" value={shortMoney(s.momo_today)} note={money(s.momo_today)} icon={Icon.phone()} href="/cashier/receipts" />
       </Stats>
 
       <Card className="mb-4">

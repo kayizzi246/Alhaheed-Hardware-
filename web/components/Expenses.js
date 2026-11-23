@@ -10,6 +10,7 @@ import {
   Loading, Modal, PageHead, Segmented, Select, Stat, Stats, Table, TableWrap,
   Td, Textarea, Th, Tr,
 } from '@/components/ui';
+import { Icon } from '@/components/icons';
 
 /**
  * Money going out that is not a customer's order.
@@ -106,18 +107,18 @@ export default function Expenses() {
 
       <Stats>
         <Stat
-          label="Waiting for the manager"
+          label="Waiting for the manager" icon={Icon.clock()} tone={s.waiting ? 'warn' : 'ok'}
           value={s.waiting ?? 0}
           note={s.waiting_value ? money(s.waiting_value) : 'nothing pending'}
           lead={data.canApprove && s.waiting > 0}
         />
         <Stat
-          label="Approved, to pay out"
+          label="Approved, to pay out" icon={Icon.check()}
           value={s.to_pay ?? 0}
           lead={data.canPay && !data.canApprove && s.to_pay > 0}
         />
-        <Stat label="Paid today" value={shortMoney(s.paid_today)} note={money(s.paid_today)} />
-        <Stat label="Showing" value={rows.length} note={FILTERS.find(([v]) => v === status)?.[1]} />
+        <Stat label="Paid today" icon={Icon.cash()} value={shortMoney(s.paid_today)} note={money(s.paid_today)} />
+        <Stat label="Showing" icon={Icon.queue()} tone="neutral" value={rows.length} note={FILTERS.find(([v]) => v === status)?.[1]} />
       </Stats>
 
       <Card>

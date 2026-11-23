@@ -10,6 +10,7 @@ import {
   Alert, Button, Card, CardHead, CardTitle, Chip, Empty, Fresh, Loading,
   Modal, PageHead, Stat, Stats, Table, TableWrap, Td, Th, Tr,
 } from '@/components/ui';
+import { Icon } from '@/components/icons';
 import { PasswordField, SignInCard, passwordProblem } from '@/components/StaffBits';
 
 const ROLE_LABEL = { cashier: 'Cashier', accounts: 'Accounts', store: 'Store Manager', manager: 'Manager' };
@@ -139,41 +140,41 @@ export default function StaffMember() {
       {/* The figures that matter for their desk. */}
       {s.desk === 'cashier' && (
         <Stats>
-          <Stat label="Taken today" value={shortMoney(t.today?.total)} note={`${t.today?.receipts || 0} receipts · ${money(t.today?.total)}`} lead />
-          <Stat label="Taken this month" value={shortMoney(t.month?.total)} note={`${t.month?.receipts || 0} receipts`} />
+          <Stat label="Taken today" icon={Icon.cash()} value={shortMoney(t.today?.total)} note={`${t.today?.receipts || 0} receipts · ${money(t.today?.total)}`} lead />
+          <Stat label="Taken this month" icon={Icon.chart()} tone="neutral" value={shortMoney(t.month?.total)} note={`${t.month?.receipts || 0} receipts`} />
           <Stat
-            label="Mobile money this month"
+            label="Mobile money this month" icon={Icon.phone()}
             value={shortMoney(t.month?.momo)}
             note={`cash ${shortMoney(t.month?.cash)} · card ${shortMoney(t.month?.card)}`}
           />
           <Stat
-            label="Sent back by Accounts"
+            label="Sent back by Accounts" icon={t.month?.sent_back ? Icon.close() : Icon.check()}
             value={t.month?.sent_back || 0}
             note="this month"
-            tone={t.month?.sent_back ? 'bad' : undefined}
+            tone={t.month?.sent_back ? 'bad' : 'ok'}
           />
         </Stats>
       )}
       {s.desk === 'accounts' && (
         <Stats>
-          <Stat label="Verified today" value={c.today?.verified || 0} lead />
-          <Stat label="Verified this month" value={c.month?.verified || 0} />
-          <Stat label="Sent back today" value={c.today?.rejected || 0} />
-          <Stat label="Sent back this month" value={c.month?.rejected || 0} />
+          <Stat label="Verified today" icon={Icon.check()} value={c.today?.verified || 0} lead />
+          <Stat label="Verified this month" icon={Icon.chart()} tone="neutral" value={c.month?.verified || 0} />
+          <Stat label="Sent back today" icon={Icon.close()} tone="neutral" value={c.today?.rejected || 0} />
+          <Stat label="Sent back this month" icon={Icon.close()} tone="neutral" value={c.month?.rejected || 0} />
         </Stats>
       )}
       {s.desk === 'store' && (
         <Stats>
-          <Stat label="Released today" value={count('today', 'released')} lead />
-          <Stat label="Released this month" value={count('month', 'released')} />
-          <Stat label="Everything today" value={totalActs('today')} />
-          <Stat label="Everything this month" value={totalActs('month')} />
+          <Stat label="Released today" icon={Icon.box()} value={count('today', 'released')} lead />
+          <Stat label="Released this month" icon={Icon.chart()} tone="neutral" value={count('month', 'released')} />
+          <Stat label="Everything today" icon={Icon.clock()} tone="neutral" value={totalActs('today')} />
+          <Stat label="Everything this month" icon={Icon.chart()} tone="neutral" value={totalActs('month')} />
         </Stats>
       )}
       {s.desk === 'manager' && (
         <Stats>
-          <Stat label="Actions today" value={totalActs('today')} lead />
-          <Stat label="Actions this month" value={totalActs('month')} />
+          <Stat label="Actions today" icon={Icon.clock()} value={totalActs('today')} lead />
+          <Stat label="Actions this month" icon={Icon.chart()} tone="neutral" value={totalActs('month')} />
         </Stats>
       )}
 

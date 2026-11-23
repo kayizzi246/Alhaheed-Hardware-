@@ -16,6 +16,7 @@
  */
 
 import * as React from 'react';
+import Link from 'next/link';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import * as SelectPrimitive from '@radix-ui/react-select';
@@ -94,7 +95,7 @@ IconButton.displayName = 'IconButton';
 export const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('rounded-lg border border-line bg-surface shadow-sm', className)}
+    className={cn('overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.04),0_6px_20px_-12px_rgb(15_23_42/0.12)]', className)}
     {...props}
   />
 ));
@@ -487,38 +488,156 @@ export const PageHead = ({ title, sub, children }) => (
  * One figure, read down a column: label above, number below.
  * `lead` marks the one that matters most on the screen.
  */
-export function Stat({ label, value, note, lead, tone }) {
+/**
+ * One figure, the panel's standard tile — every desk's screen uses it.
+ *
+ * A large tight number as the one thing to read; a coloured icon, when
+ * there is one, carrying the figure's state (amber waiting, red low,
+ * green fine) so the number itself stays plain. The figure that matters
+ * most on a screen is the hero — deep blue, white text — and a tile
+ * that leads somewhere is a link to the place you would act on it.
+ *
+ * `lead` and `hero` mean the same. Without an icon, `tone` colours the
+ * number instead (cash in green, cash out red), as it always has.
+ */
+const STAT_TONES = {
+  brand: 'bg-brand-soft text-brand',
+  neutral: 'bg-surface-sunk text-ink-muted',
+  ok: 'bg-ok-bg text-ok',
+  warn: 'bg-warn-bg text-warn',
+  bad: 'bg-bad-bg text-bad',
+};
+
+export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, spark, className }) {
+  const big = !!(hero || lead);
+  const Box = href ? Link : 'div';
   return (
-    <div
+    <Box
+      {...(href ? { href } : {})}
       className={cn(
-        'min-w-0 rounded-lg border border-line bg-surface px-3 py-3 shadow-sm [container-type:inline-size] sm:px-4 sm:py-3.5',
-        lead && 'border-brand/30 bg-brand-soft'
+        'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl p-4 [container-type:inline-size] sm:p-5',
+        'transition-[transform,box-shadow,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+        big
+          ? 'bg-[linear-gradient(135deg,rgb(var(--brand))_0%,rgb(var(--brand-dark))_100%)] text-white shadow-[0_12px_32px_-12px_rgb(var(--brand)/0.55)]'
+          : 'border border-line bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.04),0_6px_20px_-12px_rgb(15_23_42/0.12)]',
+        href && (big
+          ? 'hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgb(var(--brand)/0.65)] active:scale-[0.985]'
+          : 'hover:-translate-y-0.5 hover:border-line-firm hover:shadow-[0_2px_4px_rgb(15_23_42/0.05),0_14px_32px_-14px_rgb(15_23_42/0.22)] active:scale-[0.985]'),
+        'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand/30',
+        className
       )}
     >
-      <p className="text-[10.5px] font-bold uppercase tracking-[.06em] text-ink-muted sm:text-[11px] sm:tracking-[.07em]">{label}</p>
-      <p
+      {big && (
+        // A soft light in the corner, so the blue has depth.
+        <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 -z-10 size-56 rounded-full bg-white/15 blur-3xl" />
+      )}
+
+      <div className="flex items-start gap-2.5">
+        {icon && (
+          <span
+            className={cn(
+              'grid size-9 shrink-0 place-items-center rounded-xl [&>svg]:size-[18px]',
+              big ? 'bg-white/15 text-white ring-1 ring-inset ring-white/20' : STAT_TONES[tone] || STAT_TONES.brand
+            )}
+          >
+            {icon}
+          </span>
+        )}
+        <span
+          className={cn(
+            'min-w-0 flex-1 text-[13px] font-semibold leading-tight [overflow-wrap:anywhere]',
+            icon && 'pt-[9px]',
+            big ? 'text-white/85' : 'text-ink-muted'
+          )}
+        >
+          {label}
+        </span>
+        {href && (
+          <svg
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+            className={cn(
+              'size-4 shrink-0 -translate-x-1 opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100',
+              icon && 'mt-[10px]',
+              big ? 'text-white/80' : 'text-ink-faint'
+            )}
+          >
+            <path d="M5 11l6-6M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </div>
+
+      <strong
         className={cn(
-          // Big for short figures ("7", "UGX 849K"); only a long full
-          // amount ("UGX 12,345,000") steps down to fit its tile.
-          String(value ?? '').length > 11
-            ? 'tnum mt-1.5 text-[clamp(15px,10cqi,27px)] font-extrabold leading-none text-ink'
-            : 'tnum mt-1.5 text-[clamp(20px,14cqi,27px)] font-extrabold leading-none text-ink',
-          lead && 'text-brand-dark',
-          tone === 'ok' && 'text-ok',
-          tone === 'bad' && 'text-bad'
+          'tnum block font-display font-extrabold leading-none tracking-[-0.03em]',
+          icon ? 'mt-4' : 'mt-3',
+          String(value ?? '').length > 11 ? 'text-[clamp(18px,10.5cqi,30px)]' : 'text-[clamp(24px,15cqi,32px)]',
+          big ? 'text-white' : !icon && tone === 'ok' ? 'text-ok' : !icon && tone === 'bad' ? 'text-bad' : 'text-ink'
         )}
       >
         {value}
-      </p>
-      {note && <p className="mt-1.5 text-xs leading-snug text-ink-muted">{note}</p>}
-    </div>
+      </strong>
+
+      {(note || (delta !== null && delta !== undefined)) && (
+        <span className={cn('mt-3 flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px] leading-snug', big ? 'text-white/80' : 'text-ink-muted')}>
+          {delta !== null && delta !== undefined && (
+            <span
+              className={cn(
+                'tnum inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11.5px] font-bold',
+                big ? 'bg-white/20 text-white' : delta >= 0 ? 'bg-ok-bg text-ok' : 'bg-bad-bg text-bad'
+              )}
+            >
+              <svg viewBox="0 0 12 12" aria-hidden="true" className={cn('size-3', delta < 0 && 'rotate-180')}>
+                <path d="M6 2.5v7M3 5.5l3-3 3 3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {Math.abs(delta)}%
+            </span>
+          )}
+          {note && <span className="min-w-0">{note}</span>}
+        </span>
+      )}
+
+      {spark && <Sparkline values={spark} />}
+    </Box>
+  );
+}
+
+/**
+ * A run of figures drawn faintly in the hero tile's corner — not for
+ * reading values from, but for seeing at a glance which way things went.
+ */
+function Sparkline({ values }) {
+  const max = Math.max(...values, 1);
+  const pts = values.map((v, i) => [
+    values.length === 1 ? 50 : (i / (values.length - 1)) * 100,
+    30 - (v / max) * 24,
+  ]);
+  const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+  const [lx, ly] = pts[pts.length - 1];
+  return (
+    <svg
+      viewBox="0 0 100 32"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      className="pointer-events-none absolute bottom-0 right-0 -z-10 h-[42%] w-[56%]"
+    >
+      <defs>
+        <linearGradient id="stat-spark" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="white" stopOpacity="0.22" />
+          <stop offset="1" stopColor="white" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`${line} L100,32 L0,32 Z`} fill="url(#stat-spark)" />
+      <path d={line} fill="none" stroke="white" strokeOpacity="0.55" strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      <circle cx={lx} cy={ly} r="1.6" fill="white" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
 
 // Two across even on a phone. One per row filled the whole first screen
 // with figures and pushed the actual work — the queue — out of sight.
 export const Stats = ({ children, className }) => (
-  <div className={cn('mb-5 grid grid-cols-2 gap-2.5 sm:mb-6 sm:gap-3 xl:grid-cols-4', className)}>{children}</div>
+  <div className={cn('mb-5 grid grid-cols-2 gap-3 sm:mb-6 sm:gap-4 xl:grid-cols-4', className)}>{children}</div>
 );
 
 /** When the screen last checked. It polls; it does not pretend to push. */

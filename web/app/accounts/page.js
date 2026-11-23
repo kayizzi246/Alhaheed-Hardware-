@@ -7,6 +7,7 @@ import { money, shortMoney, methodLabel, time, list } from '@/lib/format';
 import {
   Alert, Button, Card, CardHead, CardTitle, Empty, Field, Fresh, Loading, Modal,
   PageHead, Stat, Stats, Table, TableWrap, Td, Textarea, Th, Tr, LoadFailed } from '@/components/ui';
+import { Icon } from '@/components/icons';
 import CashBookTable from '@/components/CashBookTable';
 
 /**
@@ -82,10 +83,17 @@ export default function VerifyPayments() {
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
       <Stats>
-        <Stat label="Awaiting verification" value={s.awaiting ?? 0} lead={orders.length > 0} note={orders.length ? 'oldest first' : 'all checked'} />
-        <Stat label="Verified today" value={s.verified_today ?? 0} />
-        <Stat label="Cash in today" value={shortMoney(s.cash_in)} note={money(s.cash_in)} tone="ok" />
-        <Stat label="Cash out today" value={shortMoney(s.cash_out)} note={money(s.cash_out)} tone="bad" />
+        <Stat
+          label="Awaiting verification"
+          value={s.awaiting ?? 0}
+          lead={orders.length > 0}
+          note={orders.length ? 'oldest first' : 'all checked'}
+          icon={Icon.queue()}
+          tone={orders.length ? 'warn' : 'ok'}
+        />
+        <Stat label="Verified today" value={s.verified_today ?? 0} note="sent on to the store" icon={Icon.check()} tone="ok" />
+        <Stat label="Cash in today" value={shortMoney(s.cash_in)} note={money(s.cash_in)} icon={Icon.cash()} tone="ok" href="/accounts/cash-book" />
+        <Stat label="Cash out today" value={shortMoney(s.cash_out)} note={money(s.cash_out)} icon={Icon.cash()} tone="bad" href="/accounts/cash-book" />
       </Stats>
 
       <Card className="mb-4">
