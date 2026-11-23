@@ -16,11 +16,13 @@ export const NAV = {
     { href: '/cashier/receipts', label: 'Receipts', icon: 'receipt' },
     { href: '/cashier/cash-book', label: 'Cash Book', icon: 'cash' },
     { href: '/cashier/end-of-day', label: 'End of Day', icon: 'clock' },
+    { href: '/cashier/expenses', label: 'Expenses', icon: 'cash' },
   ],
   accounts: [
     { href: '/accounts', label: 'Verify Payments', icon: 'check' },
     { href: '/accounts/cash-book', label: 'Cash Book', icon: 'cash' },
     { href: '/accounts/reconciliation', label: 'Reconciliation', icon: 'scales' },
+    { href: '/accounts/expenses', label: 'Expenses', icon: 'cash' },
     { href: '/accounts/reports', label: 'Reports', icon: 'chart' },
   ],
   manager: [
@@ -31,6 +33,7 @@ export const NAV = {
     { href: '/manager/products', label: 'Products', icon: 'box' },
     { href: '/manager/customers', label: 'Customers', icon: 'people' },
     { href: '/manager/staff', label: 'Staff', icon: 'user' },
+    { href: '/manager/expenses', label: 'Expenses', icon: 'cash' },
 
     { group: 'Records' },
     { href: '/manager/reports', label: 'Reports', icon: 'chart' },

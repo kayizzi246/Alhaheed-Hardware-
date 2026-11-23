@@ -4,9 +4,9 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { money, dateTime, statusLabel, list } from '@/lib/format';
+import { money, dateTime, statusLabel, methodLabel, list } from '@/lib/format';
 import {
-  Alert, Button, Card, Empty, Input, Loading, PageHead, Select,
+  Alert, Button, Card, Empty, Input, Loading, Modal, PageHead, Select,
   StatusChip, Table, TableWrap, Td, Th, Tr,
 } from '@/components/ui';
 
@@ -46,6 +46,7 @@ function ManagerOrders() {
   });
   const [search, setSearch] = useState('');
   const [orders, setOrders] = useState(null);
+  const [openId, setOpenId] = useState(null);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -116,8 +117,8 @@ function ManagerOrders() {
                     <Td num className="font-semibold text-ink">{money(o.total)}</Td>
                     <Td className="tnum whitespace-nowrap text-ink-muted">{dateTime(o.created_at)}</Td>
                     <Td className="text-right">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/manager/orders/${o.id}`}>Open</Link>
+                      <Button variant="outline" size="sm" onClick={() => setOpenId(o.id)}>
+                        Open
                       </Button>
                     </Td>
                   </Tr>
@@ -127,6 +128,111 @@ function ManagerOrders() {
           </TableWrap>
         )}
       </Card>
+
+      {openId && (
+        <OrderDialog id={openId} onClose={() => setOpenId(null)} onChanged={load} />
+      )}
     </>
+  );
+}
+
+/**
+ * One order, over the list rather than instead of it.
+ *
+ * The detail used to be its own page, which meant going back to find
+ * where you were in a list of a hundred — losing the scroll position,
+ * the filter and the search each time. A manager checking three orders
+ * in a row was navigating six times.
+ *
+ * The page still exists and still works: a link to an order from the
+ * alerts panel or the audit trail has to land somewhere.
+ */
+function OrderDialog({ id, onClose, onChanged }) {
+  const [order, setOrder] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    api(`/api/orders/${id}`)
+      .then((r) => { if (alive) setOrder(r.order); })
+      .catch((e) => { if (alive) setError(e.message); });
+    return () => { alive = false; };
+  }, [id]);
+
+  const items = list(order?.items);
+
+  return (
+    <Modal
+      title={order ? `Order ${order.order_no}` : 'Order'}
+      description={order ? `${order.company_name || order.ordered_by_name} · ${dateTime(order.created_at)}` : null}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          {order && (
+            <Button asChild>
+              <Link href={`/manager/orders/${order.id}`}>Open the full record</Link>
+            </Button>
+          )}
+        </>
+      }
+    >
+      {error && <Alert>{error}</Alert>}
+      {!order && !error && <Loading>Fetching the order…</Loading>}
+
+      {order && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <StatusChip status={order.status}>{statusLabel(order.status)}</StatusChip>
+            <span className="text-[13px] text-ink-muted">
+              {order.fulfilment === 'delivery' ? 'For delivery' : 'For collection'}
+              {order.ordered_by_phone ? ` · ${order.ordered_by_phone}` : ''}
+            </span>
+            <span className="tnum ml-auto font-display text-[20px] font-extrabold text-ink">
+              {money(order.total)}
+            </span>
+          </div>
+
+          {items.length > 0 && (
+            <TableWrap className="rounded-sm border border-line">
+              <Table className="text-[13px]">
+                <thead>
+                  <tr><Th>Item</Th><Th num>Qty</Th><Th num>Total</Th></tr>
+                </thead>
+                <tbody>
+                  {items.map((i) => (
+                    <Tr key={i.id}>
+                      <Td>
+                        <span className="text-ink">{i.product_name}</span>
+                        {i.code && <span className="tnum ml-2 text-ink-muted">{i.code}</span>}
+                      </Td>
+                      <Td num>{i.quantity} {i.unit}</Td>
+                      <Td num className="font-semibold text-ink">{money(i.line_total)}</Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            </TableWrap>
+          )}
+
+          {order.delivery_address && (
+            <p className="rounded-sm border border-line bg-surface-2 px-3.5 py-2.5 text-[13px]">
+              <span className="font-semibold text-ink">Deliver to:</span>{' '}
+              <span className="text-ink-2">{order.delivery_address}</span>
+            </p>
+          )}
+
+          {order.payment && (
+            <p className="text-[13px] text-ink-muted">
+              <span className="font-semibold text-ink">{order.payment.receipt_no}</span>
+              {' · '}{methodLabel(order.payment.method)}
+              {' · '}taken by {order.payment.cashier_name}
+              {order.payment.verified === 1 && <span className="text-ok"> · verified</span>}
+              {order.payment.verified === -1 && <span className="text-bad"> · rejected</span>}
+            </p>
+          )}
+        </div>
+      )}
+    </Modal>
   );
 }
