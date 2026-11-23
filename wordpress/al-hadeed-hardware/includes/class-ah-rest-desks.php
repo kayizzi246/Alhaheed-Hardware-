@@ -747,12 +747,41 @@ class AH_Rest_Desks {
 
 	public static function customers( $req ) {
 		$args = array( 'role' => 'customer', 'number' => 200 );
-		if ( $req->get_param( 'q' ) ) {
-			$args['search']         = '*' . sanitize_text_field( $req->get_param( 'q' ) ) . '*';
+		$q    = trim( sanitize_text_field( (string) $req->get_param( 'q' ) ) );
+		if ( '' !== $q ) {
+			$args['search']         = '*' . $q . '*';
 			$args['search_columns'] = array( 'display_name', 'user_email', 'user_login' );
 		}
 
 		$users = get_users( $args );
+
+		// By phone too. The box has always said "Name, phone or email",
+		// but the number lives in user meta, which a user search does not
+		// look at — so typing a number found nobody. Matched on the last
+		// nine digits, so "0772 123 456" finds "+256772123456".
+		$digits = preg_replace( '/\D/', '', $q );
+		if ( strlen( $digits ) >= 6 ) {
+			$tail = substr( $digits, -9 );
+			$by_phone = get_users(
+				array(
+					'role'       => 'customer',
+					'number'     => 50,
+					'meta_query' => array(
+						array(
+							'key'     => 'ah_phone',
+							'value'   => $tail,
+							'compare' => 'LIKE',
+						),
+					),
+				)
+			);
+			$seen = wp_list_pluck( $users, 'ID' );
+			foreach ( $by_phone as $u ) {
+				if ( ! in_array( $u->ID, $seen, true ) ) {
+					$users[] = $u;
+				}
+			}
+		}
 		if ( ! $users ) {
 			return array( 'customers' => array() );
 		}

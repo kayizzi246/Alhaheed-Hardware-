@@ -330,6 +330,9 @@ class AH_Rest {
 		// that a reference has not already paid for another order.
 		AH_Proofs::routes();
 
+		// Customers who walk in, added at the counter.
+		AH_Customers::routes();
+
 		// Writing to suppliers from inside the shop, instead of the
 		// cashier opening a mail app and typing it out again.
 		AH_Suppliers::routes();

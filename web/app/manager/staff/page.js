@@ -186,7 +186,15 @@ function HireDialog({ onClose, onDone }) {
     setError('');
     try {
       const r = await api('/api/manager/staff/create', { method: 'POST', body: form });
-      setHired({ name: r.staff.fullName, id: r.staff.id, phone: r.signInWith || r.staff.phone, password: form.password });
+      // Only a password the server says it saved is shown. A site still on
+      // the older plugin ignores the field and makes its own; showing the
+      // typed one there would hand the person a password that fails.
+      setHired({
+        name: r.staff.fullName,
+        id: r.staff.id,
+        phone: r.signInWith || r.staff.phone,
+        password: r.passwordSet === true ? form.password : null,
+      });
     } catch (err) {
       setError(err.message);
       setBusy(false);
@@ -214,7 +222,15 @@ function HireDialog({ onClose, onDone }) {
           </>
         }
       >
-        <SignInCard phone={hired.phone} password={hired.password} />
+        {hired.password ? (
+          <SignInCard phone={hired.phone} password={hired.password} />
+        ) : (
+          <p className="text-[13.5px] leading-relaxed text-ink-2">
+            They sign in with <strong className="tnum">{hired.phone}</strong> and a code texted to that phone.
+            This site is on an older version of the plugin, which does not take a password from here —
+            upload the latest one to set passwords when hiring.
+          </p>
+        )}
       </Modal>
     );
   }

@@ -137,7 +137,20 @@ class AH_Shape {
 				? (int) get_user_meta( $user->ID, 'ah_spending_limit', true )
 				: null,
 			'status'        => get_user_meta( $user->ID, 'ah_status', true ) ?: 'active',
+			// Where a customer came from: added at the counter, or by
+			// ordering on the app. Staff accounts leave these empty.
+			'source'        => $desk ? null : ( get_user_meta( $user->ID, 'ah_source', true ) ?: 'app' ),
+			'addedBy'       => $desk ? null : self::added_by( $user->ID ),
 		);
+	}
+
+	private static function added_by( $user_id ) {
+		$by = (int) get_user_meta( $user_id, 'ah_added_by', true );
+		if ( ! $by ) {
+			return null;
+		}
+		$who = get_user_by( 'id', $by );
+		return $who ? $who->display_name : null;
 	}
 
 	// -----------------------------------------------------------------
