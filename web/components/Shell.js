@@ -100,19 +100,25 @@ export default function Shell({ allow, children }) {
   return (
     <div className="min-h-dvh lg:pl-rail">
       {/* ── The rail ──────────────────────────────────────────────── */}
+      {/* The rail is the shop's dark warm navy, the same slab the
+          sign-in page wears, so the brand is on screen the whole shift
+          rather than only at the door. Everything inside it is set in
+          white at varying strength — the orange is kept for the one
+          row you are standing on, which is the only thing in here that
+          needs to be found at a glance. */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-rail flex-col border-r border-line bg-surface',
+          'fixed inset-y-0 left-0 z-40 flex w-rail flex-col border-r border-black/20 bg-navy',
           'transition-transform duration-200 ease-out',
           'max-lg:shadow-lg',
           menuOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'
         )}
       >
-        <div className="flex items-center gap-2.5 border-b border-line px-4 py-4">
-          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand text-[13px] font-extrabold text-white">
+        <div className="flex items-center gap-2.5 border-b border-white/10 px-4 py-4">
+          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-brand to-brand-dark text-[13px] font-extrabold text-white shadow-sm">
             AH
           </span>
-          <span className="font-display text-[12.5px] font-extrabold leading-[1.15] tracking-[.04em] text-ink">
+          <span className="font-display text-[12.5px] font-extrabold leading-[1.15] tracking-[.04em] text-white">
             AL HADEED
             <br />
             <b className="text-brand">HARDWARE</b>
@@ -124,7 +130,7 @@ export default function Shell({ allow, children }) {
             item.group ? (
               <p
                 key={`g${i}`}
-                className="mb-1.5 mt-4 px-3 font-display text-[10.5px] font-bold uppercase tracking-[.08em] text-ink-faint"
+                className="mb-1.5 mt-4 px-3 font-display text-[10.5px] font-bold uppercase tracking-[.08em] text-white/35"
               >
                 {item.group}
               </p>
@@ -134,14 +140,19 @@ export default function Shell({ allow, children }) {
                 href={item.href}
                 aria-current={item === current ? 'page' : undefined}
                 className={cn(
-                  'mb-0.5 flex items-center gap-2.5 rounded-sm px-3 py-2.5',
+                  'relative mb-0.5 flex items-center gap-2.5 rounded-sm px-3 py-2.5',
                   'font-display text-[14.5px] font-medium transition-colors duration-150 ease-out',
                   item === current
-                    ? 'bg-brand-soft font-semibold text-brand-dark'
-                    : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
+                    ? 'bg-white/[.07] font-semibold text-white'
+                    : 'text-white/60 hover:bg-white/[.04] hover:text-white/90'
                 )}
               >
-                <span className={cn('shrink-0', item === current ? 'text-brand' : 'text-ink-muted')}>
+                {/* A bar as well as a tint, so the current row is still
+                    obvious to anyone who cannot pick the tint out. */}
+                {item === current && (
+                  <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-r bg-brand" />
+                )}
+                <span className={cn('shrink-0', item === current ? 'text-brand' : 'text-white/45')}>
                   {Icon[item.icon]?.()}
                 </span>
                 {item.label}
@@ -150,10 +161,10 @@ export default function Shell({ allow, children }) {
           )}
         </nav>
 
-        <div className="border-t border-line px-4 py-3">
+        <div className="border-t border-white/10 px-4 py-3">
           <span
             title="These screens re-check the shop on their own"
-            className={cn('inline-flex items-center gap-2 text-xs', failing ? 'text-bad' : 'text-ink-muted')}
+            className={cn('inline-flex items-center gap-2 text-xs', failing ? 'text-bad' : 'text-white/45')}
           >
             <i className={cn('size-1.5 rounded-full', failing ? 'bg-bad' : 'bg-ok')} />
             {freshness(at, failing)}
