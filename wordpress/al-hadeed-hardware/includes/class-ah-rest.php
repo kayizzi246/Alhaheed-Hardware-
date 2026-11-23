@@ -302,6 +302,16 @@ class AH_Rest {
 		);
 
 		// ── Cashier ───────────────────────────────────────────────────
+		// A sale at the counter: the cashier builds the basket for
+		// somebody standing there, then takes payment the usual way.
+		register_rest_route(
+			$ns, '/cashier/orders',
+			array(
+				'methods'             => $post,
+				'permission_callback' => self::desk( array( 'cashier', 'manager' ) ),
+				'callback'            => array( __CLASS__, 'counter_sale' ),
+			)
+		);
 		register_rest_route(
 			$ns, '/cashier/queue',
 			array(
@@ -858,6 +868,85 @@ class AH_Rest {
 	}
 
 	/**
+	 * A sale for somebody standing at the counter.
+	 *
+	 * Becomes an ordinary order waiting for payment, so everything after
+	 * it — the receipt, Accounts checking it, the store releasing the
+	 * goods, the reports — is exactly what an order from the app gets.
+	 * Nothing about a counter sale is a separate system.
+	 *
+	 * Who it is for, in order of preference:
+	 *   customerId     somebody already on the list
+	 *   phone (+name)  found by number, or added there and then
+	 *   neither        an anonymous walk-in — not everyone wants to give
+	 *                  a name to buy a box of nails
+	 */
+	public static function counter_sale( $req ) {
+		$items = (array) $req->get_param( 'items' );
+		if ( ! $items ) {
+			return self::err( 'ah_empty', 'Add at least one item to the sale', 400 );
+		}
+
+		$customer = null;
+		$id       = (int) $req->get_param( 'customerId' );
+		$phone    = trim( (string) $req->get_param( 'phone' ) );
+		$name     = trim( sanitize_text_field( (string) $req->get_param( 'name' ) ) );
+
+		if ( $id ) {
+			$customer = get_user_by( 'id', $id );
+			if ( ! $customer || AH_Roles::desk_of( $customer ) ) {
+				return self::err( 'ah_no_customer', 'That customer is not on the list', 404 );
+			}
+		} elseif ( '' !== $phone ) {
+			$customer = AH_Auth::user_by_phone( $phone );
+			if ( $customer && AH_Roles::desk_of( $customer ) ) {
+				return self::err( 'ah_staff_number', 'That number belongs to a member of staff', 400 );
+			}
+			if ( ! $customer ) {
+				if ( mb_strlen( $name ) < 2 ) {
+					return self::err( 'ah_need_name', 'That number is new. Add their name too, or leave the number blank for a walk-in.', 400 );
+				}
+				// The same checks and the same record as adding a customer
+				// from the Customers screen — one way to make a customer.
+				$add = new WP_REST_Request( 'POST', '/' . self::NS . '/customers' );
+				$add->set_param( 'fullName', $name );
+				$add->set_param( 'phone', $phone );
+				$add->set_param( 'welcome', (bool) $req->get_param( 'welcome' ) );
+				$made = AH_Customers::create( $add );
+				if ( is_wp_error( $made ) ) {
+					return $made;
+				}
+				$customer = get_user_by( 'id', (int) $made['customer']['id'] );
+			}
+		}
+
+		$how   = 'delivery' === $req->get_param( 'fulfilment' ) ? 'shop_delivery' : 'pickup';
+		$where = trim( (string) $req->get_param( 'address' ) );
+		if ( 'shop_delivery' === $how && '' === $where ) {
+			return self::err( 'ah_no_address', 'Say where to deliver it', 400 );
+		}
+
+		$bill_name  = $customer ? $customer->display_name : 'Walk-in customer';
+		$bill_phone = $customer ? (string) get_user_meta( $customer->ID, 'ah_phone', true ) : '';
+
+		$order = self::build_order( $customer, $items, $bill_phone, $bill_name, $how, $where, 'counter' );
+		if ( is_wp_error( $order ) ) {
+			return $order;
+		}
+
+		$staff = AH_Auth::current();
+		$order->update_meta_data( '_ah_taken_by', $staff->ID );
+		$note = trim( sanitize_textarea_field( (string) $req->get_param( 'notes' ) ) );
+		// Kept beside the delivery note, which the driver needs.
+		$order->set_customer_note( 'Sold at the counter by ' . $staff->display_name . ' · ' . $order->get_customer_note() . ( $note ? "\n" . $note : '' ) );
+		$order->save();
+
+		AH_Flow::log_event( $order->get_id(), 'cashier', 'counter_sale', null, 'pending_payment', $staff->ID, $order->get_item_count() . ' item(s)' );
+
+		return array( 'order' => AH_Shape::order( $order, true ) );
+	}
+
+	/**
 	 * Turn a basket into a saved WooCommerce order.
 	 *
 	 * Built through WooCommerce rather than by hand so that stock,
@@ -868,8 +957,10 @@ class AH_Rest {
 	 *
 	 * @return WC_Order|WP_Error
 	 */
-	private static function build_order( $user, $items, $phone, $name, $how, $where ) {
-		$order = wc_create_order( array( 'customer_id' => $user->ID ) );
+	private static function build_order( $user, $items, $phone, $name, $how, $where, $source = 'app' ) {
+		// No account at all is allowed: a walk-in who would rather not
+		// give a name or number. WooCommerce calls that a guest order.
+		$order = wc_create_order( array( 'customer_id' => $user ? $user->ID : 0 ) );
 
 		foreach ( $items as $line ) {
 			$product_id = isset( $line['productId'] ) ? (int) $line['productId'] : 0;
@@ -907,7 +998,7 @@ class AH_Rest {
 		}
 
 		$order->update_meta_data( '_ah_fulfilment', 'shop_delivery' === $how ? 'delivery' : 'pickup' );
-		$order->update_meta_data( '_ah_source', 'app' );
+		$order->update_meta_data( '_ah_source', $source );
 		$order->update_meta_data( '_ah_delivery_choice', $how );
 		if ( $where ) {
 			$order->update_meta_data( '_ah_location', $where );
@@ -918,7 +1009,7 @@ class AH_Rest {
 		$order->set_status( 'pending' );
 		$order->save();
 
-		AH_Flow::on_new_order( $order );
+		AH_Flow::on_new_order( $order, false );
 
 		return $order;
 	}

@@ -34,7 +34,15 @@ class AH_Flow {
 	 * A new website order: stamp it with the shop's own order number and
 	 * text the customer what to do next.
 	 */
-	public static function on_new_order( $order ) {
+	/**
+	 * @param WC_Order|int $order
+	 * @param bool         $notify Text the customer. The app's ordering
+	 *                             routes text them themselves (they need to
+	 *                             report whether it went), so they pass
+	 *                             false — before, every app order sent the
+	 *                             same "order placed" text twice.
+	 */
+	public static function on_new_order( $order, $notify = true ) {
 		$order = is_numeric( $order ) ? wc_get_order( $order ) : $order;
 		if ( ! $order ) {
 			return;
@@ -65,7 +73,7 @@ class AH_Flow {
 		);
 
 		$phone = $order->get_billing_phone();
-		if ( $phone ) {
+		if ( $phone && $notify ) {
 			AH_Sms::send( $phone, AH_Sms::order_placed_message( $order ) );
 		}
 	}

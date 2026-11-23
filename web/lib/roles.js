@@ -13,6 +13,7 @@
 export const NAV = {
   cashier: [
     { href: '/cashier', label: 'Payment Queue', icon: 'queue' },
+    { href: '/cashier/sale', label: 'New Sale', icon: 'box' },
     { href: '/cashier/receipts', label: 'Receipts', icon: 'receipt' },
     { href: '/cashier/customers', label: 'Customers', icon: 'people' },
     { href: '/cashier/cash-book', label: 'Cash Book', icon: 'cash' },
