@@ -59,9 +59,12 @@ export default {
       },
 
       fontFamily: {
-        // Inter reads; Manrope announces. Set in app/layout.js.
+        // Set in app/layout.js.
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['var(--font-display)', 'var(--font-sans)', 'sans-serif'],
+        // One family now. 'display' stays as a name so the markup that
+        // asks for it keeps working, and so a second face can be put
+        // back in one line if it is ever wanted.
+        display: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
 
       borderRadius: {

@@ -170,23 +170,24 @@
   }
 
   /* Manrope carries headings. The weight is set where the size is. */
-  /* Poppins has a real 900, so the headings use one — no synthesised
-     bold, which smears the outline and looks blurry at this size.
+  /* Inter carries a real 900, so a heading is a genuine Black rather
+     than a synthesised one — which smears the outline and looks
+     blurry at this size.
 
-     Poppins is a geometric face and sets much wider than Manrope did,
-     so the tracking is pulled in harder to compensate; at 900 the
-     counters close up and the line needs the room taken back out. */
+     Inter sets narrower than Poppins did, so the tracking is eased
+     back: tight tracking on an already-narrow face closes the
+     counters and words start running together. */
   h1, h2, h3, h4 {
     @apply font-display;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.016em;
   }
 
   /* The page title is the one thing on the screen that should be
      unmistakably the heaviest. */
   h1 {
     font-weight: 900;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.021em;
   }
 
   /* One focus ring for the whole panel rather than one per component.
