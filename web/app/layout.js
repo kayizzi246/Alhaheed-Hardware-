@@ -1,13 +1,14 @@
-import { Inter, Manrope } from 'next/font/google';
+import { Inter, Poppins } from 'next/font/google';
 import { THEME_SCRIPT } from '@/components/Theme';
 import './globals.css';
 
 /**
  * The two typefaces.
  *
- * Manrope sets the headings, the navigation and the titles — it has a
- * squarer, more mechanical shape that suits a hardware shop, and it
- * holds up at the big weights the figures on these screens need.
+ * Poppins sets the headings, the navigation and the titles. It is a
+ * geometric face — near-circular bowls, even strokes — so it reads as
+ * built rather than written, which suits a counter. It also has a true
+ * 900, which is what the big figures on these screens wanted.
  *
  * Inter does the reading: body text, forms, tables, buttons, labels.
  * It was drawn for screens at small sizes, its numerals line up in a
@@ -24,8 +25,15 @@ const inter = Inter({
   display: 'swap',
 });
 
-const manrope = Manrope({
+/**
+ * Poppins ships as static cuts, not a variable font, so the weights
+ * have to be named — only these are downloaded. 900 is included
+ * because Poppins actually has one, which Manrope did not: the
+ * headline can now be a real Black rather than an 800 pretending.
+ */
+const poppins = Poppins({
   subsets: ['latin'],
+  weight: ['500', '600', '700', '800', '900'],
   variable: '--font-display',
   display: 'swap',
 });
@@ -37,7 +45,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${manrope.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
       <head>
         {/* Sets the theme before the first paint. Anything later than
             this is a white flash in a dark room. */}

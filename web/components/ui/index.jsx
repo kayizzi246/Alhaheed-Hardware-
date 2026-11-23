@@ -352,7 +352,7 @@ export const Spinner = ({ className }) => (
 export const PageHead = ({ title, sub, children }) => (
   <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div className="min-w-0">
-      <h1 className="text-[26px] font-bold leading-tight text-ink">{title}</h1>
+      <h1 className="text-[26px] leading-tight text-ink">{title}</h1>
       {sub && <p className="mt-1 text-sm text-ink-muted">{sub}</p>}
     </div>
     {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}

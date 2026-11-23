@@ -51,7 +51,7 @@ export default function ManagerOrderDetail() {
     <>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="tnum text-[26px] font-bold leading-tight text-ink">Order {order.order_no}</h1>
+          <h1 className="tnum text-[26px] leading-tight text-ink">Order {order.order_no}</h1>
           <p className="mt-1 text-sm text-ink-muted">{dateTime(order.created_at)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

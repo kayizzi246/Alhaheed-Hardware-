@@ -73,7 +73,7 @@ export default function ManagerConsole() {
     <>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-[26px] font-bold leading-tight text-ink">The shop today</h1>
+          <h1 className="text-[26px] leading-tight text-ink">The shop today</h1>
           <p className="mt-1 text-sm text-ink-muted">
             Everything moving through the counter,{' '}
             {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -426,7 +426,7 @@ function Latest({ rows }) {
 function ConsoleSkeleton() {
   return (
     <>
-      <h1 className="mb-6 text-[26px] font-bold text-ink">The shop today</h1>
+      <h1 className="mb-6 text-[26px] text-ink">The shop today</h1>
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[96px]" />)}
       </div>

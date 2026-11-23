@@ -711,6 +711,87 @@ String _statusLabel(String status) => switch (status) {
       _ => status,
     };
 
+/// The small square on the product sheet, when there is no photograph
+/// to put there: the category's colour and the first letter of its name.
+Widget _initialTile(Map<String, dynamic> product, Color colour) => ColoredBox(
+      color: colour,
+      child: Center(
+        child: Text(
+          (product['category_name'] as String? ?? '?')
+              .characters
+              .first
+              .toUpperCase(),
+          style: _title(24, weight: FontWeight.w800, color: _white),
+        ),
+      ),
+    );
+
+/// The photograph of a product, where there is one.
+///
+/// A shop that has not photographed its stock yet still gets a tidy
+/// shelf: the fallback is the category's colour with its name on it,
+/// which is what every tile looked like before any pictures existed.
+///
+/// That fallback is also the error state. On a dropped connection the
+/// default is Flutter's broken-image glyph — a grey icon that says
+/// "something is wrong with this app" when the truth is that the line
+/// went away for a second. The coloured tile says nothing is wrong,
+/// which is nearer the truth and much easier to look at on a wall of
+/// twenty products.
+class _ProductPicture extends StatelessWidget {
+  const _ProductPicture({required this.product, required this.colour});
+
+  final Map<String, dynamic> product;
+  final Color colour;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = product['picture'] as String?;
+
+    if (url == null || url.isEmpty) return _fallback();
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      // The shelf is a grid of twenty; full-resolution decodes of all
+      // of them is how a mid-range Android runs out of memory.
+      cacheWidth: 420,
+      errorBuilder: (_, __, ___) => _fallback(),
+      loadingBuilder: (_, child, progress) =>
+          progress == null ? child : _fallback(dim: true),
+    );
+  }
+
+  Widget _fallback({bool dim = false}) => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.lerp(colour, _white, dim ? 0.3 : 0.12)!,
+              Color.lerp(colour, Colors.black, dim ? 0.0 : 0.12)!,
+            ],
+          ),
+        ),
+        child: dim
+            ? null
+            : Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(
+                    (product['category_name'] as String? ?? 'ITEM')
+                        .toUpperCase(),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        _title(12.5, weight: FontWeight.w800, color: _white),
+                  ),
+                ),
+              ),
+      );
+}
+
 class _Chip extends StatelessWidget {
   const _Chip(this.label,
       {required this.bg, required this.fg, this.bold = true});
@@ -1385,32 +1466,7 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color.lerp(colour, _white, 0.12)!,
-                          Color.lerp(colour, Colors.black, 0.12)!,
-                        ],
-                      ),
-                    ),
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Text(
-                          (p['category_name'] as String? ?? 'ITEM')
-                              .toUpperCase(),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: _title(12.5,
-                              weight: FontWeight.w800, color: _white),
-                        ),
-                      ),
-                    ),
-                  ),
+                  _ProductPicture(product: p, colour: colour),
                   if (stock <= 0)
                     Positioned(
                       left: 8,
@@ -1792,20 +1848,26 @@ class _ProductSheetState extends State<_ProductSheet> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: colour,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    (p['category_name'] as String? ?? '?')
-                        .characters
-                        .first
-                        .toUpperCase(),
-                    style: _title(24, weight: FontWeight.w800, color: _white),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: SizedBox(
+                    width: 64,
+                    height: 64,
+                    child: (p['picture'] as String?)?.isNotEmpty == true
+                        ? Image.network(
+                            p['picture'] as String,
+                            fit: BoxFit.cover,
+                            cacheWidth: 200,
+                            errorBuilder: (_, __, ___) =>
+                                _initialTile(p, colour),
+                            loadingBuilder: (_, child, progress) =>
+                                progress == null
+                                    ? child
+                                    : ColoredBox(
+                                        color: Color.lerp(
+                                            colour, _white, 0.3)!),
+                          )
+                        : _initialTile(p, colour),
                   ),
                 ),
                 const SizedBox(width: 14),

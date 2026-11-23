@@ -167,7 +167,7 @@ export default function Shell({ allow, children }) {
           {Icon.menu()}
         </IconButton>
 
-        <h1 className="min-w-0 flex-1 truncate font-display text-[18px] font-bold text-ink">{title}</h1>
+        <h1 className="min-w-0 flex-1 truncate font-display text-[18px] font-bold tracking-[-.015em] text-ink">{title}</h1>
 
         <div className="flex items-center gap-2">
           <Alerts unread={unread} home={HOME[user.role]} onSeen={() => setUnread(0)} />

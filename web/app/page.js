@@ -157,7 +157,7 @@ export default function LoginPage() {
 
           {/* 800 is Manrope's heaviest real cut. The extra authority
               comes from size and tracking, not a faked 900. */}
-          <h2 className="mt-7 font-display text-[46px] font-extrabold leading-[1.04] tracking-[-.035em] xl:text-[56px]">
+          <h2 className="mt-7 font-display text-[46px] font-black leading-[1.04] tracking-[-.032em] xl:text-[56px]">
             Run the counter
             <br />
             <span className="bg-gradient-to-br from-brand to-[rgb(var(--red))] bg-clip-text text-transparent">
