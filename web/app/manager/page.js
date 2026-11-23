@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api, peek } from '@/lib/api';
 import { money, shortMoney, time, statusLabel, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { Icon } from '@/components/icons';
 import {
   Alert, Button, Card, CardBody, CardHead, CardNote, CardTitle,
   Fresh, Skeleton, StatusChip, Table, TableWrap, Td, Th, Tr,
@@ -100,12 +101,48 @@ export default function ManagerConsole() {
       {/* ── The row of figures ─────────────────────────────────────── */}
       {/* Two across on a phone, the day's sales across the top. One per
           row put five tiles between the manager and everything else. */}
-      <div className="mb-4 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-5">
-        <Kpi label="Sales today" value={money(d.salesToday)} delta={delta} note="vs daily average" lead className="col-span-2 sm:col-span-1" />
-        <Kpi label="Orders today" value={String(d.ordersToday)} note={`${waiting} still open`} />
-        <Kpi label="Average order" value={money(avgOrder)} note="per order today" />
-        <Kpi label="Waiting on a desk" value={String(waiting)} note="cashier, accounts, store" tone={waiting ? 'warn' : null} />
-        <Kpi label="Low on stock" value={String(low.length)} note="at or below reorder" tone={low.length ? 'bad' : null} />
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
+        <Kpi
+          hero
+          label="Sales today"
+          value={money(d.salesToday)}
+          delta={delta}
+          note={delta === null ? (d.salesToday ? 'the first sales this week' : 'nothing taken yet today') : 'vs the daily average'}
+          icon={Icon.cash()}
+          href="/manager/reports"
+          spark={days.map((x) => x.total)}
+          className="col-span-2 sm:col-span-1"
+        />
+        <Kpi
+          label="Orders today"
+          value={String(d.ordersToday)}
+          note={waiting ? `${waiting} still open` : 'all dealt with'}
+          icon={Icon.receipt()}
+          href="/manager/orders"
+        />
+        <Kpi
+          label="Average order"
+          value={money(avgOrder)}
+          note="per order today"
+          icon={Icon.chart()}
+          tone="neutral"
+        />
+        <Kpi
+          label="Waiting on a desk"
+          value={String(waiting)}
+          note={waiting ? 'at the cashier, accounts or store' : 'nothing waiting'}
+          icon={Icon.clock()}
+          tone={waiting ? 'warn' : 'ok'}
+          href="/manager/orders"
+        />
+        <Kpi
+          label="Low on stock"
+          value={String(low.length)}
+          note={low.length ? 'at or below the reorder level' : 'everything is stocked'}
+          icon={Icon.box()}
+          tone={low.length ? 'bad' : 'ok'}
+          href="/manager/products"
+        />
       </div>
 
       {/* ── Trajectory and funnel ──────────────────────────────────── */}
@@ -171,44 +208,138 @@ export default function ManagerConsole() {
 
 /* ── Pieces ───────────────────────────────────────────────────────── */
 
-function Kpi({ label, value, delta, note, tone, lead, className }) {
+/**
+ * One figure at the top of the dashboard.
+ *
+ * Read at a glance, then — if it is worth acting on — tapped: each
+ * tile that leads somewhere is a link to the screen where you would
+ * act on it. The icon's colour carries the state (amber when orders
+ * are waiting, red when stock is low, green when all is well) so the
+ * number itself stays the one thing to read. The day's sales is the
+ * hero, with the week drawn behind it.
+ */
+const TONES = {
+  brand: 'bg-brand-soft text-brand',
+  neutral: 'bg-surface-sunk text-ink-muted',
+  ok: 'bg-ok-bg text-ok',
+  warn: 'bg-warn-bg text-warn',
+  bad: 'bg-bad-bg text-bad',
+};
+
+function Kpi({ label, value, delta, note, tone = 'brand', icon, href, spark, hero, className }) {
+  const Box = href ? Link : 'div';
   return (
-    <div
+    <Box
+      {...(href ? { href } : {})}
       className={cn(
-        'min-w-0 rounded-lg border border-line bg-surface px-3 py-3 shadow-sm [container-type:inline-size] sm:px-4 sm:py-3.5',
-        lead && 'border-brand/30 bg-brand-soft',
-        className,
-        tone === 'warn' && 'border-warn/30',
-        tone === 'bad' && 'border-bad/30'
+        'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl p-4 [container-type:inline-size] sm:p-5',
+        'transition-[transform,box-shadow,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+        hero
+          ? 'bg-[linear-gradient(135deg,rgb(var(--brand))_0%,rgb(var(--brand-dark))_100%)] text-white shadow-[0_12px_32px_-12px_rgb(var(--brand)/0.55)]'
+          : 'border border-line bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.04),0_6px_20px_-12px_rgb(15_23_42/0.12)]',
+        href && (hero
+          ? 'hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgb(var(--brand)/0.65)] active:scale-[0.985]'
+          : 'hover:-translate-y-0.5 hover:border-line-firm hover:shadow-[0_2px_4px_rgb(15_23_42/0.05),0_14px_32px_-14px_rgb(15_23_42/0.22)] active:scale-[0.985]'),
+        'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand/30',
+        className
       )}
     >
-      <span className="block text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">{label}</span>
+      {hero && (
+        // A soft light in the corner, so the blue has depth rather than
+        // being a flat slab.
+        <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 -z-10 size-56 rounded-full bg-white/15 blur-3xl" />
+      )}
+
+      <div className="flex items-start gap-2.5">
+        <span
+          className={cn(
+            'grid size-9 shrink-0 place-items-center rounded-xl [&>svg]:size-[18px]',
+            hero ? 'bg-white/15 text-white ring-1 ring-inset ring-white/20' : TONES[tone]
+          )}
+        >
+          {icon}
+        </span>
+        <span className={cn('min-w-0 flex-1 pt-[9px] text-[13px] font-semibold leading-tight [overflow-wrap:anywhere]', hero ? 'text-white/85' : 'text-ink-muted')}>
+          {label}
+        </span>
+        {href && (
+          <svg
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+            className={cn(
+              'mt-[10px] size-4 shrink-0 -translate-x-1 opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100',
+              hero ? 'text-white/80' : 'text-ink-faint'
+            )}
+          >
+            <path d="M5 11l6-6M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </div>
+
       <strong
         className={cn(
-          String(value).length > 11
-            ? 'tnum mt-1.5 block font-display text-[clamp(15px,10cqi,26px)] font-extrabold leading-none tracking-[-.02em] text-ink'
-            : 'tnum mt-1.5 block font-display text-[clamp(20px,14cqi,26px)] font-extrabold leading-none tracking-[-.02em] text-ink',
-          lead && 'text-brand-dark',
-          tone === 'warn' && 'text-warn',
-          tone === 'bad' && 'text-bad'
+          'tnum mt-4 block font-display font-extrabold leading-none tracking-[-0.03em]',
+          String(value).length > 11 ? 'text-[clamp(18px,10.5cqi,30px)]' : 'text-[clamp(24px,15cqi,32px)]',
+          hero ? 'text-white' : 'text-ink'
         )}
       >
         {value}
       </strong>
-      <span className="mt-2 flex min-w-0 items-center gap-1.5 truncate text-xs text-ink-muted">
+
+      <span className={cn('mt-3 flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px]', hero ? 'text-white/80' : 'text-ink-muted')}>
         {delta !== null && delta !== undefined && (
           <span
             className={cn(
-              'tnum rounded px-1.5 py-0.5 text-[11px] font-bold',
-              delta >= 0 ? 'bg-ok-bg text-ok' : 'bg-bad-bg text-bad'
+              'tnum inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11.5px] font-bold',
+              hero
+                ? 'bg-white/20 text-white'
+                : delta >= 0 ? 'bg-ok-bg text-ok' : 'bg-bad-bg text-bad'
             )}
           >
-            {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}%
+            <svg viewBox="0 0 12 12" aria-hidden="true" className={cn('size-3', delta < 0 && 'rotate-180')}>
+              <path d="M6 2.5v7M3 5.5l3-3 3 3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {Math.abs(delta)}%
           </span>
         )}
-        {note}
+        <span className="min-w-0">{note}</span>
       </span>
-    </div>
+
+      {spark && <Sparkline values={spark} />}
+    </Box>
+  );
+}
+
+/**
+ * The week, drawn faintly along the bottom of the hero tile. Not for
+ * reading values from — the chart below does that — but for seeing at
+ * a glance whether today is up or down on the days before it.
+ */
+function Sparkline({ values }) {
+  const max = Math.max(...values, 1);
+  const pts = values.map((v, i) => [
+    values.length === 1 ? 50 : (i / (values.length - 1)) * 100,
+    30 - (v / max) * 24,
+  ]);
+  const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+  const [lx, ly] = pts[pts.length - 1];
+  return (
+    <svg
+      viewBox="0 0 100 32"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      className="pointer-events-none absolute bottom-0 right-0 -z-10 h-[42%] w-[56%]"
+    >
+      <defs>
+        <linearGradient id="kpi-spark" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="white" stopOpacity="0.22" />
+          <stop offset="1" stopColor="white" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`${line} L100,32 L0,32 Z`} fill="url(#kpi-spark)" />
+      <path d={line} fill="none" stroke="white" strokeOpacity="0.55" strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      <circle cx={lx} cy={ly} r="1.6" fill="white" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
 
@@ -455,8 +586,8 @@ function ConsoleSkeleton() {
   return (
     <>
       <h1 className="mb-6 text-[26px] text-ink">The shop today</h1>
-      <div className="mb-4 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-5">
-        {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className={i === 0 ? 'col-span-2 h-[96px] sm:col-span-1' : 'h-[96px]'} />)}
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
+        {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className={i === 0 ? 'col-span-2 h-[150px] rounded-2xl sm:col-span-1' : 'h-[150px] rounded-2xl'} />)}
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <Skeleton className="h-[250px]" />
