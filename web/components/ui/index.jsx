@@ -31,22 +31,27 @@ const buttonVariants = cva(
   // The press is on every variant. Without it the screen does not feel
   // like it heard you.
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm font-semibold ' +
-    'transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out ' +
+    'transition-[transform,background-color,border-color,color,box-shadow,filter] duration-150 ease-out ' +
     'active:scale-[.97] disabled:pointer-events-none disabled:opacity-50 ' +
     '[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:pointer-events-none',
   {
     variants: {
       variant: {
+        // A light edge along the top and a coloured glow beneath: the
+        // button reads as something to press, not a painted rectangle.
         primary:
-          'bg-brand text-white shadow-sm hover:bg-brand-dark',
+          'bg-[linear-gradient(180deg,rgb(var(--brand)/0.9),rgb(var(--brand)))] text-white ' +
+          'shadow-[inset_0_1px_0_rgb(255_255_255/0.22),0_1px_2px_rgb(15_23_42/0.14),0_6px_16px_-8px_rgb(var(--brand)/0.75)] ' +
+          'hover:brightness-[1.07] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.24),0_2px_4px_rgb(15_23_42/0.14),0_10px_22px_-10px_rgb(var(--brand)/0.85)]',
         outline:
-          'border border-line bg-surface text-ink-2 hover:border-line-firm hover:text-ink',
+          'border border-line bg-surface text-ink-2 shadow-[0_1px_2px_rgb(15_23_42/0.05)] hover:border-line-firm hover:bg-surface-2 hover:text-ink',
         ghost:
           'text-ink-muted hover:bg-surface-2 hover:text-ink',
         danger:
           'border border-bad/25 bg-bad-bg text-bad hover:border-bad/40',
         good:
-          'bg-ok text-white hover:brightness-110',
+          'bg-[linear-gradient(180deg,rgb(var(--green)/0.9),rgb(var(--green)))] text-white ' +
+          'shadow-[inset_0_1px_0_rgb(255_255_255/0.2),0_1px_2px_rgb(15_23_42/0.14),0_6px_16px_-8px_rgb(var(--green)/0.7)] hover:brightness-110',
       },
       size: {
         sm: 'h-8 px-3 text-[13px]',
@@ -398,8 +403,14 @@ export const Tr = ({ className, ...props }) => (
 
 /* ── States ──────────────────────────────────────────────────────── */
 
-export const Empty = ({ title, children, action }) => (
-  <div className="px-6 py-14 text-center">
+export const Empty = ({ title, children, action, icon }) => (
+  <div className="px-6 py-12 text-center">
+    <span
+      aria-hidden="true"
+      className="mx-auto mb-4 grid size-12 place-items-center rounded-2xl bg-surface-2 text-ink-faint ring-1 ring-inset ring-line [&>svg]:size-[22px]"
+    >
+      {icon || Icon.queue()}
+    </span>
     {title && <p className="text-base font-semibold text-ink">{title}</p>}
     {children && <p className="mx-auto mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-ink-muted">{children}</p>}
     {action && <div className="mt-5">{action}</div>}
@@ -667,7 +678,7 @@ export const DialogClose = DialogPrimitive.Close;
 export const DialogContent = React.forwardRef(
   ({ className, title, description, children, ...props }, ref) => (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-navy-deep/45 backdrop-blur-[2px] data-[state=open]:animate-pop-in" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-navy-deep/40 backdrop-blur-[6px] data-[state=open]:animate-pop-in" />
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
@@ -675,7 +686,7 @@ export const DialogContent = React.forwardRef(
           // Tall content scrolls inside the dialog rather than pushing
           // its buttons off the bottom of a laptop screen.
           'max-h-[min(88vh,840px)] overflow-y-auto',
-          'rounded-lg border border-line bg-surface shadow-lg',
+          'rounded-2xl border border-line/80 bg-surface shadow-[0_24px_64px_-16px_rgb(15_23_42/0.35),0_4px_12px_-4px_rgb(15_23_42/0.12)]',
           // A modal is not anchored to a trigger, so it scales from its
           // own centre — and from .96, never 0. `dialog-in` rather than
           // `pop-in` because this box is centred by a translate, and
@@ -710,7 +721,7 @@ export const DialogBody = ({ className, ...props }) => (
 );
 
 export const DialogFoot = ({ className, ...props }) => (
-  <div className={cn('flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2 px-5 py-3.5', className)} {...props} />
+  <div className={cn('flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2/70 px-5 py-3.5', className)} {...props} />
 );
 
 /**

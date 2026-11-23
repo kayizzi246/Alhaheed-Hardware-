@@ -6,6 +6,7 @@ import { money, list } from '@/lib/format';
 import {
   Alert, Button, Card, Checkbox, Chip, Empty, Field, Input, Loading, Modal, PageHead,
   Stat, Stats, Table, TableWrap, Td, Textarea, Th, Tr, LoadFailed } from '@/components/ui';
+import { Icon } from '@/components/icons';
 
 const ACCOUNT_LABEL = (c) => {
   if (c.accountType === 'company_owner') return 'Company owner';
@@ -76,9 +77,9 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
       <Stats className="xl:grid-cols-3">
-        <Stat label="Customers" value={rows.length} />
-        <Stat label="Added at the counter" value={walkIns} />
-        <Stat label="Spent with the shop" value={money(spent)} tone="ok" />
+        <Stat label="Customers" value={rows.length} icon={Icon.people()} />
+        <Stat label="Added at the counter" value={walkIns} icon={Icon.user()} tone="neutral" />
+        <Stat label="Spent with the shop" value={money(spent)} tone="ok" icon={Icon.cash()} />
       </Stats>
 
       <Card>

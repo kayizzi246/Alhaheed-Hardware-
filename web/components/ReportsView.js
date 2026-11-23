@@ -7,6 +7,7 @@ import {
   Alert, Button, Card, CardBody, CardHead, CardTitle, Chip, Empty, Field,
   Input, Loading, PageHead, Select, Stat, Stats, Table, TableWrap, Td, Th, Tr,
 } from '@/components/ui';
+import { Icon } from '@/components/icons';
 
 const PERIODS = [
   ['daily', 'Today'],
@@ -141,13 +142,17 @@ export default function ReportsView() {
       </Card>
 
       <Stats>
-        <Stat label="Gross sales (verified)" value={money(sales.totals.gross)} lead />
-        <Stat label="Receipts" value={sales.totals.receipts} />
+        <Stat label="Gross sales (verified)" value={money(sales.totals.gross)} lead icon={Icon.cash()} />
+        <Stat label="Receipts" value={sales.totals.receipts} icon={Icon.receipt()} />
         <Stat
           label="Average receipt"
+          icon={Icon.chart()}
+          tone="neutral"
+          icon={Icon.chart()}
+          tone="neutral"
           value={money(sales.totals.receipts ? Math.round(sales.totals.gross / sales.totals.receipts) : 0)}
         />
-        <Stat label="Orders in period" value={stages.reduce((s, x) => s + x.orders, 0)} />
+        <Stat label="Orders in period" value={stages.reduce((s, x) => s + x.orders, 0)} icon={Icon.queue()} />
       </Stats>
 
       <Card className="mb-4">

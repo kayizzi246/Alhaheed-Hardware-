@@ -9,6 +9,7 @@ import { list, dateTime } from '@/lib/format';
 import {
   Alert, Button, Card, CardHead, CardTitle, Chip, Empty, Field, Input, Loading,
   Modal, PageHead, Select, Stat, Stats, Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
+import { Icon } from '@/components/icons';
 
 const ROLE_LABEL = {
   cashier: 'Cashier',
@@ -69,7 +70,7 @@ export default function ManagerStaff() {
 
       <Stats>
         {Object.keys(ROLE_LABEL).map((r) => (
-          <Stat key={r} label={ROLE_LABEL[r]} value={count(r)} />
+          <Stat key={r} label={ROLE_LABEL[r]} value={count(r)} icon={{ cashier: Icon.cash(), accounts: Icon.check(), store: Icon.box(), manager: Icon.user() }[r]} tone="neutral" />
         ))}
       </Stats>
 

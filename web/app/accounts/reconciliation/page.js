@@ -7,6 +7,7 @@ import {
   Alert, Card, CardBody, CardHead, CardTitle, Empty, Input, Loading,
   PageHead, Stat, Stats, Table, TableWrap, Td, Th, Tr,
 } from '@/components/ui';
+import { Icon } from '@/components/icons';
 
 /** What was collected, against what the cash book shows. */
 export default function ReconciliationPage() {
@@ -45,9 +46,9 @@ export default function ReconciliationPage() {
       {data && (
         <>
           <Stats>
-            <Stat label="Collected" value={money(collected)} />
-            <Stat label="Verified" value={money(verified)} tone="ok" />
-            <Stat label="Still pending" value={money(pending)} />
+            <Stat label="Collected" value={money(collected)} icon={Icon.cash()} />
+            <Stat label="Verified" value={money(verified)} tone="ok" icon={Icon.check()} />
+            <Stat label="Still pending" value={money(pending)} icon={Icon.clock()} tone={pending ? 'warn' : 'ok'} />
             <Stat
               label="Cash book difference"
               value={money(Math.abs(data.difference))}

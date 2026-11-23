@@ -140,19 +140,19 @@ export default function Shell({ allow, children }) {
                 href={item.href}
                 aria-current={item === current ? 'page' : undefined}
                 className={cn(
-                  'relative mb-0.5 flex items-center gap-2.5 rounded-sm px-3 py-2.5',
+                  'relative mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2.5',
                   'font-display text-[14.5px] font-medium transition-colors duration-150 ease-out',
                   item === current
-                    ? 'bg-white/[.07] font-semibold text-white'
-                    : 'text-white/60 hover:bg-white/[.04] hover:text-white/90'
+                    ? 'bg-[linear-gradient(90deg,rgb(var(--brand)/0.30),rgb(var(--brand)/0.06))] font-semibold text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.07)]'
+                    : 'text-white/60 hover:bg-white/[.05] hover:text-white/90'
                 )}
               >
                 {/* A bar as well as a tint, so the current row is still
                     obvious to anyone who cannot pick the tint out. */}
                 {item === current && (
-                  <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-r bg-brand" />
+                  <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-brand shadow-[0_0_12px_rgb(var(--brand))]" />
                 )}
-                <span className={cn('shrink-0', item === current ? 'text-brand' : 'text-white/45')}>
+                <span className={cn('shrink-0 transition-colors duration-150', item === current ? 'text-white' : 'text-white/45')}>
                   {Icon[item.icon]?.()}
                 </span>
                 {item.label}

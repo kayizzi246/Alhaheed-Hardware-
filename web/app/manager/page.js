@@ -240,10 +240,11 @@ const TRACK = 150;
 /** Seven bars. One series, so no legend — the title names it. */
 function Trajectory({ days, average }) {
   const [picked, setPicked] = useState(null);
+  const [hover, setHover] = useState(null);
   if (!days.length) return <None>No verified sales in the last week.</None>;
 
   const max = Math.max(1, ...days.map((d) => d.total));
-  const active = picked ?? days.length - 1;
+  const active = hover ?? picked ?? days.length - 1;
   const chosen = days[active];
   const dayName = (iso) => {
     const d = new Date(iso + 'T00:00:00');
@@ -286,14 +287,20 @@ function Trajectory({ days, average }) {
             key={d.day}
             type="button"
             onClick={() => setPicked(i)}
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+            onFocus={() => setHover(i)}
+            onBlur={() => setHover(null)}
             aria-label={`${d.day}: ${money(d.total)}`}
             className="group flex min-w-0 flex-1 flex-col items-stretch gap-1.5"
           >
             <span className="flex items-end" style={{ height: TRACK }}>
               <span
                 className={cn(
-                  'w-full rounded-t-[3px] transition-[height,background-color] duration-200 ease-out',
-                  i === active ? 'bg-brand' : 'bg-brand/35 group-hover:bg-brand/55'
+                  'w-full rounded-b-[3px] rounded-t-lg transition-[height,box-shadow,opacity] duration-200 ease-out',
+                  i === active
+                    ? 'bg-[linear-gradient(180deg,rgb(var(--brand)),rgb(var(--brand-dark)))] shadow-[0_8px_18px_-8px_rgb(var(--brand)/0.7)]'
+                    : 'bg-[linear-gradient(180deg,rgb(var(--brand)/0.34),rgb(var(--brand)/0.14))]'
                 )}
                 style={{ height: Math.max(4, Math.round((d.total / max) * TRACK)) }}
               />
@@ -331,18 +338,23 @@ function Funnel({ byStage }) {
           <li key={s.key}>
             <Link
               href={`/manager/orders?status=${s.status}`}
-              className="flex items-center gap-3 rounded-sm px-2 py-2.5 transition-colors duration-150 hover:bg-surface-2"
+              className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors duration-150 hover:bg-surface-2"
             >
-              <span className="tnum grid size-6 shrink-0 place-items-center rounded-md bg-surface-sunk text-[11.5px] font-bold text-ink-muted">
+              <span className={cn('tnum grid size-7 shrink-0 place-items-center rounded-lg text-[12px] font-bold', busy ? 'bg-brand-soft text-brand' : 'bg-surface-sunk text-ink-muted')}>
                 {i + 1}
               </span>
               <span className="w-[128px] shrink-0">
                 <b className="block text-[13.5px] font-semibold text-ink">{s.label}</b>
                 <em className="block text-[11.5px] not-italic text-ink-muted">{s.hint}</em>
               </span>
-              <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-sunk">
+              <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-sunk">
                 <span
-                  className={cn('block h-full rounded-full', busy ? 'bg-brand' : 'bg-ok')}
+                  className={cn(
+                    'block h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]',
+                    busy
+                      ? 'bg-[linear-gradient(90deg,rgb(var(--brand)/0.65),rgb(var(--brand)))]'
+                      : 'bg-[linear-gradient(90deg,rgb(var(--green)/0.65),rgb(var(--green)))]'
+                  )}
                   style={{ width: `${Math.max(3, (n / max) * 100)}%` }}
                 />
               </span>
@@ -370,17 +382,17 @@ function Mix({ byMethod }) {
       <div
         role="img"
         aria-label={parts.map((p) => `${p.label} ${money(p.value)}`).join(', ')}
-        className="flex h-2.5 overflow-hidden rounded-full bg-surface-sunk"
+        className="flex h-3 gap-[3px]"
       >
         {parts.filter((p) => p.value > 0).map((p) => (
-          <span key={p.key} style={{ flexGrow: p.value, background: p.colour }} />
+          <span key={p.key} className="rounded-full" style={{ flexGrow: p.value, background: p.colour }} />
         ))}
       </div>
 
       <ul className="mt-4 space-y-3">
         {parts.map((p) => (
           <li key={p.key} className="flex items-center gap-2.5 text-[13.5px]">
-            <span className="size-2.5 shrink-0 rounded-sm" style={{ background: p.colour }} />
+            <span className="size-2.5 shrink-0 rounded-full ring-2 ring-surface" style={{ background: p.colour, boxShadow: `0 0 0 3px color-mix(in srgb, ${p.colour} 22%, transparent)` }} />
             <span className="flex-1 text-ink-2">{p.label}</span>
             <span className="tnum text-ink-muted">{Math.round((p.value / total) * 100)}%</span>
             <span className="tnum w-[104px] text-right font-semibold text-ink">{money(p.value)}</span>

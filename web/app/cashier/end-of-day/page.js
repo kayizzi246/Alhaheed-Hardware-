@@ -7,6 +7,7 @@ import {
   Alert, Button, Card, CardHead, CardTitle, Input, Loading,
   PageHead, Stat, Stats, Table, TableWrap, Td, Tr,
 } from '@/components/ui';
+import { Icon } from '@/components/icons';
 
 /** What this cashier took in today, for handing over the till. */
 export default function EndOfDayPage() {
@@ -39,10 +40,10 @@ export default function EndOfDayPage() {
       {data && (
         <>
           <Stats>
-            <Stat label="Receipts issued" value={data.receipts} />
-            <Stat label="Total collected" value={money(data.total)} lead />
-            <Stat label="Cash" value={money(data.cash)} tone="ok" />
-            <Stat label="Mobile Money" value={money(data.mobile_money)} />
+            <Stat label="Receipts issued" value={data.receipts} icon={Icon.receipt()} />
+            <Stat label="Total collected" value={money(data.total)} lead icon={Icon.cash()} />
+            <Stat label="Cash" value={money(data.cash)} tone="ok" icon={Icon.cash()} />
+            <Stat label="Mobile Money" value={money(data.mobile_money)} icon={Icon.phone()} />
           </Stats>
 
           <Card className="mb-4">
