@@ -154,6 +154,7 @@ class AH_Import {
 
 		$importer = admin_url( 'edit.php?post_type=product&page=product_importer' );
 		$template = add_query_arg( array( 'ah_template' => 1, '_wpnonce' => wp_create_nonce( 'ah_template' ) ), admin_url( 'admin.php?page=al-hadeed-import' ) );
+		$sample   = add_query_arg( array( 'ah_install_sample' => 1, '_wpnonce' => wp_create_nonce( 'ah_install_sample' ) ), admin_url( 'admin.php?page=al-hadeed-import' ) );
 		?>
 		<div class="wrap ah-wrap">
 			<header class="ah-head">
@@ -186,6 +187,16 @@ class AH_Import {
 				<p class="ah-row" style="margin-top:16px">
 					<a class="button button-primary ah-go" href="<?php echo esc_url( $importer ); ?>">Open the importer</a>
 					<a class="button" href="<?php echo esc_url( $template ); ?>">Download a template CSV</a>
+					<a class="button button-secondary" href="<?php echo esc_url( $sample ); ?>">Put 25 sample products on the shelf</a>
+				</p>
+
+				<p class="ah-t" style="font-size:13px;margin-top:10px">
+					<strong>New shop?</strong> Download the sample catalogue and import it. It
+					is twenty-five things an ironmonger actually sells — cement, iron bars,
+					roofing sheets, paint, tools — each with a picture, so the app and the
+					desks have something real on them from the first minute. The prices are
+					in the right range but they are a starting point: change them before you
+					trade.
 				</p>
 			</div>
 
@@ -234,6 +245,161 @@ class AH_Import {
 		<?php
 	}
 
+	// -----------------------------------------------------------------
+	// A catalogue to start from
+	// -----------------------------------------------------------------
+
+	/**
+	 * Twenty-five things an ironmonger in Kampala actually sells.
+	 *
+	 * This exists so a new shop has something on the shelf the moment
+	 * the plugin is installed — the app, the desks and the reports all
+	 * look broken against an empty catalogue, and "import your own
+	 * spreadsheet first" is a poor way to meet a system.
+	 *
+	 * The prices are in the right range for 2026 but they are a
+	 * starting point, not a price list. Change them before you trade.
+	 */
+	private static function sample_rows() {
+		return array(
+			array( 'AH-CEM-001', 'Hima Cement 50kg', 'Cement', 34000, 'bag', 240, 40, '32.5N, general purpose' ),
+			array( 'AH-CEM-002', 'Tororo Cement 50kg', 'Cement', 33000, 'bag', 180, 40, '32.5N' ),
+			array( 'AH-CEM-003', 'Concrete Block 6in', 'Cement', 3200, 'piece', 900, 200, 'Solid, 400×200×150mm' ),
+			array( 'AH-IRN-001', 'Iron Bar Y12 (12m)', 'Iron & Steel', 42000, 'length', 96, 50, 'Deformed, high tensile' ),
+			array( 'AH-IRN-002', 'Iron Bar Y10 (12m)', 'Iron & Steel', 29000, 'length', 120, 50, 'Deformed, high tensile' ),
+			array( 'AH-IRN-003', 'Angle Bar 2in (6m)', 'Iron & Steel', 48000, 'length', 40, 15, 'Mild steel, 5mm' ),
+			array( 'AH-IRN-004', 'Binding Wire 16g', 'Iron & Steel', 9500, 'kg', 150, 30, 'Soft annealed' ),
+			array( 'AH-ROF-001', 'Iron Sheet 28G (3m)', 'Roofing', 38500, 'sheet', 85, 20, 'Pre-painted, box profile' ),
+			array( 'AH-ROF-002', 'Iron Sheet 30G (3m)', 'Roofing', 31000, 'sheet', 110, 20, 'Galvanised, corrugated' ),
+			array( 'AH-ROF-003', 'Roofing Nails 3in', 'Roofing', 8500, 'kg', 200, 40, 'Twisted shank, with washer' ),
+			array( 'AH-PNT-001', 'Wall Paint 20L (Silk)', 'Paints', 185000, 'tin', 14, 6, 'Vinyl silk, interior' ),
+			array( 'AH-PNT-002', 'Gloss Paint 4L', 'Paints', 62000, 'tin', 30, 10, 'Oil based, for wood and metal' ),
+			array( 'AH-PNT-003', 'Paint Brush 4in', 'Paints', 7000, 'piece', 75, 20, 'Synthetic bristle' ),
+			array( 'AH-TLS-001', 'Wire Nails 4in', 'Tools', 7500, 'kg', 260, 40, 'Bright, sold per kg' ),
+			array( 'AH-TLS-002', 'Claw Hammer 16oz', 'Tools', 22000, 'piece', 38, 10, 'Fibreglass handle' ),
+			array( 'AH-TLS-003', 'Tape Measure 5m', 'Tools', 12000, 'piece', 52, 15, 'Auto-lock, metric' ),
+			array( 'AH-TLS-004', 'Wheelbarrow (Heavy duty)', 'Tools', 165000, 'piece', 12, 4, 'Steel tray, pneumatic wheel' ),
+			array( 'AH-PLM-001', 'PVC Pipe 4in (6m)', 'Plumbing', 27000, 'length', 64, 20, 'Class B, for waste' ),
+			array( 'AH-PLM-002', 'Water Tank 1000L', 'Plumbing', 420000, 'piece', 8, 3, 'UV stabilised, 3 layer' ),
+			array( 'AH-ELE-001', 'Electric Cable 2.5mm (90m)', 'Electrical', 235000, 'roll', 10, 4, 'Single core, copper' ),
+			array( 'AH-ELE-002', 'LED Bulb 12W', 'Electrical', 11000, 'piece', 140, 30, 'E27, warm white' ),
+			array( 'AH-TMB-001', 'Timber 4×2 (14ft)', 'Timber', 18000, 'piece', 160, 40, 'Eucalyptus, seasoned' ),
+			array( 'AH-HWR-001', 'Padlock 50mm', 'Hardware', 18000, 'piece', 44, 12, 'Brass, three keys' ),
+			array( 'AH-HWR-002', 'Door Hinge 4in', 'Hardware', 6500, 'pair', 90, 25, 'Stainless steel' ),
+			array( 'AH-HWR-003', 'Wood Screws 2in', 'Hardware', 9000, 'kg', 120, 30, 'Countersunk, sold per kg' ),
+		);
+	}
+
+	/**
+	 * Put the sample catalogue on the shelf.
+	 *
+	 * Written straight through WooCommerce rather than handed to the CSV
+	 * importer, for one reason: the importer fetches images over HTTP,
+	 * and a server asking for its own URL fails on more hosts than you
+	 * would think — a container that cannot see its own published port,
+	 * a firewall that blocks loopback, a site behind basic auth. The
+	 * pictures are already on this disk, so they are copied from there
+	 * and nothing leaves the machine.
+	 *
+	 * Safe to run twice: a SKU that already exists is left alone, so
+	 * nobody loses a price they have edited.
+	 */
+	public static function install_sample() {
+		if ( empty( $_GET['ah_install_sample'] ) || ! current_user_can( 'ah_desk_manager' ) ) {
+			return;
+		}
+		check_admin_referer( 'ah_install_sample' );
+
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+
+		$added = 0;
+		$kept  = 0;
+
+		foreach ( self::sample_rows() as $row ) {
+			list( $sku, $name, $category, $price, $unit, $stock, $reorder, $description ) = $row;
+
+			if ( wc_get_product_id_by_sku( $sku ) ) {
+				++$kept;
+				continue;
+			}
+
+			$product = new WC_Product_Simple();
+			$product->set_name( $name );
+			$product->set_sku( $sku );
+			$product->set_regular_price( (string) $price );
+			$product->set_short_description( $description );
+			$product->set_manage_stock( true );
+			$product->set_stock_quantity( $stock );
+			$product->set_stock_status( 'instock' );
+			$product->set_status( 'publish' );
+			$product->set_catalog_visibility( 'visible' );
+
+			$term = term_exists( $category, 'product_cat' );
+			if ( ! $term ) {
+				$term = wp_insert_term( $category, 'product_cat' );
+			}
+			if ( ! is_wp_error( $term ) ) {
+				$product->set_category_ids( array( (int) $term['term_id'] ) );
+			}
+
+			$product->update_meta_data( '_ah_unit', $unit );
+			$product->update_meta_data( '_ah_reorder_level', $reorder );
+
+			$id = $product->save();
+			if ( ! $id ) {
+				continue;
+			}
+
+			self::attach_picture( $id, $sku, $name );
+			++$added;
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array( 'page' => 'al-hadeed-import', 'ah_added' => $added, 'ah_kept' => $kept ),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Copy one of the shipped pictures into the media library and hang
+	 * it on the product.
+	 *
+	 * The file is copied first, because media_handle_sideload MOVES
+	 * what it is given — pointing it at the plugin's own file would
+	 * empty the folder the second time somebody ran this.
+	 */
+	private static function attach_picture( $product_id, $sku, $name ) {
+		$source = AH_PATH . 'assets/products/' . $sku . '.jpg';
+		if ( ! file_exists( $source ) ) {
+			return;
+		}
+
+		$temp = wp_tempnam( $sku . '.jpg' );
+		if ( ! $temp || ! copy( $source, $temp ) ) {
+			return;
+		}
+
+		$file = array(
+			'name'     => $sku . '.jpg',
+			'type'     => 'image/jpeg',
+			'tmp_name' => $temp,
+			'size'     => filesize( $temp ),
+		);
+
+		$attachment_id = media_handle_sideload( $file, 0, $name );
+
+		if ( is_wp_error( $attachment_id ) ) {
+			@unlink( $temp );
+			return;
+		}
+		set_post_thumbnail( $product_id, $attachment_id );
+	}
+
 	/** Hands over a template with the headings already right. */
 	public static function template() {
 		if ( empty( $_GET['ah_template'] ) || ! current_user_can( 'ah_desk_manager' ) ) {
@@ -266,3 +432,4 @@ class AH_Import {
 }
 
 add_action( 'admin_init', array( 'AH_Import', 'template' ) );
+add_action( 'admin_init', array( 'AH_Import', 'install_sample' ) );

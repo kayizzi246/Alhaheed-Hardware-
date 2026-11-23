@@ -123,10 +123,22 @@ export default function LoginPage() {
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       {/* ── The shop ─────────────────────────────────────────────── */}
       <aside className="relative hidden overflow-hidden bg-navy px-12 py-14 text-white lg:flex lg:items-center xl:px-16">
-        {/* A warm wash from the top-left, so the panel is not a flat slab. */}
+        {/* Two washes, not one. A single radial gradient reads as a
+            spotlight; a warm one from the top-left with a cooler, wider
+            one behind it gives the slab some depth without becoming a
+            pattern you notice. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_12%_0%,rgba(232,134,42,.22),transparent_60%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(85%_65%_at_10%_-5%,rgba(232,134,42,.28),transparent_58%)]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_55%_at_95%_100%,rgba(192,57,43,.16),transparent_62%)]"
+        />
+        {/* A hairline of brand along the edge where the two halves meet. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-brand/40 to-transparent"
         />
 
         <div className="relative w-full max-w-lg">
@@ -143,13 +155,17 @@ export default function LoginPage() {
             {reachable === false && 'Shop unreachable'}
           </span>
 
-          <h2 className="mt-7 font-display text-[44px] font-extrabold leading-[1.08] tracking-[-.025em] xl:text-[52px]">
+          {/* 800 is Manrope's heaviest real cut. The extra authority
+              comes from size and tracking, not a faked 900. */}
+          <h2 className="mt-7 font-display text-[46px] font-extrabold leading-[1.04] tracking-[-.035em] xl:text-[56px]">
             Run the counter
             <br />
-            <span className="text-brand">without paper</span>
+            <span className="bg-gradient-to-br from-brand to-[rgb(var(--red))] bg-clip-text text-transparent">
+              without paper
+            </span>
           </h2>
 
-          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/70">
+          <p className="mt-5 max-w-md text-[15.5px] leading-[1.65] text-white/65">
             Orders move from the customer&rsquo;s phone to the cashier, to accounts,
             to the store &mdash; and nobody writes a slip.
           </p>
@@ -164,18 +180,30 @@ export default function LoginPage() {
             How an order moves
           </span>
 
-          <ol className="mt-3.5 space-y-2.5">
+          {/* The four desks, joined by a line. It is a sequence, and a
+              list of four separate rows does not say so. */}
+          <ol className="relative mt-4">
+            <span
+              aria-hidden="true"
+              className="absolute left-3 top-3 bottom-3 w-px bg-gradient-to-b from-brand/50 via-white/15 to-transparent"
+            />
             {[
               ['Customer', 'orders on the app'],
               ['Cashier', 'takes the money'],
               ['Accounts', 'checks the till'],
               ['Store', 'releases the goods'],
             ].map(([who, what], i) => (
-              <li key={who} className="flex items-center gap-3">
-                <span className="tnum grid size-6 shrink-0 place-items-center rounded-md bg-white/10 text-[11.5px] font-bold text-white/75">
+              <li key={who} className="relative flex items-center gap-3.5 py-[7px]">
+                <span
+                  className={[
+                    'tnum relative z-[1] grid size-6 shrink-0 place-items-center rounded-full',
+                    'text-[11px] font-extrabold ring-4 ring-navy',
+                    i === 0 ? 'bg-brand text-white' : 'bg-white/10 text-white/70',
+                  ].join(' ')}
+                >
                   {i + 1}
                 </span>
-                <strong className="min-w-[88px] text-sm font-semibold">{who}</strong>
+                <strong className="min-w-[92px] text-[14.5px] font-semibold">{who}</strong>
                 <em className="text-[13.5px] not-italic text-white/55">{what}</em>
               </li>
             ))}
@@ -199,8 +227,8 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full max-w-[380px]">
-          <div className="mb-8 flex items-center gap-2.5">
-            <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-brand text-sm font-extrabold text-white">
+          <div className="mb-9 flex items-center gap-2.5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-gradient-to-br from-brand to-brand-dark text-sm font-extrabold text-white shadow-sm">
               AH
             </span>
             <span className="font-display text-[13px] font-extrabold leading-[1.15] tracking-[.04em] text-ink">
@@ -210,8 +238,10 @@ export default function LoginPage() {
             </span>
           </div>
 
-          <h1 className="text-[27px] font-bold leading-tight text-ink">Sign in to your account</h1>
-          <p className="mb-7 mt-1.5 text-sm text-ink-muted">{shop?.name ?? 'Staff panel'}</p>
+          <h1 className="text-[29px] leading-[1.12] text-ink">Sign in to your account</h1>
+          <p className="mb-7 mt-2 text-sm text-ink-muted">
+            {shop?.name && shop.name !== 'My Blog' ? shop.name : 'Staff panel'}
+          </p>
 
           <div aria-live="polite">
             {error && <Alert>{error}</Alert>}

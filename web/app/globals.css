@@ -170,10 +170,21 @@
   }
 
   /* Manrope carries headings. The weight is set where the size is. */
+  /* Manrope's variable axis is 200–800, so 800 is as heavy as it goes.
+     A CSS `font-weight: 900` on it does not get you a heavier cut: the
+     browser either clamps to 800 or synthesises one by smearing the
+     outline, which looks blurry at a headline size and worse the
+     larger it gets. So the headings sit at a real 800, and the weight
+     is carried the rest of the way by tighter tracking — which is how
+     display type is actually set. */
   h1, h2, h3, h4 {
     @apply font-display;
-    letter-spacing: -0.015em;
+    font-weight: 800;
+    letter-spacing: -0.022em;
   }
+
+  /* The bigger it is, the tighter it wants to be. */
+  h1 { letter-spacing: -0.03em; }
 
   /* One focus ring for the whole panel rather than one per component.
      Mouse users never see it; keyboard users always do. */
