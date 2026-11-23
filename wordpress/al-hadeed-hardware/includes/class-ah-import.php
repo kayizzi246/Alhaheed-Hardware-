@@ -155,6 +155,37 @@ class AH_Import {
 		$importer = admin_url( 'edit.php?post_type=product&page=product_importer' );
 		$template = add_query_arg( array( 'ah_template' => 1, '_wpnonce' => wp_create_nonce( 'ah_template' ) ), admin_url( 'admin.php?page=al-hadeed-import' ) );
 		$sample   = add_query_arg( array( 'ah_install_sample' => 1, '_wpnonce' => wp_create_nonce( 'ah_install_sample' ) ), admin_url( 'admin.php?page=al-hadeed-import' ) );
+
+		// What the sample installer just did. Without this the button
+		// redirects back to an identical page and the person has no
+		// idea whether anything happened — so they press it again.
+		if ( isset( $_GET['ah_added'] ) ) {
+			$added = (int) $_GET['ah_added'];
+			$kept  = isset( $_GET['ah_kept'] ) ? (int) $_GET['ah_kept'] : 0;
+
+			if ( $added > 0 ) {
+				printf(
+					'<div class="notice notice-success is-dismissible"><p><strong>%d %s added.</strong> %s'
+					. ' <a href="%s">See them in the catalogue</a>.</p></div>',
+					$added,
+					$added === 1 ? 'product' : 'products',
+					$kept
+						? esc_html( sprintf(
+							'%d %s already on the shelf and were left alone.',
+							$kept,
+							1 === $kept ? 'product was' : 'products were'
+						) )
+						: '',
+					esc_url( admin_url( 'edit.php?post_type=product' ) )
+				);
+			} else {
+				printf(
+					'<div class="notice notice-info is-dismissible"><p><strong>Nothing to add.</strong>'
+					. ' All %d sample products are already on the shelf, so none were touched.</p></div>',
+					$kept
+				);
+			}
+		}
 		?>
 		<div class="wrap ah-wrap">
 			<header class="ah-head">
