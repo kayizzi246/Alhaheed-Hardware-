@@ -11,8 +11,10 @@
  * will write it on paper instead.
  */
 import * as React from 'react';
-import { CheckCircle2, Receipt } from 'lucide-react';
-import { api, money, shortMoney, at, methodLabel, CONFIG } from '@/lib/api';
+import { CheckCircle2, ImageUp, Receipt } from 'lucide-react';
+import { api, upload, money, shortMoney, at, methodLabel, CONFIG } from '@/lib/api';
+import { readPaymentText, normaliseRef } from '@/lib/txref';
+import { readImageText, shrinkImage } from '@/lib/ocr';
 import { usePoll } from '@/lib/usePoll';
 import {
   Alert, Button, Card, CardBody, CardHeader, CardTitle, Dialog, DialogBody, DialogContent,
@@ -167,6 +169,15 @@ function TakePayment({ order, onClose, onDone, onError }) {
   const [busy, setBusy] = React.useState(false);
   const [local, setLocal] = React.useState('');
 
+  // The screenshot, and what was read off it.
+  const [proof, setProof] = React.useState(null);
+  const [preview, setPreview] = React.useState('');
+  const [reading, setReading] = React.useState(null);
+  const [found, setFound] = React.useState(null);
+  const [refFrom, setRefFrom] = React.useState('typed');
+  const [dupe, setDupe] = React.useState(null);
+  const [big, setBig] = React.useState(false);
+
   // A new order resets the form and pre-fills the amount.
   React.useEffect(() => {
     if (order) {
@@ -174,12 +185,73 @@ function TakePayment({ order, onClose, onDone, onError }) {
       setAmount(String(order.total ?? ''));
       setRef('');
       setLocal('');
+      setProof(null);
+      setPreview('');
+      setFound(null);
+      setRefFrom('typed');
+      setDupe(null);
     }
   }, [order && order.id]);
+
+  React.useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+
+  const needsRef = method !== 'cash';
+
+  // Already paid for another order? Asked while it can still be fixed.
+  React.useEffect(() => {
+    const value = normaliseRef(ref);
+    if (!order || !needsRef || value.length < 6) { setDupe(null); return undefined; }
+    let live = true;
+    const t = setTimeout(() => {
+      api(`/cashier/check-ref?ref=${encodeURIComponent(value)}&order=${order.id}`)
+        .then((r) => { if (live) setDupe(r.used ? r : null); })
+        .catch(() => {});
+    }, 350);
+    return () => { live = false; clearTimeout(t); };
+  }, [ref, needsRef, order && order.id]);
 
   if (!order) return null;
 
   const short = Number(amount || 0) < Number(order.total || 0);
+
+  const attach = async (file) => {
+    if (!file) return;
+    setLocal('');
+    setFound(null);
+    try {
+      const small = await shrinkImage(file);
+      setProof(small);
+      setPreview(URL.createObjectURL(small));
+      setReading({ stage: 'preparing', progress: 0 });
+      const result = readPaymentText(await readImageText(small, (stage, progress) => setReading({ stage, progress })));
+      setFound(result.ref || result.amount ? result : { failed: true });
+      setBig(true);
+      if (result.ref && (!ref || refFrom !== 'typed')) { setRef(result.ref); setRefFrom('picture'); }
+    } catch {
+      setFound({ failed: true });
+    } finally {
+      setReading(null);
+    }
+  };
+
+  const removeProof = () => {
+    setProof(null);
+    setPreview('');
+    setFound(null);
+    if (refFrom === 'picture') { setRef(''); setRefFrom('typed'); }
+  };
+
+  const onPaste = (e) => {
+    const text = e.clipboardData.getData('text');
+    if (text.length < 30) return;
+    const result = readPaymentText(text);
+    if (result.ref) {
+      e.preventDefault();
+      setRef(result.ref);
+      setRefFrom('pasted');
+      setFound(result);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -187,10 +259,20 @@ function TakePayment({ order, onClose, onDone, onError }) {
     setBusy(true);
     setLocal('');
     try {
-      await api(`/cashier/orders/${order.id}/payment`, {
-        method: 'POST',
-        body: { method, amountPaid: Number(amount), transactionRef: ref || null },
-      });
+      const transactionRef = needsRef ? normaliseRef(ref) : (ref.trim() || '');
+      if (needsRef && proof) {
+        const form = new FormData();
+        form.append('method', method);
+        form.append('amountPaid', String(Math.trunc(Number(amount))));
+        form.append('transactionRef', transactionRef);
+        form.append('proof', proof, proof.name || 'proof.jpg');
+        await upload(`/cashier/orders/${order.id}/payment`, form);
+      } else {
+        await api(`/cashier/orders/${order.id}/payment`, {
+          method: 'POST',
+          body: { method, amountPaid: Number(amount), transactionRef: transactionRef || null },
+        });
+      }
       onDone(`${order.order_no} paid — ${money(amount)}. It is with Accounts now.`);
     } catch (err) {
       setLocal(err.message);
@@ -199,6 +281,8 @@ function TakePayment({ order, onClose, onDone, onError }) {
       setBusy(false);
     }
   };
+
+  const mismatch = found && !found.failed && found.amount && needsRef && found.amount !== Math.trunc(Number(amount || 0));
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
@@ -214,42 +298,114 @@ function TakePayment({ order, onClose, onDone, onError }) {
               <Segmented name="Payment method" value={method} onChange={setMethod} options={METHODS} />
             </Field>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label="Amount received"
-                hint={short ? `${money(Number(order.total) - Number(amount || 0))} short of the total` : null}
-              >
-                <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  inputMode="numeric"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  autoFocus
-                  required
-                  className="tnum text-[17px] font-semibold"
-                />
-              </Field>
+            <Field
+              label="Amount received"
+              hint={short ? `${money(Number(order.total) - Number(amount || 0))} short of the total` : null}
+            >
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                autoFocus
+                required
+                className="tnum text-[17px] font-semibold"
+              />
+            </Field>
 
+            {needsRef && (
               <Field
-                label={method === 'cash' ? 'Reference (optional)' : 'Transaction reference'}
-                hint={method === 'mobile_money' ? 'The code from the MTN or Airtel message' : null}
+                label="Proof of payment"
+                hint={proof ? null : 'A screenshot or photo of the message. The transaction ID is read off it for you.'}
               >
-                <Input
-                  value={ref}
-                  onChange={(e) => setRef(e.target.value)}
-                  placeholder={method === 'cash' ? '—' : 'e.g. MP2611.1431.A12345'}
-                  required={method !== 'cash'}
-                />
+                {!proof ? (
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-input bg-card px-4 py-4 text-[13.5px] font-semibold text-primary transition-colors hover:border-primary hover:bg-accent">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => { attach(e.target.files && e.target.files[0]); e.target.value = ''; }}
+                    />
+                    <ImageUp className="size-4" /> Attach the screenshot
+                  </label>
+                ) : (
+                  <div className="flex items-center gap-3 rounded-md border bg-card p-2.5">
+                    <button type="button" onClick={() => setBig((b) => !b)} title={big ? 'Hide the picture' : 'Show the picture'} className="shrink-0">
+                      <img src={preview} alt="Payment screenshot" className="h-16 w-12 rounded border object-cover object-center" />
+                    </button>
+                    <div className="min-w-0 flex-1 text-[13px] text-muted-foreground">
+                      {reading ? (
+                        <>
+                          <span className="block font-medium text-foreground">
+                            {reading.stage === 'preparing' ? 'Getting the reader ready…' : 'Reading the transaction ID…'}
+                          </span>
+                          <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-muted">
+                            <span className="block h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: `${Math.round((reading.progress || 0) * 100)}%` }} />
+                          </span>
+                        </>
+                      ) : found && found.ref ? (
+                        <>Read <strong className="tnum text-foreground">{found.ref}</strong>{found.network ? ` · ${found.network}` : ''}. Check it matches the picture.</>
+                      ) : found ? (
+                        'Could not read an ID off this picture. Type it in below — the picture is kept as the record.'
+                      ) : 'Attached.'}
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setBig((b) => !b)} disabled={!!reading}>
+                        {big ? 'Hide picture' : 'Show picture'}
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={removeProof} disabled={!!reading}>Remove</Button>
+                    </div>
+                  </div>
+                )}
               </Field>
-            </div>
+            )}
+
+            {needsRef && proof && big && (
+              <div className="max-h-[320px] overflow-auto rounded-md border bg-muted">
+                <img src={preview} alt="Payment screenshot, full width" className="block w-full" />
+              </div>
+            )}
+
+            <Field
+              label={method === 'cash' ? 'Reference (optional)' : 'Transaction ID'}
+              hint={
+                dupe ? null
+                  : refFrom === 'picture' ? 'Filled in from the picture — correct it if it is wrong.'
+                    : refFrom === 'pasted' ? 'Taken from the message you pasted.'
+                      : method === 'mobile_money' ? 'From the MTN or Airtel message. You can paste the whole message here.'
+                        : method === 'card' ? 'The RRN or reference on the card slip.' : null
+              }
+            >
+              <Input
+                value={ref}
+                onChange={(e) => { setRef(e.target.value); setRefFrom('typed'); }}
+                onPaste={onPaste}
+                placeholder={method === 'cash' ? '—' : method === 'card' ? '432118765123' : '12345678901 or MP261123.1401.A77821'}
+                required={needsRef}
+                autoComplete="off"
+                spellCheck={false}
+                className={needsRef ? 'tnum uppercase tracking-wide' : undefined}
+              />
+              {dupe && (
+                <p className="mt-1 text-[12px] font-medium text-destructive">
+                  Already used — it paid for order {dupe.orderNo} (receipt {dupe.receiptNo}).
+                </p>
+              )}
+            </Field>
+
+            {mismatch && (
+              <Alert tone="warning">
+                The message says {money(found.amount)}, but {money(Math.trunc(Number(amount || 0)))} is entered as received. Check before recording.
+              </Alert>
+            )}
           </DialogBody>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy || !!reading || (needsRef && (!normaliseRef(ref) || !!dupe))}>
               {busy ? 'Saving…' : `Record ${money(amount || 0)}`}
             </Button>
           </DialogFooter>

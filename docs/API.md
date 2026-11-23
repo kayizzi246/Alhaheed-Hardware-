@@ -87,13 +87,39 @@ POST /api/orders
 | GET | `/receipts` | Receipts for a date. `?mine=1` for just this cashier |
 | GET | `/receipts/:receiptNo` | A printable receipt |
 | GET | `/end-of-day` | This cashier's hand-over summary |
+| GET | `/check-ref?ref=&order=` | Has this transaction ID already paid for another order? |
 
 ```http
 POST /api/cashier/orders/12/payment
 { "method": "mobile_money", "amountPaid": 2485000, "transactionRef": "MP2611190934" }
 
-→ { "order": { "status": "paid", ... }, "receipt": { "receipt_no": "R-00843", ... } }
+→ { "order": { "status": "paid", "payment": { "receipt_no": "R-00843", "has_proof": false, ... }, ... } }
 ```
+
+The receipt number is on `order.payment`. There is no top-level
+`receipt` — an earlier version of this page said there was, and the
+panel read it, so every successful payment showed the cashier an error.
+
+**With the screenshot.** Send the same fields as `multipart/form-data`
+with the picture in a part named `proof` (JPEG, PNG or WebP, up to
+8 MB, checked by its bytes). It is stored outside the public uploads and
+served only through `GET /api/payments/:paymentId/proof` to cashier,
+accounts and manager. If the payment is refused, the picture is deleted.
+
+**One transaction, one order.** A transaction ID already used by a
+payment Accounts has not rejected is refused with `409 ah_ref_used`.
+IDs are compared without spaces and case, so `mp261123 1401` and
+`MP2611231401` are the same.
+
+---
+
+## Payments — `/api/payments`  *(cashier, accounts, manager)*
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/:id/proof` | The screenshot attached to a payment (image bytes, never cached) |
+
+The accounts queue carries `payment_id` and `has_proof` on each row.
 
 ---
 

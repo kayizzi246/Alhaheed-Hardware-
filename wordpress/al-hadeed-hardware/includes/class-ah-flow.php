@@ -100,7 +100,7 @@ class AH_Flow {
 			return new WP_Error( 'ah_bad_method', 'Unknown payment method', array( 'status' => 400 ) );
 		}
 
-		$ref = isset( $args['transaction_ref'] ) ? trim( (string) $args['transaction_ref'] ) : '';
+		$ref = isset( $args['transaction_ref'] ) ? AH_Proofs::normalise_ref( $args['transaction_ref'] ) : '';
 		// Mobile money and card leave a reference behind. Without it
 		// Accounts has nothing to match against the statement, and the
 		// order would stall there instead of here.
@@ -110,6 +110,26 @@ class AH_Flow {
 				'A transaction reference is required for mobile money and card payments',
 				array( 'status' => 400 )
 			);
+		}
+
+		// One mobile money transaction pays for one order. Used twice,
+		// the shop has a receipt for money it received once — by mistake
+		// or otherwise, and Accounts would only find out at month end.
+		if ( '' !== $ref ) {
+			$used = AH_Proofs::already_used( $ref, $order->get_id() );
+			if ( $used ) {
+				$other = wc_get_order( (int) $used['order_id'] );
+				return new WP_Error(
+					'ah_ref_used',
+					sprintf(
+						'Transaction %s has already paid for order %s (receipt %s). Check the reference.',
+						$ref,
+						$other ? AH_Shape::order_no( $other ) : '#' . $used['order_id'],
+						$used['receipt_no']
+					),
+					array( 'status' => 409 )
+				);
+			}
 		}
 
 		$due  = AH_Shape::money( $order->get_total() );
@@ -136,6 +156,7 @@ class AH_Flow {
 				'amount_paid'     => $paid,
 				'method'          => $method,
 				'transaction_ref' => $ref ? $ref : null,
+				'proof_file'      => ! empty( $args['proof_file'] ) ? $args['proof_file'] : null,
 				'cashier_id'      => $cashier_id,
 				'cashier_name'    => $cashier ? $cashier->display_name : '',
 				'verified'        => 0,

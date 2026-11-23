@@ -11,7 +11,7 @@
  */
 import * as React from 'react';
 import { CheckCircle2, BookOpen } from 'lucide-react';
-import { api, money, shortMoney, at, methodLabel, CONFIG } from '@/lib/api';
+import { api, blobUrl, money, shortMoney, at, methodLabel, CONFIG } from '@/lib/api';
 import { usePoll } from '@/lib/usePoll';
 import {
   Alert, Button, Card, CardBody, CardHeader, CardTitle, Dialog, DialogBody, DialogContent,
@@ -168,6 +168,7 @@ function Ruling({ ruling, onClose, onDone }) {
         <form onSubmit={submit}>
           <DialogBody className="space-y-4">
             {local && <Alert>{local}</Alert>}
+            <PaymentFacts order={order} />
             <Field
               label={approve ? 'Remarks (optional)' : 'Why is it going back?'}
               hint={approve ? 'Anything worth remembering about this payment.' : 'The cashier reads this. Be specific — "no MM message found", "UGX 5,000 short".'}
@@ -190,6 +191,60 @@ function Ruling({ ruling, onClose, onDone }) {
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * What the cashier recorded, and the picture they recorded it from.
+ *
+ * In the dialog where the decision is made, so nobody verifies from
+ * memory of another screen. The picture comes through the desk's
+ * session — it is not on a public URL, because it carries the
+ * customer's name and number.
+ */
+function PaymentFacts({ order }) {
+  const [src, setSrc] = React.useState('');
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    setSrc('');
+    setError('');
+    if (!order.has_proof || !order.payment_id) return undefined;
+    let url = '';
+    let live = true;
+    blobUrl(`/payments/${order.payment_id}/proof`)
+      .then((u) => { url = u; if (live) setSrc(u); })
+      .catch((e) => live && setError(e.message));
+    return () => { live = false; if (url) URL.revokeObjectURL(url); };
+  }, [order.payment_id, order.has_proof]);
+
+  return (
+    <div className="space-y-3">
+      <dl className="grid grid-cols-3 gap-2 rounded-md border bg-muted/50 px-3 py-2.5 text-[13px]">
+        <div>
+          <dt className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Received</dt>
+          <dd className="tnum mt-0.5 font-semibold">{money(order.amount_paid ?? order.total)}</dd>
+        </div>
+        <div>
+          <dt className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Method</dt>
+          <dd className="mt-0.5 font-semibold">{methodLabel(order.method)}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Transaction ID</dt>
+          <dd className="tnum mt-0.5 break-all font-semibold">{order.transaction_ref || '—'}</dd>
+        </div>
+      </dl>
+      {order.method !== 'cash' && !order.has_proof && (
+        <p className="text-xs text-muted-foreground">No screenshot was attached to this payment.</p>
+      )}
+      {error && <Alert>{error}</Alert>}
+      {order.has_proof && !src && !error && <Skeleton className="h-48" />}
+      {src && (
+        <a href={src} target="_blank" rel="noreferrer" title="Open full size">
+          <img src={src} alt={`Payment screenshot for ${order.order_no}`} className="max-h-[45vh] w-full rounded-md border object-contain" />
+        </a>
+      )}
+    </div>
   );
 }
 

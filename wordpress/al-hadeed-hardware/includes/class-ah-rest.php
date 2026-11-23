@@ -326,6 +326,10 @@ class AH_Rest {
 		// The whole month on one page: sales, spending, the book.
 		AH_Monthly::routes();
 
+		// The screenshot behind a mobile money reference, and the check
+		// that a reference has not already paid for another order.
+		AH_Proofs::routes();
+
 		// Writing to suppliers from inside the shop, instead of the
 		// cashier opening a mail app and typing it out again.
 		AH_Suppliers::routes();
@@ -496,6 +500,8 @@ class AH_Rest {
 			$orders[ $i ]['amount_paid']     = (int) $payment['amount_paid'];
 			$orders[ $i ]['cashier_name']    = $cashier ? $cashier->display_name : null;
 			$orders[ $i ]['paid_at']         = $payment['created_at'];
+			$orders[ $i ]['payment_id']      = (int) $payment['id'];
+			$orders[ $i ]['has_proof']       = ! empty( $payment['proof_file'] );
 		}
 
 		return array(
@@ -903,18 +909,37 @@ class AH_Rest {
 
 	public static function take_payment( $req ) {
 		$user = AH_Auth::current();
-		return self::wrap(
-			AH_Flow::receive_payment(
-				(int) $req['id'],
-				array(
-					'method'          => $req->get_param( 'method' ),
-					'amount_paid'     => $req->get_param( 'amountPaid' ),
-					'transaction_ref' => $req->get_param( 'transactionRef' ),
-				),
-				$user->ID
+
+		// The screenshot arrives in the same request as the payment, so
+		// there is never a picture with no payment or a payment that lost
+		// its picture on the way.
+		$proof = '';
+		$files = $req->get_file_params();
+		if ( ! empty( $files['proof'] ) && UPLOAD_ERR_NO_FILE !== (int) $files['proof']['error'] ) {
+			$proof = AH_Proofs::store( $files['proof'] );
+			if ( is_wp_error( $proof ) ) {
+				return $proof;
+			}
+		}
+
+		$result = AH_Flow::receive_payment(
+			(int) $req['id'],
+			array(
+				'method'          => $req->get_param( 'method' ),
+				'amount_paid'     => $req->get_param( 'amountPaid' ),
+				'transaction_ref' => $req->get_param( 'transactionRef' ),
+				'proof_file'      => $proof,
 			),
-			'order'
+			$user->ID
 		);
+
+		// Refused — a duplicate reference, a short payment — so the
+		// picture belongs to nothing and is not kept.
+		if ( is_wp_error( $result ) && $proof ) {
+			AH_Proofs::discard( $proof );
+		}
+
+		return self::wrap( $result, 'order' );
 	}
 
 	public static function verify( $req ) {

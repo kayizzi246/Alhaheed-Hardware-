@@ -326,7 +326,8 @@ export const Alert = ({ tone = 'danger', children }) => {
       className={cn(
         'mb-4 flex items-start gap-2.5 rounded-md border px-4 py-3 text-sm',
         tone === 'danger' && 'border-destructive/25 bg-destructive/10 text-destructive',
-        tone === 'success' && 'border-success/25 bg-success/10 text-success'
+        tone === 'success' && 'border-success/25 bg-success/10 text-success',
+        tone === 'warning' && 'border-warning/30 bg-warning/10 text-warning'
       )}
     >
       {children}

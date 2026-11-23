@@ -42,6 +42,34 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
   return data;
 }
 
+/**
+ * Send a file. Separate from api() because multipart must be left to
+ * the browser, which adds the boundary marker — set Content-Type by
+ * hand and the server cannot read the body.
+ */
+export async function upload(path, formData) {
+  const res = await fetch(CONFIG.root + path, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'X-WP-Nonce': CONFIG.nonce },
+    body: formData,
+  });
+  let data = null;
+  try { data = await res.json(); } catch { /* empty */ }
+  if (!res.ok) throw new Error((data && (data.error || data.message)) || `Upload failed (${res.status})`);
+  return data;
+}
+
+/** A picture behind the desk's session, as an object URL the caller must revoke. */
+export async function blobUrl(path) {
+  const res = await fetch(CONFIG.root + path, {
+    credentials: 'same-origin',
+    headers: { 'X-WP-Nonce': CONFIG.nonce },
+  });
+  if (!res.ok) throw new Error(res.status === 404 ? 'The picture is missing.' : 'The picture could not be loaded.');
+  return URL.createObjectURL(await res.blob());
+}
+
 export const money = (n) =>
   `${CONFIG.shop.currency} ${Number(n || 0).toLocaleString('en-US')}`;
 

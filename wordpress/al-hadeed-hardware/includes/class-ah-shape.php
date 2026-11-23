@@ -198,6 +198,15 @@ class AH_Shape {
 
 		$row['items']   = self::items( $order );
 		$row['payment'] = AH_Flow::payment_for( $order->get_id() );
+
+		// Where the screenshot sits on disk is nobody's business —
+		// customers read this shape too. Whether there is one is enough;
+		// the picture itself comes from /payments/{id}/proof, which
+		// checks the desk first.
+		if ( $row['payment'] ) {
+			$row['payment']['has_proof'] = ! empty( $row['payment']['proof_file'] );
+			unset( $row['payment']['proof_file'] );
+		}
 		$row['events']  = AH_Flow::events_for( $order->get_id() );
 		return $row;
 	}

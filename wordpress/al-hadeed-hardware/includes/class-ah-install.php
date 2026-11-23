@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.2.0';
+	const DB_VERSION = '1.3.0';
 
 	public static function activate() {
 		self::tables();
@@ -61,6 +61,7 @@ class AH_Install {
 			amount_paid     BIGINT          NOT NULL DEFAULT 0,
 			method          VARCHAR(32)     NOT NULL,
 			transaction_ref VARCHAR(191)    NULL,
+			proof_file      VARCHAR(191)    NULL,
 			cashier_id      BIGINT UNSIGNED NOT NULL,
 			cashier_name    VARCHAR(191)    NOT NULL,
 			verified        TINYINT         NOT NULL DEFAULT 0,
@@ -72,7 +73,8 @@ class AH_Install {
 			PRIMARY KEY (id),
 			UNIQUE KEY receipt_no (receipt_no),
 			KEY order_id (order_id),
-			KEY verified (verified)
+			KEY verified (verified),
+			KEY transaction_ref (transaction_ref)
 		) {$charset};";
 
 		$sql[] = "CREATE TABLE {$p}ah_cash_book (

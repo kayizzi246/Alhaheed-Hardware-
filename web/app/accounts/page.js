@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api, getUser } from '@/lib/api';
 import { usePoll } from '@/lib/live';
 import { money, shortMoney, methodLabel, time, list } from '@/lib/format';
@@ -25,6 +25,7 @@ export default function VerifyPayments() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busyId, setBusyId] = useState(null);
+  const [viewing, setViewing] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -121,7 +122,20 @@ export default function VerifyPayments() {
                       )}
                     </Td>
                     <Td>{methodLabel(o.method)}</Td>
-                    <Td className="text-ink-muted">{o.transaction_ref || '—'}</Td>
+                    <Td>
+                      <span className="tnum block text-ink-muted">{o.transaction_ref || '—'}</span>
+                      {o.has_proof ? (
+                        <button
+                          type="button"
+                          onClick={() => setViewing(o)}
+                          className="mt-0.5 text-xs font-semibold text-brand hover:underline"
+                        >
+                          See the screenshot
+                        </button>
+                      ) : o.method !== 'cash' ? (
+                        <span className="mt-0.5 block text-xs text-ink-faint">no screenshot</span>
+                      ) : null}
+                    </Td>
                     <Td num className="font-semibold text-ink">{money(o.amount_paid)}</Td>
                     <Td>
                       {o.cashier_name}
@@ -159,6 +173,15 @@ export default function VerifyPayments() {
         <CardHead><CardTitle>Cash book — today</CardTitle></CardHead>
         <CashBookTable />
       </Card>
+
+      {viewing && (
+        <ProofModal
+          order={viewing}
+          onClose={() => setViewing(null)}
+          onVerify={() => { const o = viewing; setViewing(null); verify(o, true); }}
+          onReject={() => { const o = viewing; setViewing(null); setRejecting(o); }}
+        />
+      )}
 
       {rejecting && (
         <RejectModal
@@ -205,6 +228,70 @@ function RejectModal({ order, onClose, onConfirm, busy }) {
           autoFocus
         />
       </Field>
+    </Modal>
+  );
+}
+
+/**
+ * The screenshot behind a payment, beside the figures it should show.
+ *
+ * Accounts compares three things: the amount, the reference, and the
+ * picture. They sit together here so nobody verifies from memory of
+ * what was on another screen. The picture is fetched with the desk's
+ * token — it is not on a public URL, because it carries the customer's
+ * name and number.
+ */
+function ProofModal({ order, onClose, onVerify, onReject }) {
+  const [src, setSrc] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let url = '';
+    let live = true;
+    api(`/api/payments/${order.payment_id}/proof`, { raw: true })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(res.status === 404 ? 'The picture is missing.' : 'The picture could not be loaded.');
+        url = URL.createObjectURL(await res.blob());
+        if (live) setSrc(url);
+      })
+      .catch((e) => live && setError(e.message));
+    return () => { live = false; if (url) URL.revokeObjectURL(url); };
+  }, [order.payment_id]);
+
+  return (
+    <Modal
+      title={`Proof for ${order.order_no}`}
+      description={`Receipt ${order.receipt_no} · taken by ${order.cashier_name || 'the cashier'}`}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="danger" onClick={onReject}>Reject</Button>
+          <Button variant="good" onClick={onVerify}>It matches — verify</Button>
+        </>
+      }
+    >
+      <dl className="mb-3 grid grid-cols-3 gap-2 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[13px]">
+        <div>
+          <dt className="text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">Amount</dt>
+          <dd className="tnum mt-0.5 font-semibold text-ink">{money(order.amount_paid)}</dd>
+        </div>
+        <div>
+          <dt className="text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">Method</dt>
+          <dd className="mt-0.5 font-semibold text-ink">{methodLabel(order.method)}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">Transaction ID</dt>
+          <dd className="tnum mt-0.5 break-all font-semibold text-ink">{order.transaction_ref}</dd>
+        </div>
+      </dl>
+      <Alert>{error}</Alert>
+      {!src && !error && <Loading>Loading the picture…</Loading>}
+      {src && (
+        <a href={src} target="_blank" rel="noreferrer" title="Open full size">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src} alt={`Payment screenshot for ${order.order_no}`} className="max-h-[55vh] w-full rounded-sm border border-line object-contain" />
+        </a>
+      )}
     </Modal>
   );
 }
