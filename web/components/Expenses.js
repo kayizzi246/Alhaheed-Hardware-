@@ -61,13 +61,28 @@ export default function Expenses() {
       setData(await api(`/api/expenses?status=${status}`));
       setError('');
     } catch (e) {
+      // An empty shape, not null. Leaving it null kept the screen on
+      // "Loading requests…" for ever while the error sat in state with
+      // nothing rendering it — so a server that answered 404 looked
+      // exactly like a slow one, and there was nothing to act on.
+      setData({ expenses: [], summary: {}, canApprove: false, canPay: false });
       setError(e.message);
     }
   }, [status]);
 
   const { at, failing } = usePoll(load, 20000);
 
-  if (!data) return <Loading>Loading requests…</Loading>;
+  if (!data && !error) return <Loading>Loading requests…</Loading>;
+
+  if (!data) {
+    return (
+      <>
+        <PageHead title="Expenses" />
+        <Alert>{error}</Alert>
+        <Button variant="outline" onClick={load}>Try again</Button>
+      </>
+    );
+  }
 
   const rows = list(data.expenses);
   const s = data.summary || {};

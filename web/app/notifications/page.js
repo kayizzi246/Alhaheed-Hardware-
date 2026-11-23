@@ -26,6 +26,7 @@ export default function NotificationsPage() {
       setData(await api('/api/notifications'));
       setError('');
     } catch (e) {
+      setData({ notifications: [], unread: 0 });
       setError(e.message);
     }
   }, []);

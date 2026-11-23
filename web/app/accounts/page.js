@@ -31,6 +31,7 @@ export default function VerifyPayments() {
       setData(await api('/api/accounts/queue'));
       setError('');
     } catch (e) {
+      setData({ orders: [], summary: {} });
       setError(e.message);
     }
   }, []);

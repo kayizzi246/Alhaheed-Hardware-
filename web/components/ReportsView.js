@@ -64,7 +64,11 @@ export default function ReportsView() {
       setData({ sales, best, stock, stage, staff });
       setError('');
     } catch (e) {
+      // Reports are five calls at once; if any of them fails there is
+      // nothing partial worth drawing, so the screen says so instead
+      // of sitting on "Building reports…".
       setError(e.message);
+      setData(null);
     }
   }, [query]);
 
@@ -76,7 +80,17 @@ export default function ReportsView() {
       .catch((e) => setError(e.message));
   };
 
-  if (!data) return <Loading>Building reports…</Loading>;
+  if (!data && !error) return <Loading>Building reports…</Loading>;
+
+  if (!data) {
+    return (
+      <>
+        <PageHead title="Reports" />
+        <Alert>{error}</Alert>
+        <Button variant="outline" onClick={load}>Try again</Button>
+      </>
+    );
+  }
 
   const { sales, best, stock, stage, staff } = data;
   const byDay = list(sales.byDay);

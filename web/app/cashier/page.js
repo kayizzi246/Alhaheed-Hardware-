@@ -38,6 +38,9 @@ export default function CashierQueue() {
       setRecent(list(receipts.receipts).slice(0, 8));
       setError('');
     } catch (e) {
+      // An empty shape, not null: null leaves the screen on "Loading"
+      // for ever with the error nowhere to be seen.
+      setData({ orders: [], summary: {} });
       setError(e.message);
     }
   }, []);
