@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { api, getUser } from '@/lib/api';
+import { api, getUser, peek } from '@/lib/api';
 import { usePoll } from '@/lib/live';
 import { money, shortMoney, dateTime, methodLabel, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -49,7 +49,7 @@ const TONE = {
 
 export default function Expenses() {
   const [status, setStatus] = useState('raised');
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(() => peek('/api/expenses?status=raised'));
   const [raising, setRaising] = useState(false);
   const [deciding, setDeciding] = useState(null);
   const [paying, setPaying] = useState(null);
@@ -381,7 +381,7 @@ function DecideDialog({ e, approve, onClose, onDone }) {
             rows={3}
             value={note}
             onChange={(ev) => setNote(ev.target.value)}
-            placeholder={approve ? '—' : 'We already have two of these in the store'}
+            placeholder={approve ? 'Optional' : 'We already have two of these in the store'}
             autoFocus={!approve}
           />
         </Field>

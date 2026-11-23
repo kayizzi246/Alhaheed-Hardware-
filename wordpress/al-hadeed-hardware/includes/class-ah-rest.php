@@ -35,6 +35,12 @@ class AH_Rest {
 		// Clients are on other domains (Vercel, a phone), so they are
 		// cross-origin by definition.
 		add_action( 'rest_api_init', array( __CLASS__, 'cors' ), 15 );
+		add_filter( 'rest_post_dispatch', array( __CLASS__, 'cache_public' ), 20, 3 );
+
+		// A product added, edited or sold out: the counts start again.
+		foreach ( array( 'woocommerce_update_product', 'woocommerce_new_product', 'woocommerce_product_set_stock_status', 'woocommerce_variation_set_stock_status', 'trashed_post' ) as $hook ) {
+			add_action( $hook, function () { delete_transient( 'ah_shelf_counts' ); } );
+		}
 	}
 
 	/** Puts the API on /api/... as well as /wp-json/alhadeed/v1/... */
@@ -71,6 +77,57 @@ class AH_Rest {
 				return $served;
 			}
 		);
+	}
+
+	/**
+	 * How many products, and how many in stock — for the sign-in page.
+	 *
+	 * The sign-in page used to download the whole product list to count
+	 * it: every name, price and picture, to draw two numbers. With a real
+	 * catalogue that is the slowest thing on a page whose only job is to
+	 * let somebody type a password. Two counts, kept for five minutes.
+	 */
+	public static function shelf_counts() {
+		$cached = get_transient( 'ah_shelf_counts' );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		global $wpdb;
+		$counts = array(
+			'products' => (int) $wpdb->get_var(
+				"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'product' AND post_status = 'publish'"
+			),
+			'inStock'  => (int) $wpdb->get_var(
+				"SELECT COUNT(*) FROM {$wpdb->posts} p
+				   JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_stock_status'
+				  WHERE p.post_type = 'product' AND p.post_status = 'publish' AND m.meta_value = 'instock'"
+			),
+		);
+		set_transient( 'ah_shelf_counts', $counts, 5 * MINUTE_IN_SECONDS );
+		return $counts;
+	}
+
+	/**
+	 * Let browsers keep the public lists for a minute.
+	 *
+	 * Every request to this server costs most of a second before it
+	 * answers — WordPress and WooCommerce loading on shared hosting —
+	 * however small the reply. The product list and the categories are
+	 * the same for everybody and change a few times a day, so a phone
+	 * or a browser that fetched them a minute ago can use that copy, and
+	 * for ten minutes after can show it while quietly fetching a new
+	 * one. Nothing signed-in or personal is ever marked this way.
+	 */
+	public static function cache_public( $response, $server, $request ) {
+		if ( 'GET' !== $request->get_method() || ! ( $response instanceof WP_HTTP_Response ) || $response->is_error() ) {
+			return $response;
+		}
+		$route = $request->get_route();
+		$public = array( '/' . self::NS . '/health', '/' . self::NS . '/products', '/' . self::NS . '/products/categories' );
+		if ( in_array( $route, $public, true ) ) {
+			$response->header( 'Cache-Control', 'public, max-age=60, stale-while-revalidate=600' );
+		}
+		return $response;
 	}
 
 	// -----------------------------------------------------------------
@@ -123,11 +180,14 @@ class AH_Rest {
 				'methods'             => $get,
 				'permission_callback' => array( __CLASS__, 'open' ),
 				'callback'            => function () {
-					return array(
-						'ok'       => true,
-						'shop'     => AH_Sms::shop_name(),
-						'currency' => AH_Sms::option( 'currency', 'UGX' ),
-						'time'     => gmdate( 'c' ),
+					return array_merge(
+						array(
+							'ok'       => true,
+							'shop'     => AH_Sms::shop_name(),
+							'currency' => AH_Sms::option( 'currency', 'UGX' ),
+							'time'     => gmdate( 'c' ),
+						),
+						self::shelf_counts()
 					);
 				},
 			)

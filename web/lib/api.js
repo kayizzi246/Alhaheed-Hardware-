@@ -42,7 +42,24 @@ export function setSession(token, user, { remember = true } = {}) {
   } catch { /* nothing to be done if storage is blocked */ }
 }
 
+/**
+ * The last answer to each GET, in memory, for showing a screen at once.
+ *
+ * Every request to the shop's server costs most of a second before it
+ * replies, however small. Going back to a screen you were on a minute
+ * ago should not mean staring at "Loading…" for that second again — so
+ * a screen can start from what it showed last time (peek) and replace
+ * it as soon as the fresh answer arrives. It is never used *instead* of
+ * asking: only to fill the gap while asking.
+ *
+ * Memory only, and emptied on sign-out, so on a shared counter computer
+ * the next person never sees the last person's screen.
+ */
+const lastSeen = new Map();
+export const peek = (path) => lastSeen.get(path) ?? null;
+
 export function clearSession() {
+  lastSeen.clear();
   for (const s of stores()) {
     try { s.removeItem(TOKEN_KEY); s.removeItem(USER_KEY); } catch { /* ignore */ }
   }
@@ -68,6 +85,7 @@ export async function api(path, { method = 'GET', body, raw } = {}) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  if (method === 'GET') lastSeen.set(path, data);
   return data;
 }
 

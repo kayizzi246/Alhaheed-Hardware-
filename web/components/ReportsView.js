@@ -312,7 +312,7 @@ export default function ReportsView() {
                       <Td className="capitalize text-ink-muted">{row.role}</Td>
                       {actions.map((a) => (
                         <Td key={a} num className={row.counts[a] ? undefined : 'text-ink-faint'}>
-                          {row.counts[a] || '—'}
+                          {row.counts[a] || ''}
                         </Td>
                       ))}
                     </Tr>

@@ -137,9 +137,9 @@ export default function Cashier() {
                       <tr key={r.id}>
                         <Td className="tnum font-semibold">{r.receipt_no}</Td>
                         <Td className="tnum">{r.order_no}</Td>
-                        <Td>{r.company_name || r.customer_name || '—'}</Td>
+                        <Td>{r.company_name || r.customer_name || ''}</Td>
                         <Td>{methodLabel(r.method)}</Td>
-                        <Td className="text-muted-foreground">{r.transaction_ref || '—'}</Td>
+                        <Td className="text-muted-foreground">{r.transaction_ref || ''}</Td>
                         <Td right className="font-semibold">{money(r.amount_paid)}</Td>
                         <Td right className="text-muted-foreground">{at(r.created_at)}</Td>
                       </tr>
@@ -383,7 +383,7 @@ function TakePayment({ order, onClose, onDone, onError }) {
                 value={ref}
                 onChange={(e) => { setRef(e.target.value); setRefFrom('typed'); }}
                 onPaste={onPaste}
-                placeholder={method === 'cash' ? '—' : method === 'card' ? '432118765123' : '12345678901 or MP261123.1401.A77821'}
+                placeholder={method === 'cash' ? 'Optional' : method === 'card' ? '432118765123' : '12345678901 or MP261123.1401.A77821'}
                 required={needsRef}
                 autoComplete="off"
                 spellCheck={false}

@@ -178,7 +178,7 @@ function Ruling({ ruling, onClose, onDone }) {
                 onChange={(e) => setRemarks(e.target.value)}
                 required={!approve}
                 autoFocus
-                placeholder={approve ? '—' : 'No mobile-money message for this reference'}
+                placeholder={approve ? 'Optional' : 'No mobile-money message for this reference'}
               />
             </Field>
           </DialogBody>
@@ -231,7 +231,7 @@ function PaymentFacts({ order }) {
         </div>
         <div className="min-w-0">
           <dt className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Transaction ID</dt>
-          <dd className="tnum mt-0.5 break-all font-semibold">{order.transaction_ref || '—'}</dd>
+          <dd className="tnum mt-0.5 break-all font-semibold">{order.transaction_ref || ''}</dd>
         </div>
       </dl>
       {order.method !== 'cash' && !order.has_proof && (
@@ -316,10 +316,10 @@ function CashBook({ book, onSaved }) {
                     <Td className="text-muted-foreground">{at(r.created_at)}</Td>
                     <Td>{r.details}{r.method ? <span className="ml-2 text-muted-foreground">{methodLabel(r.method)}</span> : null}</Td>
                     <Td right className={r.cash_in ? 'font-semibold text-success' : 'text-muted-foreground'}>
-                      {r.cash_in ? money(r.cash_in) : '—'}
+                      {r.cash_in ? money(r.cash_in) : ''}
                     </Td>
                     <Td right className={r.cash_out ? 'font-semibold text-destructive' : 'text-muted-foreground'}>
-                      {r.cash_out ? money(r.cash_out) : '—'}
+                      {r.cash_out ? money(r.cash_out) : ''}
                     </Td>
                     <Td right className="font-semibold">{money(r.balance)}</Td>
                   </tr>

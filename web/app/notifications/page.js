@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, peek } from '@/lib/api';
 import { usePoll } from '@/lib/live';
 import { dateTime, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -18,7 +18,7 @@ import {
  * keeps.
  */
 export default function NotificationsPage() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(() => peek('/api/notifications'));
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {

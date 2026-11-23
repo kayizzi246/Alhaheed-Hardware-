@@ -116,7 +116,7 @@ export default function ManagerProducts() {
                     <Tr key={p.id} className={cn(!p.active && 'opacity-50')}>
                       <Td className="font-medium text-ink">{p.name}</Td>
                       <Td className="tnum text-ink-muted">{p.code}</Td>
-                      <Td className="text-ink-muted">{p.category_name || '—'}</Td>
+                      <Td className="text-ink-muted">{p.category_name || ''}</Td>
                       <Td num className="font-semibold text-ink">{money(p.price)}</Td>
                       <Td num className={low ? 'text-bad' : undefined}>
                         <strong className={low ? 'font-bold' : 'font-semibold text-ink'}>

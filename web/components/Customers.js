@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, peek } from '@/lib/api';
 import { money, list } from '@/lib/format';
 import {
   Alert, Button, Card, Checkbox, Chip, Empty, Field, Input, Loading, Modal, PageHead,
@@ -24,7 +24,10 @@ const ACCOUNT_LABEL = (c) => {
  * list, and if not, add them — name and number is enough.
  */
 export default function Customers({ canAdd = false, from = '/api/customers' }) {
-  const [customers, setCustomers] = useState(null);
+  const [customers, setCustomers] = useState(() => {
+    const r = peek(from);
+    return r ? list(r.customers) : null;
+  });
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -116,7 +119,7 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
                           <span className="block text-xs text-ink-muted">{c.companyName}</span>
                         )}
                       </Td>
-                      <Td className="tnum whitespace-nowrap">{c.phone || '—'}</Td>
+                      <Td className="tnum whitespace-nowrap">{c.phone || ''}</Td>
                       <Td className="text-ink-muted">
                         {ACCOUNT_LABEL(c)}
                         {c.source === 'counter' && (
@@ -257,7 +260,7 @@ function AddCustomer({ start, onClose, onFound, onDone }) {
             <Input value={form.address} onChange={set('address')} placeholder="Kireka, near the market" />
           </Field>
           <Field label="Email (optional)">
-            <Input type="email" value={form.email} onChange={set('email')} placeholder="—" />
+            <Input type="email" value={form.email} onChange={set('email')} />
           </Field>
         </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, peek } from '@/lib/api';
 import { dateTime, list } from '@/lib/format';
 import {
   Alert, Card, Empty, Loading, PageHead, Select,
@@ -27,7 +27,10 @@ const ACTION_LABEL = {
  * cannot answer from memory.
  */
 export default function ManagerAudit() {
-  const [events, setEvents] = useState(null);
+  const [events, setEvents] = useState(() => {
+    const r = peek('/api/manager/audit?limit=300');
+    return r ? list(r.events) : null;
+  });
   const [who, setWho] = useState('all');
   const [what, setWhat] = useState('all');
   const [error, setError] = useState('');
@@ -96,13 +99,13 @@ export default function ManagerAudit() {
                         >
                           {e.order_no}
                         </Link>
-                      ) : '—'}
+                      ) : ''}
                     </Td>
                     <Td className="capitalize text-ink-muted">{e.stage}</Td>
                     <Td className="font-medium text-ink">
                       {ACTION_LABEL[e.action] || String(e.action).replace(/_/g, ' ')}
                     </Td>
-                    <Td>{e.handler_name || '—'}</Td>
+                    <Td>{e.handler_name || ''}</Td>
                     <Td className="text-ink-muted">{e.notes || ''}</Td>
                   </Tr>
                 ))}

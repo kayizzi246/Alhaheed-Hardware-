@@ -1,5 +1,6 @@
 'use client';
 import { ThemeToggle } from '@/components/Theme';
+import { list } from '@/lib/format';
 import { Alert, Button, Checkbox, Field, Input, Spinner } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -59,17 +60,19 @@ export default function LoginPage() {
     let alive = true;
     (async () => {
       try {
-        const [health, products] = await Promise.all([
-          api('/api/health'),
-          api('/api/products'),
-        ]);
+        // One small request. The counts used to come from downloading
+        // the whole product list — every name, price and picture — to
+        // draw two numbers on a page whose job is to take a password.
+        const health = await api('/api/health');
         if (!alive) return;
-        setShop({
-          name: health.shop,
-          currency: health.currency,
-          products: products.products.length,
-          inStock: products.products.filter((p) => p.stock_available > 0).length,
-        });
+        let counts = { products: health.products, inStock: health.inStock };
+        // A site still on the older plugin has no counts on /health.
+        if (typeof counts.products !== 'number') {
+          const products = list((await api('/api/products')).products);
+          counts = { products: products.length, inStock: products.filter((x) => x.stock_available > 0).length };
+        }
+        if (!alive) return;
+        setShop({ name: health.shop, currency: health.currency, ...counts });
         setReachable(true);
       } catch {
         if (alive) setReachable(false);
@@ -372,8 +375,10 @@ export default function LoginPage() {
           {/* The live figures stay: they are the one thing on this
               panel that proves the shop is actually there. */}
           <div className="mt-11 flex items-stretch justify-center divide-x divide-white/10 border-t border-white/10 pt-7">
-            <Figure value={shop ? String(shop.products) : '—'} label="Products" first />
-            <Figure value={shop ? String(shop.inStock) : '—'} label="In stock" />
+            {/* Faded in once known, never a dash standing in for a
+                number. Space is held, so nothing jumps when they land. */}
+            <Figure value={shop?.products} label="Products" first />
+            <Figure value={shop?.inStock} label="In stock" />
             <Figure value={shop?.currency ?? 'UGX'} label="Currency" />
           </div>
         </div>
@@ -485,10 +490,17 @@ function OrderFlowArt() {
 
 /** One figure on the brand panel: the number, then what it counts. */
 function Figure({ value, label, first }) {
+  const known = value !== undefined && value !== null;
   return (
     <div className={first ? 'pr-6' : 'px-6'}>
-      <strong className="tnum block text-center font-display text-[22px] font-extrabold leading-none">
-        {value}
+      <strong
+        className={[
+          'tnum block min-h-[22px] text-center font-display text-[22px] font-extrabold leading-none',
+          'transition-opacity duration-200 ease-out',
+          known ? 'opacity-100' : 'opacity-0',
+        ].join(' ')}
+      >
+        {known ? String(value) : ' '}
       </strong>
       <span className="mt-1.5 block text-center text-[11.5px] text-white/50">{label}</span>
     </div>

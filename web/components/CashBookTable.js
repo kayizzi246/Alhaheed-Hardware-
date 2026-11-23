@@ -61,10 +61,10 @@ export default function CashBookTable({ date }) {
                 )}
               </Td>
               <Td num className={e.cash_in ? 'font-semibold text-ok' : 'text-ink-faint'}>
-                {e.cash_in ? Number(e.cash_in).toLocaleString('en-UG') : '—'}
+                {e.cash_in ? Number(e.cash_in).toLocaleString('en-UG') : ''}
               </Td>
               <Td num className={e.cash_out ? 'font-semibold text-bad' : 'text-ink-faint'}>
-                {e.cash_out ? Number(e.cash_out).toLocaleString('en-UG') : '—'}
+                {e.cash_out ? Number(e.cash_out).toLocaleString('en-UG') : ''}
               </Td>
               <Td num className="text-ink">{Number(e.balance ?? 0).toLocaleString('en-UG')}</Td>
             </Tr>

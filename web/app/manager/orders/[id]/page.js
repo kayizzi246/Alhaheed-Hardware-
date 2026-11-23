@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, peek } from '@/lib/api';
 import { money, dateTime, statusLabel, methodLabel, list } from '@/lib/format';
 import {
   Alert, Button, Card, CardHead, CardTitle, Field, Input, Loading, Modal,
@@ -13,7 +13,7 @@ import {
 /** One order in full: the items, the receipt, and who touched it. */
 export default function ManagerOrderDetail() {
   const { id } = useParams();
-  const [order, setOrder] = useState(null);
+  const [order, setOrder] = useState(() => peek(`/api/orders/${id}`)?.order ?? null);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
@@ -75,7 +75,7 @@ export default function ManagerOrderDetail() {
                 <Row k="Status"><StatusChip status={order.status}>{statusLabel(order.status)}</StatusChip></Row>
                 <Row k="Customer">{order.company_name || order.ordered_by_name}</Row>
                 {order.company_name && <Row k="Ordered by">{order.ordered_by_name}</Row>}
-                <Row k="Phone"><span className="tnum">{order.ordered_by_phone || '—'}</span></Row>
+                <Row k="Phone"><span className="tnum">{order.ordered_by_phone || ''}</span></Row>
                 <Row k="Fulfilment">{order.fulfilment === 'delivery' ? 'Delivery' : 'Pick-up'}</Row>
                 {order.delivery_address && <Row k="Address">{order.delivery_address}</Row>}
                 <Row k="Placed"><span className="tnum">{dateTime(order.created_at)}</span></Row>
@@ -157,7 +157,7 @@ export default function ManagerOrderDetail() {
                   <Td className="tnum whitespace-nowrap text-ink-muted">{dateTime(e.created_at)}</Td>
                   <Td className="capitalize text-ink-muted">{e.stage}</Td>
                   <Td className="font-medium capitalize text-ink">{String(e.action).replace(/_/g, ' ')}</Td>
-                  <Td>{e.handler_name || '—'}</Td>
+                  <Td>{e.handler_name || ''}</Td>
                   <Td className="text-ink-muted">{e.notes || ''}</Td>
                 </Tr>
               ))}

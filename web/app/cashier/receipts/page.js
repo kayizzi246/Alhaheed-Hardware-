@@ -74,7 +74,7 @@ export default function ReceiptsPage() {
                     <Td className="tnum">{r.order_no}</Td>
                     <Td>{r.company_name || r.customer_name}</Td>
                     <Td>{methodLabel(r.method)}</Td>
-                    <Td className="text-ink-muted">{r.transaction_ref || '—'}</Td>
+                    <Td className="text-ink-muted">{r.transaction_ref || ''}</Td>
                     <Td num className="font-semibold text-ink">{money(r.amount_paid)}</Td>
                     <Td className="tnum whitespace-nowrap text-ink-muted">{dateTime(r.created_at)}</Td>
                     <Td className="text-right">

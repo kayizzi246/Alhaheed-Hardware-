@@ -259,7 +259,7 @@ function LowStock({ items, ready }) {
                       {p.name}
                       {out && <PackageX className="ml-2 inline size-3.5 align-[-2px] text-destructive" />}
                     </Td>
-                    <Td className="text-muted-foreground">{p.code || p.sku || '—'}</Td>
+                    <Td className="text-muted-foreground">{p.code || p.sku || ''}</Td>
                     <Td right className={out ? 'font-bold text-destructive' : 'font-semibold text-warning'}>
                       {Number(p.stock_available ?? 0)} {p.unit || ''}
                     </Td>

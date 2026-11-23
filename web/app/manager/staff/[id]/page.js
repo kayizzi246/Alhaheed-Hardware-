@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, peek } from '@/lib/api';
 import { usePoll } from '@/lib/live';
 import { money, shortMoney, dateTime, methodLabel, list } from '@/lib/format';
 import {
@@ -50,7 +50,7 @@ const STATE = {
  */
 export default function StaffMember() {
   const { id } = useParams();
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(() => peek(`/api/manager/staff/${id}`));
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [resetting, setResetting] = useState(false);

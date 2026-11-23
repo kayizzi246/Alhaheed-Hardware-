@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, peek } from '@/lib/api';
 import { money, dateTime, statusLabel, methodLabel, list } from '@/lib/format';
 import {
   Alert, Button, Card, Empty, Input, Loading, Modal, PageHead, Select,
@@ -45,7 +45,10 @@ function ManagerOrders() {
     return STATUSES.some(([v]) => v === asked) ? asked : 'all';
   });
   const [search, setSearch] = useState('');
-  const [orders, setOrders] = useState(null);
+  const [orders, setOrders] = useState(() => {
+    const r = peek(`/api/orders?limit=100${status !== 'all' ? `&status=${status}` : ''}`);
+    return r ? list(r.orders) : null;
+  });
   const [openId, setOpenId] = useState(null);
   const [error, setError] = useState('');
 

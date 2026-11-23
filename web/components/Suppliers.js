@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api, getUser } from '@/lib/api';
+import { api, getUser, peek } from '@/lib/api';
 import { dateTime, list } from '@/lib/format';
 import {
   Alert, Button, Card, CardBody, CardHead, CardNote, CardTitle, Chip, Empty,
@@ -23,9 +23,9 @@ import {
  * the only way anybody finds out that they did.
  */
 export default function Suppliers() {
-  const [data, setData] = useState(null);
-  const [mail, setMail] = useState([]);
-  const [low, setLow] = useState([]);
+  const [data, setData] = useState(() => peek('/api/suppliers'));
+  const [mail, setMail] = useState(() => list(peek('/api/suppliers/mail')?.mail));
+  const [low, setLow] = useState(() => list(peek('/api/suppliers/restock')?.items));
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [adding, setAdding] = useState(false);
@@ -117,9 +117,9 @@ export default function Suppliers() {
                         <span className="tnum block text-xs text-ink-muted">{s.phone}</span>
                       )}
                     </Td>
-                    <Td className="text-ink-muted">{s.contact || '—'}</Td>
+                    <Td className="text-ink-muted">{s.contact || ''}</Td>
                     <Td className="text-ink-muted">{s.email}</Td>
-                    <Td className="text-ink-muted">{s.supplies || '—'}</Td>
+                    <Td className="text-ink-muted">{s.supplies || ''}</Td>
                     <Td className="tnum text-ink-muted">
                       {s.lastMail ? dateTime(s.lastMail) : 'never'}
                     </Td>
@@ -185,7 +185,7 @@ export default function Suppliers() {
                     <Td num className="font-semibold text-bad">{i.stock}</Td>
                     <Td num className="text-ink-muted">{i.reorder}</Td>
                     <Td num className="font-semibold text-ink">{i.suggest} {i.unit}</Td>
-                    <Td className="text-ink-muted">{i.supplier || '—'}</Td>
+                    <Td className="text-ink-muted">{i.supplier || ''}</Td>
                   </Tr>
                 ))}
               </tbody>

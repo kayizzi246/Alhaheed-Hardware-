@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api, getUser, clearSession } from '@/lib/api';
+import { api, getUser, clearSession, peek } from '@/lib/api';
 import { NAV, HOME, DESK_LABEL } from '@/lib/roles';
 import { Icon } from '@/components/icons';
 import { usePoll, freshness } from '@/lib/live';
@@ -32,7 +32,7 @@ export default function Shell({ allow, children }) {
   const router = useRouter();
 
   const [user, setUser] = useState(null);
-  const [unread, setUnread] = useState(0);
+  const [unread, setUnread] = useState(() => peek('/api/notifications')?.unread ?? 0);
   const [menuOpen, setMenuOpen] = useState(false); // the phone rail
   const [accountOpen, setAccountOpen] = useState(false);
 

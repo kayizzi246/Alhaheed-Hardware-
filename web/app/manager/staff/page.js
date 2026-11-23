@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, peek } from '@/lib/api';
 import { PasswordField, SignInCard, makePassword, passwordProblem } from '@/components/StaffBits';
 import { cn } from '@/lib/cn';
 import { list, dateTime } from '@/lib/format';
@@ -32,7 +32,10 @@ const REACH = [
  * over in person. Open anyone to see what they have been doing.
  */
 export default function ManagerStaff() {
-  const [staff, setStaff] = useState(null);
+  const [staff, setStaff] = useState(() => {
+    const r = peek('/api/manager/staff');
+    return r ? list(r.staff) : null;
+  });
   const [hiring, setHiring] = useState(false);
   const [changing, setChanging] = useState(null);
   const [error, setError] = useState('');
@@ -97,7 +100,7 @@ export default function ManagerStaff() {
                       </Link>
                     </Td>
                     <Td>{ROLE_LABEL[s.role] || s.role}</Td>
-                    <Td className="tnum">{s.phone || '—'}</Td>
+                    <Td className="tnum">{s.phone || ''}</Td>
                     <Td className="tnum text-ink-muted">{s.lastSeen ? dateTime(s.lastSeen) : 'not yet'}</Td>
                     <Td>
                       <Chip tone={s.status === 'active' ? 'good' : 'grey'}>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { api, getUser } from '@/lib/api';
+import { api, getUser, peek } from '@/lib/api';
 import { usePoll } from '@/lib/live';
 import { money, shortMoney, methodLabel, time, list } from '@/lib/format';
 import {
@@ -20,7 +20,7 @@ import CashBookTable from '@/components/CashBookTable';
  * "rejected" has nothing to act on.
  */
 export default function VerifyPayments() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(() => peek('/api/accounts/queue'));
   const [rejecting, setRejecting] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -123,7 +123,7 @@ export default function VerifyPayments() {
                     </Td>
                     <Td>{methodLabel(o.method)}</Td>
                     <Td>
-                      <span className="tnum block text-ink-muted">{o.transaction_ref || '—'}</span>
+                      <span className="tnum block text-ink-muted">{o.transaction_ref || ''}</span>
                       {o.has_proof ? (
                         <button
                           type="button"

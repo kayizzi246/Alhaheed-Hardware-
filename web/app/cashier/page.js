@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api, getUser, upload } from '@/lib/api';
+import { api, getUser, upload, peek } from '@/lib/api';
 import { readPaymentText, normaliseRef } from '@/lib/txref';
 import { readImageText, shrinkImage } from '@/lib/ocr';
 import { usePoll } from '@/lib/live';
@@ -24,8 +24,8 @@ import {
  * itself rather than waiting to be reloaded.
  */
 export default function CashierQueue() {
-  const [data, setData] = useState(null);
-  const [recent, setRecent] = useState([]);
+  const [data, setData] = useState(() => peek('/api/cashier/queue'));
+  const [recent, setRecent] = useState(() => list(peek('/api/cashier/receipts')?.receipts).slice(0, 8));
   const [paying, setPaying] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');

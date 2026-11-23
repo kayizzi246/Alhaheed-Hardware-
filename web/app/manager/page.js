@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, peek } from '@/lib/api';
 import { money, shortMoney, time, statusLabel, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
@@ -31,9 +31,18 @@ import { usePoll } from '@/lib/live';
  * written beside its colour regardless.
  */
 export default function ManagerConsole() {
-  const [d, setD] = useState(null);
-  const [best, setBest] = useState(null);
-  const [recent, setRecent] = useState(null);
+  // Started from what this screen showed last time, if anything, so
+  // coming back to it is instant; the fresh figures replace it a
+  // moment later.
+  const [d, setD] = useState(() => peek('/api/manager/dashboard'));
+  const [best, setBest] = useState(() => {
+    const r = peek('/api/reports/best-sellers?period=weekly');
+    return r ? list(r.products).slice(0, 5) : null;
+  });
+  const [recent, setRecent] = useState(() => {
+    const r = peek('/api/orders?limit=7');
+    return r ? list(r.orders).slice(0, 7) : null;
+  });
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
