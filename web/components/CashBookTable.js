@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { money, time, list } from '@/lib/format';
-import { Empty, Loading, Table, TableWrap, Td, Th, Tr } from '@/components/ui';
+import { Empty, Loading, Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
 
 /**
  * The day's cash book, with a running balance.
@@ -14,14 +14,23 @@ import { Empty, Loading, Table, TableWrap, Td, Th, Tr } from '@/components/ui';
  */
 export default function CashBookTable({ date }) {
   const [book, setBook] = useState(null);
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
 
+  // This used to show an empty book — opening 0, closing 0 — when it
+  // could not load, and say nothing. To somebody reconciling the till
+  // that reads as "the drawer is empty".
   useEffect(() => {
     api(`/api/accounts/cash-book${date ? `?date=${date}` : ''}`)
-      .then(setBook)
-      .catch(() => setBook({ entries: [], opening: 0, closing: 0 }));
-  }, [date]);
+      .then((b) => { setBook(b); setError(''); })
+      .catch((e) => setError(e.message));
+  }, [date, attempt]);
 
-  if (!book) return <Loading>Loading the cash book…</Loading>;
+  if (!book) {
+    return error
+      ? <LoadFailed title="The cash book could not be loaded" onRetry={() => setAttempt((n) => n + 1)}>{error}</LoadFailed>
+      : <Loading>Loading the cash book…</Loading>;
+  }
 
   const entries = list(book.entries);
   const totalIn = entries.reduce((n, e) => n + Number(e.cash_in || 0), 0);

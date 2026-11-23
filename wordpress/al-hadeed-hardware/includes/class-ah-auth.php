@@ -230,7 +230,22 @@ class AH_Auth {
 		return $code;
 	}
 
-	/** Consumes the code. A code works once, whether or not it worked. */
+	/** Every code out for this number stops working. */
+	public static function burn_otps( $phone ) {
+		global $wpdb;
+		$wpdb->query(
+			$wpdb->prepare(
+				'UPDATE ' . AH_Install::table( 'otp' ) . ' SET consumed = 1 WHERE phone = %s AND consumed = 0',
+				AH_Sms::normalise_phone( $phone )
+			)
+		);
+	}
+
+	/**
+	 * Consumes the code when it is right. A wrong guess is counted by
+	 * AH_Limits, which kills the code after five — this used to accept
+	 * any number of wrong guesses for the code's five minutes.
+	 */
 	public static function check_otp( $phone, $code ) {
 		global $wpdb;
 		$table = AH_Install::table( 'otp' );

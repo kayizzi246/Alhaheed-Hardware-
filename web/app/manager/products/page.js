@@ -6,8 +6,7 @@ import { money, list, today } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
   Alert, Button, Card, Empty, Field, Input, Loading, Modal, PageHead,
-  Table, TableWrap, Td, Th, Tr,
-} from '@/components/ui';
+  Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
 
 /**
  * The catalogue, as the manager maintains it.
@@ -46,7 +45,7 @@ export default function ManagerProducts() {
       setProducts(list((await api('/api/manager/products')).products));
       setError('');
     } catch (e) {
-      setProducts([]);
+      // On failure, keep what was on screen; the error says it is stale.
       setError(e.message);
     }
   }, []);
@@ -92,7 +91,7 @@ export default function ManagerProducts() {
 
       <Card>
         {!products ? (
-          <Loading>Loading the catalogue…</Loading>
+          error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading the catalogue…</Loading>
         ) : shown.length === 0 ? (
           <Empty
             title="Nothing matches"

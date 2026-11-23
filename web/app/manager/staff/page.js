@@ -8,8 +8,7 @@ import { cn } from '@/lib/cn';
 import { list, dateTime } from '@/lib/format';
 import {
   Alert, Button, Card, CardHead, CardTitle, Chip, Empty, Field, Input, Loading,
-  Modal, PageHead, Select, Stat, Stats, Table, TableWrap, Td, Th, Tr,
-} from '@/components/ui';
+  Modal, PageHead, Select, Stat, Stats, Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
 
 const ROLE_LABEL = {
   cashier: 'Cashier',
@@ -47,7 +46,7 @@ export default function ManagerStaff() {
       setStaff(list(r.staff));
       setError('');
     } catch (e) {
-      setStaff([]);
+      // On failure, keep what was on screen; the error says it is stale.
       setError(e.message);
     }
   }, []);
@@ -77,7 +76,7 @@ export default function ManagerStaff() {
       <Card className="mb-4">
         <CardHead><CardTitle>Everyone with a desk</CardTitle></CardHead>
         {!staff ? (
-          <Loading>Loading staff…</Loading>
+          error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading staff…</Loading>
         ) : staff.length === 0 ? (
           <Empty
             title="No staff accounts yet"

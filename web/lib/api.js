@@ -65,26 +65,156 @@ export function clearSession() {
   }
 }
 
-/** Thin fetch wrapper that attaches the bearer token and unwraps errors. */
-export async function api(path, { method = 'GET', body, raw } = {}) {
-  const res = await fetch(BASE + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+/**
+ * An error that has already been put into words a person can act on.
+ *
+ * `kind` says what sort of failure it was, for a screen that wants to
+ * react differently — a "Try again" button makes sense after `network`
+ * or `timeout`, not after `denied`.
+ */
+export class ApiError extends Error {
+  constructor(message, { status = 0, kind = 'server', code = null, retryAfter = null } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.kind = kind;
+    this.code = code;
+    this.retryAfter = retryAfter;
+  }
+}
 
-  if (res.status === 401 && typeof window !== 'undefined') {
+/**
+ * How long to wait for the shop before saying so.
+ *
+ * Without a limit a request on a weak mobile signal can hang for
+ * minutes with a spinner and no word. Long enough for a slow server
+ * on a bad day; short enough that the person is told something.
+ */
+const TIMEOUT_MS = 25000;
+
+const offline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+
+/** Send a request; turn every way it can fail into one plain sentence. */
+async function send(path, init, { timeout = TIMEOUT_MS } = {}) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeout);
+  try {
+    return await fetch(BASE + path, { ...init, signal: ctrl.signal });
+  } catch (e) {
+    if (e?.name === 'AbortError') {
+      throw new ApiError(
+        'The shop is taking too long to answer. Check the internet connection and try again.',
+        { kind: 'timeout' }
+      );
+    }
+    // fetch() only throws for no connection at all: no signal, the
+    // server down, or the address blocked.
+    throw new ApiError(
+      offline()
+        ? 'You are offline. Reconnect to the internet and try again.'
+        : 'Cannot reach the shop right now. Check the internet connection and try again.',
+      { kind: 'network' }
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * A 401 means "your session has ended" only when there was a session.
+ *
+ * It used to mean that always — so a wrong password on the sign-in
+ * page, which is also a 401, reloaded the page, cleared what had been
+ * typed and showed nothing. The cashier was left thinking the site was
+ * broken.
+ */
+function sessionEnded(res, path, hadToken) {
+  if (res.status !== 401 || !hadToken || path.startsWith('/api/auth/')) return false;
+  if (typeof window !== 'undefined') {
     clearSession();
-    window.location.href = '/';
-    throw new Error('Session expired');
+    window.location.href = '/?ended=1';
+  }
+  return true;
+}
+
+/** Read the reply, whatever it turned out to be. */
+async function read_(res) {
+  const text = await res.text().catch(() => '');
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    // An HTML page where JSON was expected: the host's error page, a
+    // maintenance screen, a login wall. Not something to show anyone.
+    return null;
+  }
+}
+
+function sayFailure(res, data) {
+  const fromServer = data && (data.error || data.message);
+  const code = data && data.code;
+
+  // A route the server does not know: the panel is newer than the
+  // plugin on the site. Said plainly, because the fix is an upload.
+  if (code === 'rest_no_route') {
+    return 'This part needs the latest version of the shop’s plugin. Ask whoever manages the website to update it.';
+  }
+  if (fromServer && res.status < 500) return fromServer;
+
+  switch (true) {
+    case res.status === 429: return 'Too many tries. Wait a few minutes and try again.';
+    case res.status === 403: return 'You do not have access to this.';
+    case res.status === 404: return 'That could not be found. It may have been removed.';
+    case res.status === 413: return 'That file is too big to send.';
+    case res.status === 502 || res.status === 503 || res.status === 504 || res.status === 520 || res.status === 521 || res.status === 522 || res.status === 524:
+      return 'The shop’s server is not answering just now. Wait a moment and try again.';
+    case res.status >= 500:
+      return fromServer
+        ? `The shop’s server had a problem: ${fromServer}`
+        : `The shop’s server had a problem (error ${res.status}). Try again — if it keeps happening, tell the manager.`;
+    default:
+      return fromServer || `Something went wrong (error ${res.status}). Try again.`;
+  }
+}
+
+function fail(res, data) {
+  throw new ApiError(sayFailure(res, data), {
+    status: res.status,
+    kind: res.status === 403 ? 'denied' : res.status === 429 ? 'limited' : res.status >= 500 ? 'server' : 'refused',
+    code: data && data.code,
+    retryAfter: data && data.data && data.data.retryAfter,
+  });
+}
+
+/** Attaches the token, waits a sensible time, and puts every failure into words. */
+export async function api(path, { method = 'GET', body, raw, timeout } = {}) {
+  const token = getToken();
+  const res = await send(
+    path,
+    {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    },
+    { timeout }
+  );
+
+  if (sessionEnded(res, path, !!token)) {
+    throw new ApiError('Your session has ended. Sign in again.', { status: 401, kind: 'session' });
   }
   if (raw) return res;
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  const data = await read_(res);
+  if (!res.ok) fail(res, data);
+  if (data === null) {
+    throw new ApiError(
+      'The shop’s server sent back something unexpected. Try again — if it keeps happening, tell the manager.',
+      { status: res.status, kind: 'server' }
+    );
+  }
   if (method === 'GET') lastSeen.set(path, data);
   return data;
 }
@@ -92,7 +222,7 @@ export async function api(path, { method = 'GET', body, raw } = {}) {
 /** Download a CSV export through the authenticated endpoint. */
 export async function downloadCsv(path, filename) {
   const res = await api(path, { raw: true });
-  if (!res.ok) throw new Error('Export failed');
+  if (!res.ok) fail(res, await read_(res));
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -111,22 +241,20 @@ export { BASE as API_BASE };
  * application/json`, and multipart must be left to the browser — it
  * appends the boundary marker that tells the server where each part
  * starts. Set the header by hand and the body is unreadable at the
- * other end.
+ * other end. A longer wait, because a photo over a mobile connection
+ * takes longer than a list.
  */
 export async function upload(path, formData) {
-  const res = await fetch(BASE + path, {
-    method: 'POST',
-    headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
-    body: formData,
-  });
-
-  if (res.status === 401 && typeof window !== 'undefined') {
-    clearSession();
-    window.location.href = '/';
-    throw new Error('Session expired');
+  const token = getToken();
+  const res = await send(
+    path,
+    { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: formData },
+    { timeout: 60000 }
+  );
+  if (sessionEnded(res, path, !!token)) {
+    throw new ApiError('Your session has ended. Sign in again.', { status: 401, kind: 'session' });
   }
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
-  return data;
+  const data = await read_(res);
+  if (!res.ok) fail(res, data);
+  return data || {};
 }

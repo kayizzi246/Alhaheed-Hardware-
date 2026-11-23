@@ -7,8 +7,7 @@ import { api, peek } from '@/lib/api';
 import { money, dateTime, statusLabel, methodLabel, list } from '@/lib/format';
 import {
   Alert, Button, Card, Empty, Input, Loading, Modal, PageHead, Select,
-  StatusChip, Table, TableWrap, Td, Th, Tr,
-} from '@/components/ui';
+  StatusChip, Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
 
 const STATUSES = [
   ['all', 'All'],
@@ -65,7 +64,7 @@ function ManagerOrders() {
       setOrders(list(r?.orders));
       setError('');
     } catch (e) {
-      setOrders([]);
+      // On failure, keep what was on screen; the error says it is stale.
       setError(e.message);
     }
   }, [status, search]);
@@ -96,7 +95,7 @@ function ManagerOrders() {
 
       <Card>
         {!orders ? (
-          <Loading>Loading orders…</Loading>
+          error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading orders…</Loading>
         ) : orders.length === 0 ? (
           <Empty title="No orders match">
             Try a different status, or clear the search box.

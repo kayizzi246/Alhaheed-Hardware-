@@ -46,6 +46,18 @@ export default function LoginPage() {
   const [reachable, setReachable] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const [forgot, setForgot] = useState(false);
+
+  // Sent here because a session ran out? Say so, instead of the person
+  // wondering why the screen they were on has gone.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (new URLSearchParams(window.location.search).get('ended')) {
+      setNote('Your session has ended. Sign in again to carry on.');
+      window.history.replaceState(null, '', '/');
+    }
+  }, []);
 
   // ── Already signed in? ──────────────────────────────────────────────
   useEffect(() => {
@@ -184,7 +196,7 @@ export default function LoginPage() {
             />
             <MethodButton
               on={mode === 'code'}
-              onClick={() => { setMode('code'); setError(''); }}
+              onClick={() => { setMode('code'); setForgot(false); setError(''); setNote(''); }}
               icon={Icon.phone()}
               label="SMS code"
             />
@@ -197,6 +209,13 @@ export default function LoginPage() {
           </div>
 
           <div aria-live="polite">
+            {note && !error && <Alert kind="ok">{note}</Alert>}
+            {forgot && mode === 'code' && !error && (
+              <p className="mb-4 rounded-sm border border-line bg-surface-2 px-3.5 py-3 text-[13px] leading-relaxed text-ink-2">
+                No problem — sign in with a code sent to your phone instead. Once you are in,
+                ask the manager to set you a new password.
+              </p>
+            )}
             {error && <Alert>{error}</Alert>}
             {reachable === false && !error && (
               <Alert>Can&rsquo;t reach the shop. Check the connection, then try again.</Alert>
@@ -205,13 +224,13 @@ export default function LoginPage() {
 
           {mode === 'password' ? (
             <form onSubmit={signInWithPassword} noValidate className="space-y-3.5">
-              <IconField icon={Icon.mail()}>
+              <IconField icon={Icon.phone()}>
                 <Input
                   id="identifier"
                   ref={firstField}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Phone or email"
+                  placeholder="Phone number or email"
                   autoComplete="username"
                   autoCapitalize="none"
                   spellCheck="false"
@@ -253,7 +272,7 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => { setMode('code'); setError(''); }}
+                  onClick={() => { setMode('code'); setForgot(true); setError(''); setNote(''); }}
                   className="text-[13px] font-semibold text-brand-dark underline-offset-2 hover:underline"
                 >
                   Forgot password?

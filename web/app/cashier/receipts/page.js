@@ -5,14 +5,13 @@ import { api } from '@/lib/api';
 import { money, dateTime, today, methodLabel, list } from '@/lib/format';
 import {
   Alert, Button, Card, CardHead, CardTitle, Checkbox, Empty, Input, Loading,
-  Modal, PageHead, Table, TableWrap, Td, Th, Tr,
-} from '@/components/ui';
+  Modal, PageHead, Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
 
 /** Receipts issued at this desk, with a printable view. */
 export default function ReceiptsPage() {
   const [date, setDate] = useState(today());
   const [mine, setMine] = useState(true);
-  const [receipts, setReceipts] = useState([]);
+  const [receipts, setReceipts] = useState(null);
   const [open, setOpen] = useState(null);
   const [error, setError] = useState('');
 
@@ -22,20 +21,22 @@ export default function ReceiptsPage() {
       setReceipts(list(r.receipts));
       setError('');
     } catch (e) {
-      setReceipts([]);
+      setReceipts((r) => r);
       setError(e.message);
     }
   }, [date, mine]);
 
   useEffect(() => { load(); }, [load]);
 
-  const total = receipts.reduce((s, r) => s + r.amount_paid, 0);
+  // null until loaded, so a failure is not mistaken for "no receipts".
+  const rows = receipts || [];
+  const total = rows.reduce((s, r) => s + r.amount_paid, 0);
 
   return (
     <>
       <PageHead
         title="Receipts"
-        sub={`${receipts.length} ${receipts.length === 1 ? 'receipt' : 'receipts'} · ${money(total)}`}
+        sub={receipts && `${rows.length} ${rows.length === 1 ? 'receipt' : 'receipts'} · ${money(total)}`}
       >
         <Input
           type="date"
@@ -54,7 +55,9 @@ export default function ReceiptsPage() {
           <span className="tnum text-[12.5px] text-ink-muted">{money(total)}</span>
         </CardHead>
 
-        {receipts.length === 0 ? (
+        {!receipts ? (
+          error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading receipts…</Loading>
+        ) : receipts.length === 0 ? (
           <Empty title="No receipts for this date">
             Pick another day, or untick &ldquo;only mine&rdquo; to see the whole shop.
           </Empty>

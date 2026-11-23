@@ -228,6 +228,7 @@ export default function Shell({ allow, children }) {
         </div>
       </header>
 
+      <Offline />
       <main className="mx-auto max-w-[1800px] px-6 pb-16 pt-6 max-lg:px-3.5">{children}</main>
 
       {/* The veil only exists on a phone, where the rail slides over. */}
@@ -452,4 +453,52 @@ function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '?';
   return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+}
+
+/**
+ * Lost the connection? Say so, once, at the top — before somebody
+ * presses Confirm on a payment and wonders why nothing happened.
+ *
+ * The browser's own online/offline signal: it knows when the Wi-Fi or
+ * the mobile data has dropped. It cannot know when the shop's server
+ * is down; that is what each screen's own error message is for.
+ */
+function Offline() {
+  const [down, setDown] = useState(false);
+  const [back, setBack] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return undefined;
+    setDown(navigator.onLine === false);
+    let t;
+    const off = () => { setDown(true); setBack(false); };
+    const on = () => {
+      setDown(false);
+      setBack(true);
+      clearTimeout(t);
+      t = setTimeout(() => setBack(false), 4000);
+    };
+    window.addEventListener('offline', off);
+    window.addEventListener('online', on);
+    return () => {
+      window.removeEventListener('offline', off);
+      window.removeEventListener('online', on);
+      clearTimeout(t);
+    };
+  }, []);
+
+  if (!down && !back) return null;
+  return (
+    <div
+      role="status"
+      className={cn(
+        'sticky top-[57px] z-20 px-6 py-2 text-center text-[13px] font-medium max-lg:px-3.5',
+        down ? 'bg-warn-bg text-warn' : 'bg-ok-bg text-ok'
+      )}
+    >
+      {down
+        ? 'You are offline. Nothing you do now will save — it will work again once the internet is back.'
+        : 'Back online.'}
+    </div>
+  );
 }

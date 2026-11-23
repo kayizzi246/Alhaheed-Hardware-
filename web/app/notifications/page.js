@@ -6,8 +6,7 @@ import { usePoll } from '@/lib/live';
 import { dateTime, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
-  Alert, Button, Card, CardHead, CardTitle, Empty, Fresh, Loading, PageHead,
-} from '@/components/ui';
+  Alert, Button, Card, CardHead, CardTitle, Empty, Fresh, Loading, PageHead, LoadFailed } from '@/components/ui';
 
 /**
  * The whole alert history.
@@ -26,7 +25,7 @@ export default function NotificationsPage() {
       setData(await api('/api/notifications'));
       setError('');
     } catch (e) {
-      setData({ notifications: [], unread: 0 });
+      // On failure, keep what was on screen; the error says it is stale.
       setError(e.message);
     }
   }, []);
@@ -42,7 +41,7 @@ export default function NotificationsPage() {
     }
   }
 
-  if (!data) return <Loading>Loading alerts…</Loading>;
+  if (!data) return error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading alerts…</Loading>;
 
   const rows = list(data.notifications);
 

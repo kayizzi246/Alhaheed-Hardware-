@@ -6,8 +6,7 @@ import { api, peek } from '@/lib/api';
 import { dateTime, list } from '@/lib/format';
 import {
   Alert, Card, Empty, Loading, PageHead, Select,
-  Table, TableWrap, Td, Th, Tr,
-} from '@/components/ui';
+  Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
 
 const ACTION_LABEL = {
   placed: 'Order placed',
@@ -35,11 +34,12 @@ export default function ManagerAudit() {
   const [what, setWhat] = useState('all');
   const [error, setError] = useState('');
 
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     api('/api/manager/audit?limit=300')
-      .then((r) => setEvents(list(r.events)))
-      .catch((e) => { setEvents([]); setError(e.message); });
-  }, []);
+      .then((r) => { setEvents(list(r.events)); setError(''); })
+      .catch((e) => setError(e.message));
+  }, [attempt]);
 
   const people = useMemo(
     () => [...new Set((events || []).map((e) => e.handler_name).filter(Boolean))],
@@ -73,7 +73,7 @@ export default function ManagerAudit() {
 
       <Card>
         {!events ? (
-          <Loading>Loading the trail…</Loading>
+          error ? <LoadFailed onRetry={() => setAttempt((n) => n + 1)}>{error}</LoadFailed> : <Loading>Loading the trail…</Loading>
         ) : shown.length === 0 ? (
           <Empty title="Nothing recorded for that filter">
             Try a different person or action.

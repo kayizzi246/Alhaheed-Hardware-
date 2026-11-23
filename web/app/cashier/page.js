@@ -10,8 +10,7 @@ import { money, shortMoney, time, methodLabel, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
   Alert, Button, Card, CardBody, CardHead, CardTitle, Chip, Empty, Field, Fresh,
-  Input, Loading, Modal, PageHead, Segmented, Stat, Stats, StatusChip,
-} from '@/components/ui';
+  Input, Loading, Modal, PageHead, Segmented, Stat, Stats, StatusChip, LoadFailed } from '@/components/ui';
 
 /**
  * The cashier's desk.
@@ -40,16 +39,15 @@ export default function CashierQueue() {
       setRecent(list(receipts.receipts).slice(0, 8));
       setError('');
     } catch (e) {
-      // An empty shape, not null: null leaves the screen on "Loading"
-      // for ever with the error nowhere to be seen.
-      setData({ orders: [], summary: {} });
+      // On failure, keep what was on screen; the error says it is stale.
       setError(e.message);
     }
   }, []);
 
   const { at, failing } = usePoll(load, 10000);
 
-  if (!data) return <Loading>Loading the payment queue…</Loading>;
+  // Never "queue is clear" because the queue could not be fetched.
+  if (!data) return error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading the payment queue…</Loading>;
 
   const user = getUser();
   const s = data.summary || {};

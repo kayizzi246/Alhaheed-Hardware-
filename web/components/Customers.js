@@ -5,8 +5,7 @@ import { api, peek } from '@/lib/api';
 import { money, list } from '@/lib/format';
 import {
   Alert, Button, Card, Checkbox, Chip, Empty, Field, Input, Loading, Modal, PageHead,
-  Stat, Stats, Table, TableWrap, Td, Textarea, Th, Tr,
-} from '@/components/ui';
+  Stat, Stats, Table, TableWrap, Td, Textarea, Th, Tr, LoadFailed } from '@/components/ui';
 
 const ACCOUNT_LABEL = (c) => {
   if (c.accountType === 'company_owner') return 'Company owner';
@@ -40,7 +39,7 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
       setCustomers(list((await api(`${from}${qs}`)).customers));
       setError('');
     } catch (e) {
-      setCustomers([]);
+      // On failure, keep what was on screen; the error says it is stale.
       setError(e.message);
     }
   }, [q, from]);
@@ -84,7 +83,7 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
 
       <Card>
         {!customers ? (
-          <Loading>Loading customers…</Loading>
+          error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading customers…</Loading>
         ) : rows.length === 0 ? (
           <Empty
             title={q ? 'Nobody matches' : 'No customers yet'}

@@ -416,7 +416,18 @@ class AH_Rest {
 		$password   = (string) $req->get_param( 'password' );
 
 		if ( ! $identifier || ! $password ) {
-			return self::err( 'ah_bad_login', 'Wrong login details', 401 );
+			return self::err( 'ah_bad_login', 'Enter your phone number and password', 400 );
+		}
+
+		// One spelling per account, so "0772..." and "+256772..." share a
+		// count and cannot be alternated to get twice the tries.
+		$who = is_email( $identifier ) ? strtolower( $identifier ) : ( AH_Sms::normalise_phone( $identifier ) ?: strtolower( $identifier ) );
+		$ip  = AH_Limits::ip();
+		foreach ( array( array( 'login_account', $who ), array( 'login_ip', $ip ) ) as $limit ) {
+			$ok = AH_Limits::check( $limit[0], $limit[1] );
+			if ( is_wp_error( $ok ) ) {
+				return $ok;
+			}
 		}
 
 		$user = is_email( $identifier )
@@ -429,20 +440,41 @@ class AH_Rest {
 		// The same answer whether the account does not exist or the
 		// password is wrong, so the form cannot be used to discover who
 		// works here.
-		if ( ! $user || ! wp_check_password( $password, $user->user_pass, $user->ID ) ) {
-			return self::err( 'ah_bad_login', 'Wrong login details', 401 );
-		}
-		if ( ! AH_Roles::desk_of( $user ) ) {
-			return self::err( 'ah_bad_login', 'Wrong login details', 401 );
+		if ( ! $user || ! wp_check_password( $password, $user->user_pass, $user->ID ) || ! AH_Roles::desk_of( $user ) ) {
+			return self::wrong_login( $who, $ip );
 		}
 		if ( 'suspended' === get_user_meta( $user->ID, 'ah_status', true ) ) {
-			return self::err( 'ah_suspended', 'This staff account has been suspended', 401 );
+			return self::err( 'ah_suspended', 'This account has been suspended. Ask the manager.', 403 );
 		}
+
+		AH_Limits::clear( 'login_account', $who );
 
 		return array(
 			'user'  => AH_Shape::user( $user ),
 			'token' => AH_Auth::issue( $user->ID ),
 		);
+	}
+
+	/**
+	 * A wrong password: counted, and the person told how many tries are
+	 * left once they are running low, rather than finding out by being
+	 * locked out.
+	 *
+	 * The same words whether the account exists or not, so the form
+	 * cannot be used to find out who works here.
+	 */
+	private static function wrong_login( $who, $ip ) {
+		AH_Limits::hit( 'login_account', $who );
+		AH_Limits::hit( 'login_ip', $ip );
+
+		$left    = AH_Limits::left( 'login_account', $who );
+		$message = 'That phone number and password do not match.';
+		if ( 0 === $left ) {
+			$message .= ' That was the last try — wait 15 minutes, or sign in with an SMS code.';
+		} elseif ( $left <= 2 ) {
+			$message .= sprintf( ' %d %s left before a 15-minute wait.', $left, 1 === $left ? 'try' : 'tries' );
+		}
+		return self::err( 'ah_bad_login', $message, 401 );
 	}
 
 	public static function otp_request( $req ) {
@@ -451,13 +483,28 @@ class AH_Rest {
 			return self::err( 'ah_bad_phone', 'Enter a phone number', 400 );
 		}
 
+		$ip = AH_Limits::ip();
+		foreach ( array( array( 'otp_send', $phone ), array( 'otp_send_ip', $ip ) ) as $limit ) {
+			$ok = AH_Limits::check( $limit[0], $limit[1] );
+			if ( is_wp_error( $ok ) ) {
+				return $ok;
+			}
+		}
+		// Counted before it is known whether the number is registered,
+		// so trying numbers to see which are customers costs the same.
+		AH_Limits::hit( 'otp_send_ip', $ip );
+
 		$user = AH_Auth::user_by_phone( $phone );
 		if ( ! $user ) {
 			return self::err( 'ah_unknown_phone', 'That phone number is not registered', 400 );
 		}
 		if ( 'suspended' === get_user_meta( $user->ID, 'ah_status', true ) ) {
-			return self::err( 'ah_suspended', 'This account has been suspended', 401 );
+			return self::err( 'ah_suspended', 'This account has been suspended. Ask the manager.', 403 );
 		}
+
+		AH_Limits::hit( 'otp_send', $phone );
+		// A new code means a fresh set of guesses for it.
+		AH_Limits::clear( 'otp_guess', $phone );
 
 		$code = AH_Auth::issue_otp( $phone );
 		$sent = AH_Sms::send( $phone, AH_Sms::otp_message( $code ) );
@@ -484,9 +531,27 @@ class AH_Rest {
 		$phone = AH_Sms::normalise_phone( $req->get_param( 'phone' ) );
 		$code  = trim( (string) $req->get_param( 'code' ) );
 
-		if ( ! AH_Auth::check_otp( $phone, $code ) ) {
-			return self::err( 'ah_bad_code', 'That code is wrong or has expired', 401 );
+		$ok = AH_Limits::check( 'otp_guess', $phone );
+		if ( is_wp_error( $ok ) ) {
+			return $ok;
 		}
+
+		if ( ! AH_Auth::check_otp( $phone, $code ) ) {
+			// Five wrong guesses and the code is dead: a six-digit code
+			// that accepts unlimited guesses for five minutes is not a
+			// lock, it is a delay.
+			if ( AH_Limits::hit( 'otp_guess', $phone ) >= 5 ) {
+				AH_Auth::burn_otps( $phone );
+				return AH_Limits::check( 'otp_guess', $phone );
+			}
+			$left = AH_Limits::left( 'otp_guess', $phone );
+			return self::err(
+				'ah_bad_code',
+				'That code is wrong or has expired.' . ( $left <= 2 ? sprintf( ' %d %s left.', $left, 1 === $left ? 'try' : 'tries' ) : '' ),
+				401
+			);
+		}
+		AH_Limits::clear( 'otp_guess', $phone );
 		$user = AH_Auth::user_by_phone( $phone );
 		if ( ! $user ) {
 			return self::err( 'ah_no_account', 'Account not found', 401 );

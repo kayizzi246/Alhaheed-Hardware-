@@ -65,7 +65,7 @@ export default function Expenses() {
       // "Loading requests…" for ever while the error sat in state with
       // nothing rendering it — so a server that answered 404 looked
       // exactly like a slow one, and there was nothing to act on.
-      setData({ expenses: [], summary: {}, canApprove: false, canPay: false });
+      // On failure, keep what was on screen; the error says it is stale.
       setError(e.message);
     }
   }, [status]);

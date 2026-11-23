@@ -6,8 +6,7 @@ import { usePoll } from '@/lib/live';
 import { money, shortMoney, methodLabel, time, list } from '@/lib/format';
 import {
   Alert, Button, Card, CardHead, CardTitle, Empty, Field, Fresh, Loading, Modal,
-  PageHead, Stat, Stats, Table, TableWrap, Td, Textarea, Th, Tr,
-} from '@/components/ui';
+  PageHead, Stat, Stats, Table, TableWrap, Td, Textarea, Th, Tr, LoadFailed } from '@/components/ui';
 import CashBookTable from '@/components/CashBookTable';
 
 /**
@@ -32,7 +31,7 @@ export default function VerifyPayments() {
       setData(await api('/api/accounts/queue'));
       setError('');
     } catch (e) {
-      setData({ orders: [], summary: {} });
+      // On failure, keep what was on screen; the error says it is stale.
       setError(e.message);
     }
   }, []);
@@ -62,7 +61,7 @@ export default function VerifyPayments() {
     }
   }
 
-  if (!data) return <Loading>Loading payments to verify…</Loading>;
+  if (!data) return error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading payments to verify…</Loading>;
 
   const user = getUser();
   const s = data.summary || {};

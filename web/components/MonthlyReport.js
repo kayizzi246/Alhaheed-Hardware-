@@ -228,7 +228,7 @@ export default function MonthlyReport() {
               ))}
             </Select>
           </Field>
-          <Button variant="outline" size="sm" disabled={busy} onClick={load}>
+          <Button variant="outline" className="h-11" disabled={busy} onClick={load}>
             {busy ? 'Loading…' : 'Refresh'}
           </Button>
         </CardBody>

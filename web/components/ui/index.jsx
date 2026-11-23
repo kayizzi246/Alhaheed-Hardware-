@@ -9,14 +9,16 @@
  * share; this is one shop's panel, and a reader is better served
  * seeing the whole vocabulary at once.
  *
- * Radix is used only for Dialog and Tabs, which need focus traps,
- * escape handling and roving tabindex that are genuinely hard to get
- * right. Everything else is an element with classes on it.
+ * Radix is used only for Dialog, Tabs and Select, which need focus
+ * traps, escape handling, roving tabindex and type-to-jump that are
+ * genuinely hard to get right. Everything else is an element with
+ * classes on it.
  */
 
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
+import * as SelectPrimitive from '@radix-ui/react-select';
 import { Slot } from '@radix-ui/react-slot';
 import { cva } from 'class-variance-authority';
 import { cn } from '@/lib/cn';
@@ -182,9 +184,104 @@ export const Input = React.forwardRef(({ className, ...props }, ref) => (
 ));
 Input.displayName = 'Input';
 
-export const Select = React.forwardRef(({ className, ...props }, ref) => (
-  <select ref={ref} className={cn(fieldBase, 'h-11 pr-8', className)} {...props} />
-));
+/**
+ * A dropdown that looks like it belongs to this panel.
+ *
+ * The browser's own <select> draws its list in the operating system's
+ * style — a grey Windows box on a computer, a different one on every
+ * phone — and cannot be made to match. This keeps the same way of being
+ * used everywhere it already is (`value`, `onChange(e)` reading
+ * `e.target.value`, <option> children), so no screen had to change,
+ * and draws the list itself: rounded, the chosen one ticked, the one
+ * under the pointer lit, opening from the field rather than out of
+ * nowhere. Keyboard, type-to-jump and screen readers come from Radix.
+ */
+const EMPTY = '__ah_none__'; // Radix will not take '' as an item's value.
+const enc = (v) => (v === '' || v === null || v === undefined ? EMPTY : String(v));
+const dec = (v) => (v === EMPTY ? '' : v);
+
+export const Select = React.forwardRef(
+  ({ value, onChange, children, className, disabled, name, id, placeholder = 'Choose…', ...rest }, ref) => {
+    const options = React.Children.toArray(children)
+      .filter((c) => React.isValidElement(c) && c.type === 'option')
+      .map((c) => ({
+        value: c.props.value !== undefined ? String(c.props.value) : String(c.props.children),
+        label: c.props.children,
+        disabled: !!c.props.disabled,
+      }));
+
+    return (
+      <SelectPrimitive.Root
+        value={value === undefined ? undefined : enc(String(value))}
+        onValueChange={(v) => onChange?.({ target: { value: dec(v), name }, currentTarget: { value: dec(v), name } })}
+        disabled={disabled}
+        name={name}
+      >
+        <SelectPrimitive.Trigger
+          ref={ref}
+          id={id}
+          aria-label={rest['aria-label']}
+          className={cn(
+            fieldBase,
+            'group inline-flex h-11 items-center justify-between gap-2 text-left shadow-[0_1px_2px_rgb(15_23_42/0.04)]',
+            'hover:border-line-firm data-[state=open]:border-brand data-[state=open]:ring-[3px] data-[state=open]:ring-brand/20',
+            'data-[placeholder]:text-ink-faint [&>span]:min-w-0 [&>span]:truncate',
+            className
+          )}
+        >
+          <SelectPrimitive.Value placeholder={placeholder} />
+          <SelectPrimitive.Icon asChild>
+            <svg
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+              className="size-4 shrink-0 text-ink-muted transition-transform duration-200 ease-out group-data-[state=open]:rotate-180"
+            >
+              <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </SelectPrimitive.Icon>
+        </SelectPrimitive.Trigger>
+
+        <SelectPrimitive.Portal>
+          <SelectPrimitive.Content
+            position="popper"
+            sideOffset={6}
+            collisionPadding={12}
+            className={cn(
+              'z-[60] min-w-[var(--radix-select-trigger-width)] max-w-[min(92vw,420px)] overflow-hidden',
+              'max-h-[min(360px,var(--radix-select-content-available-height))]',
+              'rounded-xl border border-line bg-surface p-1 text-ink',
+              'shadow-[0_16px_40px_-12px_rgb(15_23_42/0.22),0_3px_8px_rgb(15_23_42/0.06)]',
+              'origin-[var(--radix-select-content-transform-origin)] data-[state=open]:animate-pop-in'
+            )}
+          >
+            <SelectPrimitive.Viewport className="max-h-[inherit]">
+              {options.map((o) => (
+                <SelectPrimitive.Item
+                  key={o.value}
+                  value={enc(o.value)}
+                  disabled={o.disabled}
+                  className={cn(
+                    'relative flex min-h-10 cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-[14px] outline-none',
+                    'transition-colors duration-100',
+                    'data-[highlighted]:bg-surface-2 data-[state=checked]:font-semibold data-[state=checked]:text-brand-dark',
+                    'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-45'
+                  )}
+                >
+                  <SelectPrimitive.ItemText>{o.label}</SelectPrimitive.ItemText>
+                  <SelectPrimitive.ItemIndicator className="absolute right-3 inline-flex text-brand">
+                    <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4">
+                      <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </SelectPrimitive.ItemIndicator>
+                </SelectPrimitive.Item>
+              ))}
+            </SelectPrimitive.Viewport>
+          </SelectPrimitive.Content>
+        </SelectPrimitive.Portal>
+      </SelectPrimitive.Root>
+    );
+  }
+);
 Select.displayName = 'Select';
 
 export const Textarea = React.forwardRef(({ className, ...props }, ref) => (
@@ -308,6 +405,28 @@ export const Empty = ({ title, children, action }) => (
   </div>
 );
 
+/**
+ * A screen that could not get its data.
+ *
+ * Never an empty list in its place. "Waiting for payment: 0 — queue is
+ * clear" on a dropped connection tells a cashier the queue is empty
+ * when it is not; "opening 0, closing 0" tells Accounts the till holds
+ * nothing. A failure is said to be a failure, with the way to retry.
+ */
+export const LoadFailed = ({ children, onRetry, title = 'This could not be loaded' }) => (
+  <div role="alert" className="px-6 py-12 text-center">
+    <p className="text-base font-semibold text-ink">{title}</p>
+    <p className="mx-auto mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-ink-muted">
+      {children || 'The shop could not be reached.'} Nothing has been changed.
+    </p>
+    {onRetry && (
+      <div className="mt-5">
+        <Button variant="outline" onClick={onRetry}>Try again</Button>
+      </div>
+    )}
+  </div>
+);
+
 /** The shape of what is coming, rather than a spinner over nothing. */
 export const Skeleton = ({ className }) => (
   <div className={cn('animate-shimmer rounded-sm bg-surface-sunk', className)} />
@@ -391,7 +510,7 @@ export function Stat({ label, value, note, lead, tone }) {
       >
         {value}
       </p>
-      {note && <p className="mt-1.5 truncate text-xs text-ink-muted">{note}</p>}
+      {note && <p className="mt-1.5 text-xs leading-snug text-ink-muted">{note}</p>}
     </div>
   );
 }

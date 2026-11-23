@@ -6,8 +6,7 @@ import { dateTime, list } from '@/lib/format';
 import {
   Alert, Button, Card, CardBody, CardHead, CardNote, CardTitle, Chip, Empty,
   Field, Input, Loading, Modal, PageHead, Select, Table, TableWrap, Td,
-  Textarea, Th, Tr,
-} from '@/components/ui';
+  Textarea, Th, Tr, LoadFailed } from '@/components/ui';
 
 /**
  * Suppliers, and writing to them.
@@ -46,19 +45,14 @@ export default function Suppliers() {
       setLow(list(r.items));
       setError('');
     } catch (e) {
-      // An empty shape, never null: a screen that keeps its loader up
-      // forever after a failed request is the bug I have already fixed
-      // once on this project.
-      setData({ suppliers: [], canSend: false, mailReady: null });
-      setMail([]);
-      setLow([]);
+      // On failure, keep what was on screen; the error says it is stale.
       setError(e.message);
     }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  if (!data) return <Loading>Loading suppliers…</Loading>;
+  if (!data) return error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading suppliers…</Loading>;
 
   const suppliers = list(data.suppliers);
   const active = suppliers.filter((s) => s.active);
