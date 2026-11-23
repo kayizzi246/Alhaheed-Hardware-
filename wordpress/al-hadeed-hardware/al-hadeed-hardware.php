@@ -87,6 +87,7 @@ require_once AH_PATH . 'includes/class-ah-rest.php';
 require_once AH_PATH . 'includes/class-ah-rest-desks.php';
 require_once AH_PATH . 'includes/class-ah-rest-company.php';
 require_once AH_PATH . 'includes/class-ah-catalogue.php';
+require_once AH_PATH . 'includes/class-ah-staff.php';
 require_once AH_PATH . 'includes/class-ah-settings.php';
 require_once AH_PATH . 'includes/class-ah-import.php';
 
@@ -114,6 +115,7 @@ add_action(
 		AH_Rest::init();
 		AH_Settings::init();
 		AH_Import::init();
+		AH_Staff::init();
 	}
 );
 

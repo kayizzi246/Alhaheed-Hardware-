@@ -303,6 +303,9 @@ class AH_Rest {
 
 		// Pictures, spreadsheet import and export, from the web panel.
 		AH_Catalogue::routes();
+
+		// Hiring onto a desk, from the panel.
+		AH_Staff::routes();
 		AH_Rest_Company::routes();
 
 		register_rest_route(
@@ -533,12 +536,23 @@ class AH_Rest {
 			if ( is_wp_error( $t ) ) {
 				continue;
 			}
+			// Decoded, like every other name this API sends. A filter
+			// chip reading "Iron &amp; Steel" is the same bug as the
+			// products list had, in the one place it was missed.
 			$out[] = array(
 				'id'            => $t->term_id,
-				'name'          => $t->name,
+				'name'          => AH_Shape::text( $t->name ),
 				'product_count' => (int) $t->count,
 			);
 		}
+
+		// An empty category is a filter that leads nowhere. WordPress
+		// always has "Uncategorized" whether anything is in it or not,
+		// and it was the only chip on the shelf of a new shop.
+		$out = array_values( array_filter( $out, function ( $c ) {
+			return $c['product_count'] > 0;
+		} ) );
+
 		return array( 'categories' => $out );
 	}
 

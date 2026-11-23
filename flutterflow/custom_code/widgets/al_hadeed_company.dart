@@ -74,13 +74,15 @@ const Color _hairline = Color(0xFFE3E8ED);
 const Color _tile = Color(0xFFF7F8FA);
 const Color _navy = Color(0xFF14334F);
 const Color _navyDark = Color(0xFF0D2439);
-const Color _brand = Color(0xFFE98A24);
-const Color _brandDark = Color(0xFFC9731A);
-const Color _brandPale = Color(0xFFFDF2E4);
+const Color _brand = Color(0xFF2563EB);
+const Color _brandDark = Color(0xFF1D4ED8);
+const Color _brandPale = Color(0xFFEFF6FF);
 const Color _green = Color(0xFF1E8E5A);
 const Color _greenPale = Color(0xFFE8F5EE);
 const Color _blue = Color(0xFF2D6CA2);
 const Color _bluePale = Color(0xFFE8F0F8);
+const Color _amber = Color(0xFFB45309);
+const Color _amberPale = Color(0xFFFDF2E2);
 const Color _ember = Color(0xFFC0392B);
 const Color _emberPale = Color(0xFFFBECEA);
 
@@ -690,7 +692,7 @@ Color _categoryColour(String? name) {
 /// One colour pair per status, used on every screen, so a chip means the
 /// same thing wherever it turns up.
 (Color, Color) _statusColours(String status) => switch (status) {
-      'pending_payment' => (_brandPale, _brandDark),
+      'pending_payment' => (_amberPale, _amber),
       'paid' => (_bluePale, _blue),
       'payment_verified' => (_bluePale, _blue),
       'packed' => (_bluePale, _blue),
