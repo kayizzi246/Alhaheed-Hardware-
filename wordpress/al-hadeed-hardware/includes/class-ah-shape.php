@@ -24,6 +24,21 @@ defined( 'ABSPATH' ) || exit;
 class AH_Shape {
 
 	/** WooCommerce's "12345.00" -> 12345, the way the clients want it. */
+	/**
+	 * A name as a person would write it.
+	 *
+	 * WordPress stores titles and term names HTML-encoded, so a category
+	 * called "Iron & Steel" comes back as "Iron &amp; Steel". That is
+	 * correct for a web page, which decodes it on the way in — and wrong
+	 * for everything else. The phone app paints the string onto a canvas
+	 * and the receipt printer prints bytes, so both of them showed the
+	 * ampersand spelled out. JSON is data, not markup: it is decoded
+	 * here, once, and every client gets the real name.
+	 */
+	public static function text( $value ) {
+		return html_entity_decode( (string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+	}
+
 	public static function money( $value ) {
 		return (int) round( (float) $value );
 	}
@@ -73,9 +88,9 @@ class AH_Shape {
 		return array(
 			'id'              => $product->get_id(),
 			'code'            => $product->get_sku(),
-			'name'            => $product->get_name(),
+			'name'            => self::text( $product->get_name() ),
 			'category_id'     => $category ? $category->term_id : null,
-			'category_name'   => $category ? $category->name : null,
+			'category_name'   => $category ? self::text( $category->name ) : null,
 			'description'     => wp_strip_all_tags( $product->get_short_description() ?: $product->get_description() ),
 			'unit'            => $unit ? $unit : 'pc',
 			'price'           => self::money( $product->get_price() ),
@@ -206,7 +221,7 @@ class AH_Shape {
 			$out[] = array(
 				'id'           => $item->get_id(),
 				'product_id'   => $product ? $product->get_id() : null,
-				'product_name' => $item->get_name(),
+				'product_name' => self::text( $item->get_name() ),
 				'code'         => $product ? $product->get_sku() : null,
 				'unit'         => $product ? ( $product->get_attribute( 'unit' ) ?: 'pc' ) : 'pc',
 				'quantity'     => $qty,
