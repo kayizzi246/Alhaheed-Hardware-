@@ -1,6 +1,7 @@
 'use client';
 import { ThemeToggle } from '@/components/Theme';
 import { Alert, Button, Checkbox, Field, Input, Spinner } from '@/components/ui';
+import { Icon } from '@/components/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, setSession, getUser, clearSession } from '@/lib/api';
@@ -40,6 +41,7 @@ export default function LoginPage() {
   const [devCode, setDevCode] = useState('');
 
   const [shop, setShop] = useState(null);
+  const [slide, setSlide] = useState(0);
   const [reachable, setReachable] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -74,6 +76,19 @@ export default function LoginPage() {
       }
     })();
     return () => { alive = false; };
+  }, []);
+
+
+  // The panel's line changes every seven seconds. Slow on purpose: a
+  // login screen is looked at for ten seconds and anything livelier
+  // than this is a distraction while somebody types a password. It
+  // stops entirely for anyone who has asked their machine for less
+  // motion, and clicking a dot takes over from it.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => setSlide((n) => (n + 1) % SLIDES.length), 7000);
+    return () => clearInterval(t);
   }, []);
 
   const land = useCallback((r) => {
@@ -120,293 +135,335 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1.08fr_1fr]">
-      {/* ── The shop ─────────────────────────────────────────────── */}
-      <aside className="relative hidden overflow-hidden bg-navy px-12 py-14 text-white lg:flex lg:items-center xl:px-16">
-        {/* Two washes, not one. A single radial gradient reads as a
-            spotlight; a warm one from the top-left with a cooler, wider
-            one behind it gives the slab depth without becoming a
-            pattern you notice. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(85%_65%_at_8%_-8%,rgba(232,134,42,.30),transparent_56%)]"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(65%_50%_at_100%_105%,rgba(192,57,43,.18),transparent_60%)]"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-brand/40 to-transparent"
-        />
-
-        <div className="relative w-full max-w-xl">
-          <div className="mb-9 flex items-center gap-2.5">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand to-brand-dark text-[15px] font-extrabold shadow-lg">
-              AH
-            </span>
-            <span className="font-display text-[13px] font-extrabold leading-[1.15] tracking-[.05em]">
-              AL HADEED
-              <br />
-              <b className="text-brand">HARDWARE</b>
-            </span>
-          </div>
-
-          <h2 className="font-display text-[46px] font-black leading-[1.03] tracking-[-.032em] xl:text-[58px]">
-            Run the counter
-            <br />
-            <span className="bg-gradient-to-br from-brand to-[rgb(var(--red))] bg-clip-text text-transparent">
-              without paper
-            </span>
-          </h2>
-
-          <p className="mt-5 max-w-md text-[15.5px] leading-[1.65] text-white/65">
-            Orders move from the customer&rsquo;s phone to the cashier, to accounts,
-            to the store &mdash; and nobody writes a slip.
-          </p>
-
-          {/* What the shop has on the shelf, right now. Three figures
-              on one rule rather than three boxes: boxes make them look
-              like controls, and these are facts. */}
-          <div className="mt-10 flex items-stretch divide-x divide-white/10 border-y border-white/10 py-5">
-            <Figure value={shop ? String(shop.products) : '—'} label="Products" first />
-            <Figure value={shop ? String(shop.inStock) : '—'} label="In stock" />
-            <Figure value={shop?.currency ?? 'UGX'} label="Currency" />
-          </div>
-
-          <span className="mt-9 block font-display text-[10.5px] font-bold uppercase tracking-[.1em] text-white/35">
-            How an order moves
-          </span>
-
-          {/* The four desks joined by a line, because it is a sequence
-              and four separate rows do not say so. */}
-          <ol className="relative mt-4">
-            <span
-              aria-hidden="true"
-              className="absolute bottom-4 left-3 top-4 w-px bg-gradient-to-b from-brand/50 via-white/15 to-transparent"
-            />
-            {[
-              ['Customer', 'orders on the app'],
-              ['Cashier', 'takes the money'],
-              ['Accounts', 'checks the till'],
-              ['Store', 'releases the goods'],
-            ].map(([who, what], i) => (
-              <li key={who} className="relative flex items-center gap-3.5 py-[7px]">
-                <span
-                  className={[
-                    'tnum relative z-[1] grid size-6 shrink-0 place-items-center rounded-full',
-                    'text-[11px] font-extrabold ring-4 ring-navy',
-                    i === 0 ? 'bg-brand text-white' : 'bg-white/10 text-white/70',
-                  ].join(' ')}
-                >
-                  {i + 1}
-                </span>
-                <strong className="min-w-[92px] text-[14.5px] font-semibold">{who}</strong>
-                <em className="text-[13.5px] not-italic text-white/55">{what}</em>
-              </li>
-            ))}
-          </ol>
-
-          <p className="mt-9 border-t border-white/10 pt-5 text-[13px] leading-relaxed text-white/50">
-            <strong className="font-semibold text-white/80">
-              Customers and the Store Manager use the phone app.
-            </strong>
-            <br />
-            This panel is the Cashier, Accounts and Manager desks.
-          </p>
-        </div>
-      </aside>
-
+    <div className="grid min-h-dvh lg:grid-cols-[1fr_1.02fr]">
       {/* ── The form ─────────────────────────────────────────────── */}
-      <main className="relative flex items-center justify-center bg-bg px-6 py-12">
+      <main className="relative flex items-center justify-center bg-surface px-6 py-12 sm:px-10">
         <div className="absolute right-5 top-5">
           <ThemeToggle />
         </div>
 
-        <div className="w-full max-w-[404px]">
-          {/* The brand only appears on this side when the dark panel
-              is not there to carry it. */}
-          <div className="mb-7 flex items-center gap-2.5 lg:hidden">
-            <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-gradient-to-br from-brand to-brand-dark text-sm font-extrabold text-white shadow-sm">
+        <div className="w-full max-w-[380px]">
+          <div className="mb-9 flex items-center gap-2.5">
+            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-brand to-brand-dark text-[13px] font-extrabold text-white shadow-sm">
               AH
             </span>
-            <span className="font-display text-[13px] font-extrabold leading-[1.15] tracking-[.04em] text-ink">
-              AL HADEED
-              <br />
-              <b className="text-brand">HARDWARE</b>
+            <span className="font-display text-[15px] font-extrabold tracking-[-.01em] text-ink">
+              Al Hadeed <span className="text-brand">Hardware</span>
             </span>
           </div>
 
-          {/* A card, so the form reads as one object to fill in rather
-              than fields floating on a page. */}
-          <div className="rounded-lg border border-line bg-surface p-7 shadow-lg sm:p-8">
-            <h1 className="text-[27px] leading-[1.14] text-ink">Sign in</h1>
-            <p className="mb-7 mt-2 text-sm text-ink-muted">
-              {shop?.name && shop.name !== 'My Blog' ? shop.name : 'Staff panel'}
-              {reachable === true && (
-                <span className="ml-2 inline-flex items-center gap-1.5 align-[1px] text-[12.5px] text-ok">
-                  <span className="size-1.5 rounded-full bg-ok" />
-                  online
-                </span>
-              )}
-            </p>
+          <h1 className="text-[28px] leading-[1.15] text-ink">Log in to your account</h1>
+          <p className="mb-7 mt-2 text-sm text-ink-muted">
+            {reachable === false
+              ? 'The shop cannot be reached just now.'
+              : 'Welcome back. Choose how you want to sign in:'}
+          </p>
 
-            <div aria-live="polite">
-              {error && <Alert>{error}</Alert>}
-              {reachable === false && !error && (
-                <Alert>Can&rsquo;t reach the shop. Check the connection, then try again.</Alert>
-              )}
-            </div>
+          {/* The two ways in, side by side. The reference puts Google
+              and Facebook here; this shop has no such thing, and the
+              honest equivalent is the two methods it does have. */}
+          <div className="grid grid-cols-2 gap-3">
+            <MethodButton
+              on={mode === 'password'}
+              onClick={() => { setMode('password'); setError(''); }}
+              icon={Icon.key()}
+              label="Password"
+            />
+            <MethodButton
+              on={mode === 'code'}
+              onClick={() => { setMode('code'); setError(''); }}
+              icon={Icon.phone()}
+              label="SMS code"
+            />
+          </div>
 
-            {mode === 'password' ? (
-              <form onSubmit={signInWithPassword} noValidate className="space-y-4">
-                <Field label="Phone or email">
-                  <Input
-                    id="identifier"
-                    ref={firstField}
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="cashier@alhadeed.ug"
-                    autoComplete="username"
-                    autoCapitalize="none"
-                    spellCheck="false"
-                    enterKeyHint="next"
-                    required
-                  />
-                </Field>
+          <div className="my-6 flex items-center gap-3 text-[12.5px] text-ink-faint">
+            <span className="h-px flex-1 bg-line" />
+            {mode === 'password' ? 'or continue with your details' : 'a code will be texted to you'}
+            <span className="h-px flex-1 bg-line" />
+          </div>
 
-                <Field label="Password">
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete="current-password"
-                      enterKeyHint="go"
-                      className="pr-16"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((s) => !s)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      aria-pressed={showPassword}
-                      tabIndex={-1}
-                      className="absolute inset-y-0 right-0 px-3 text-xs font-semibold text-ink-muted transition-colors hover:text-ink"
-                    >
-                      {showPassword ? 'Hide' : 'Show'}
-                    </button>
-                  </div>
-                </Field>
+          <div aria-live="polite">
+            {error && <Alert>{error}</Alert>}
+            {reachable === false && !error && (
+              <Alert>Can&rsquo;t reach the shop. Check the connection, then try again.</Alert>
+            )}
+          </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Checkbox
-                    label="Keep me signed in"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { setMode('code'); setError(''); }}
-                    className="text-[13px] font-semibold text-brand-dark underline-offset-2 hover:underline"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+          {mode === 'password' ? (
+            <form onSubmit={signInWithPassword} noValidate className="space-y-3.5">
+              <IconField icon={Icon.mail()}>
+                <Input
+                  id="identifier"
+                  ref={firstField}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="Phone or email"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                  enterKeyHint="next"
+                  className="bg-surface-2 pl-11"
+                  required
+                />
+              </IconField>
 
-                <Button size="lg" block disabled={busy || !identifier.trim() || !password}>
-                  {busy && <Spinner />}
-                  {busy ? 'Signing in…' : 'Sign in'}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={codeSent ? signInWithCode : requestCode} noValidate className="space-y-4">
-                <Field label="Phone number on your account">
-                  <Input
-                    id="phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="0772 123 456"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    disabled={codeSent}
-                    enterKeyHint="go"
-                    required
-                  />
-                </Field>
-
-                {codeSent && (
-                  <Field
-                    label="The 6-digit code we texted you"
-                    hint={devCode ? `Test mode: your code is ${devCode}` : null}
-                  >
-                    <Input
-                      id="code"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={6}
-                      autoFocus
-                      required
-                      className="tnum text-center text-[22px] font-bold tracking-[.4em]"
-                    />
-                  </Field>
-                )}
-
-                <Button
-                  size="lg"
-                  block
-                  disabled={busy || (codeSent ? code.length !== 6 : phone.trim().length < 9)}
+              <IconField icon={Icon.lock()}>
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  autoComplete="current-password"
+                  enterKeyHint="go"
+                  className="bg-surface-2 pl-11 pr-11"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  tabIndex={-1}
+                  className="absolute inset-y-0 right-0 grid w-11 place-items-center text-ink-muted transition-colors hover:text-ink"
                 >
-                  {busy && <Spinner />}
-                  {busy ? 'Please wait…' : codeSent ? 'Verify and sign in' : 'Text me a code'}
-                </Button>
+                  {showPassword ? Icon.eyeOff() : Icon.eye()}
+                </button>
+              </IconField>
 
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                <Checkbox
+                  label="Remember me"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                <button
+                  type="button"
+                  onClick={() => { setMode('code'); setError(''); }}
+                  className="text-[13px] font-semibold text-brand-dark underline-offset-2 hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <Button size="lg" block className="mt-1.5" disabled={busy || !identifier.trim() || !password}>
+                {busy && <Spinner />}
+                {busy ? 'Signing in…' : 'Log in'}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={codeSent ? signInWithCode : requestCode} noValidate className="space-y-3.5">
+              <IconField icon={Icon.phone()}>
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Phone number on your account"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  disabled={codeSent}
+                  enterKeyHint="go"
+                  className="bg-surface-2 pl-11"
+                  required
+                />
+              </IconField>
+
+              {codeSent && (
+                <Field hint={devCode ? `Test mode: your code is ${devCode}` : 'The 6-digit code we just texted you'}>
+                  <Input
+                    id="code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    autoFocus
+                    required
+                    className="tnum bg-surface-2 text-center text-[22px] font-bold tracking-[.4em]"
+                  />
+                </Field>
+              )}
+
+              <Button
+                size="lg"
+                block
+                className="mt-1.5"
+                disabled={busy || (codeSent ? code.length !== 6 : phone.trim().length < 9)}
+              >
+                {busy && <Spinner />}
+                {busy ? 'Please wait…' : codeSent ? 'Verify and log in' : 'Text me a code'}
+              </Button>
+
+              {codeSent && (
                 <Button
                   type="button"
                   variant="ghost"
                   block
-                  onClick={() => {
-                    if (codeSent) { setCodeSent(false); setCode(''); setDevCode(''); }
-                    else { setMode('password'); }
-                    setError('');
-                  }}
+                  onClick={() => { setCodeSent(false); setCode(''); setDevCode(''); setError(''); }}
                 >
-                  {codeSent ? 'Use a different number' : 'Back to password'}
+                  Use a different number
                 </Button>
-              </form>
-            )}
+              )}
+            </form>
+          )}
 
-            {mode === 'password' && (
-              <>
-                <div className="my-5 flex items-center gap-3 text-xs text-ink-faint">
-                  <span className="h-px flex-1 bg-line" />
-                  or
-                  <span className="h-px flex-1 bg-line" />
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  block
-                  onClick={() => { setMode('code'); setError(''); }}
-                >
-                  <span aria-hidden="true">✆</span>
-                  Sign in with a code by SMS
-                </Button>
-              </>
-            )}
-          </div>
-
-          <p className="mt-6 text-center text-[12.5px] leading-relaxed text-ink-muted">
-            No account? Ask the manager to add you under{' '}
-            <b className="font-semibold text-ink-2">Users</b> in WordPress.
+          <p className="mt-7 text-center text-[13px] text-ink-muted">
+            No account?{' '}
+            <span className="font-semibold text-ink-2">
+              Ask the manager to add you in WordPress.
+            </span>
           </p>
         </div>
       </main>
+
+      {/* ── The shop ─────────────────────────────────────────────── */}
+      <aside className="relative hidden overflow-hidden bg-navy p-10 text-white lg:flex lg:flex-col lg:items-center lg:justify-center xl:p-14">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(75%_55%_at_50%_0%,rgba(232,134,42,.28),transparent_62%)]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_45%_at_85%_100%,rgba(192,57,43,.20),transparent_60%)]"
+        />
+
+        <div className="relative w-full max-w-[460px]">
+          <OrderFlowArt />
+
+          <h2 className="mt-12 text-center font-display text-[26px] font-extrabold leading-[1.2] tracking-[-.02em]">
+            {SLIDES[slide].title}
+          </h2>
+          <p className="mx-auto mt-3 max-w-sm text-center text-[14.5px] leading-relaxed text-white/60">
+            {SLIDES[slide].line}
+          </p>
+
+          <div className="mt-8 flex items-center justify-center gap-2">
+            {SLIDES.map((s, i) => (
+              <button
+                key={s.title}
+                type="button"
+                onClick={() => setSlide(i)}
+                aria-label={s.title}
+                aria-current={i === slide}
+                className={[
+                  'h-1.5 rounded-full transition-all duration-300 ease-out',
+                  i === slide ? 'w-6 bg-brand' : 'w-1.5 bg-white/25 hover:bg-white/40',
+                ].join(' ')}
+              />
+            ))}
+          </div>
+
+          {/* The live figures stay: they are the one thing on this
+              panel that proves the shop is actually there. */}
+          <div className="mt-11 flex items-stretch justify-center divide-x divide-white/10 border-t border-white/10 pt-7">
+            <Figure value={shop ? String(shop.products) : '—'} label="Products" first />
+            <Figure value={shop ? String(shop.inStock) : '—'} label="In stock" />
+            <Figure value={shop?.currency ?? 'UGX'} label="Currency" />
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+/* ── Pieces ───────────────────────────────────────────────────────── */
+
+const SLIDES = [
+  {
+    title: 'Every order, end to end.',
+    line: 'From the customer’s phone to the cashier, to accounts, to the store — and nobody writes a slip.',
+  },
+  {
+    title: 'The till adds itself up.',
+    line: 'Every payment lands in the cash book as it is taken, so the end of the day is a glance, not an evening.',
+  },
+  {
+    title: 'Nothing leaves unrecorded.',
+    line: 'Stock comes off the shelf when the goods do, and every move has a name and a time against it.',
+  },
+];
+
+/** One of the two ways in. */
+function MethodButton({ on, onClick, icon, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={[
+        'flex items-center justify-center gap-2 rounded-sm border px-3 py-3 text-[13.5px] font-semibold',
+        'transition-[border-color,background-color,color,transform] duration-150 ease-out active:scale-[.98]',
+        on
+          ? 'border-brand bg-brand-soft text-brand-dark'
+          : 'border-line bg-surface text-ink-2 hover:border-line-firm hover:text-ink',
+      ].join(' ')}
+    >
+      <span className={on ? 'text-brand' : 'text-ink-muted'}>{icon}</span>
+      {label}
+    </button>
+  );
+}
+
+/** A field with a mark inside its left edge. */
+function IconField({ icon, children }) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute inset-y-0 left-0 grid w-11 place-items-center text-ink-muted">
+        {icon}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The picture on the dark panel.
+ *
+ * Not a stock illustration of people pointing at a laptop: it is the
+ * four desks an order actually passes through, drawn as the cards they
+ * are on the screens behind this one. Somebody signing in for the
+ * first time can read what the system does off it.
+ */
+function OrderFlowArt() {
+  const desks = [
+    ['Customer', 'orders on the app', 'AH-204'],
+    ['Cashier', 'takes the money', 'UGX 185,000'],
+    ['Accounts', 'checks the till', 'Verified'],
+    ['Store', 'releases the goods', 'Collected'],
+  ];
+
+  return (
+    <div className="relative mx-auto w-full max-w-[380px]" aria-hidden="true">
+      <div className="absolute inset-x-8 inset-y-0 rounded-[28px] bg-white/[.04] blur-xl" />
+      <ul className="relative space-y-2.5">
+        {desks.map(([who, what, badge], i) => (
+          <li
+            key={who}
+            className={[
+              'flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.06] px-3.5 py-3 backdrop-blur-sm',
+              // A gentle stagger, so it reads as a sequence rather than a stack.
+              i === 1 ? 'ml-6' : i === 2 ? 'ml-12' : i === 3 ? 'ml-[72px]' : '',
+            ].join(' ')}
+          >
+            <span
+              className={[
+                'tnum grid size-7 shrink-0 place-items-center rounded-lg text-[11.5px] font-extrabold',
+                i === 0 ? 'bg-brand text-white' : 'bg-white/12 text-white/70',
+              ].join(' ')}
+            >
+              {i + 1}
+            </span>
+            <span className="min-w-0 flex-1">
+              <b className="block text-[13.5px] font-semibold leading-tight">{who}</b>
+              <em className="block text-[11.5px] not-italic text-white/50">{what}</em>
+            </span>
+            <span className="tnum shrink-0 rounded-md bg-white/10 px-2 py-1 text-[11px] font-semibold text-white/75">
+              {badge}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -414,11 +471,11 @@ export default function LoginPage() {
 /** One figure on the brand panel: the number, then what it counts. */
 function Figure({ value, label, first }) {
   return (
-    <div className={first ? 'pr-7' : 'px-7'}>
-      <strong className="tnum block font-display text-[26px] font-extrabold leading-none">
+    <div className={first ? 'pr-6' : 'px-6'}>
+      <strong className="tnum block text-center font-display text-[22px] font-extrabold leading-none">
         {value}
       </strong>
-      <span className="mt-1.5 block text-[11.5px] text-white/50">{label}</span>
+      <span className="mt-1.5 block text-center text-[11.5px] text-white/50">{label}</span>
     </div>
   );
 }

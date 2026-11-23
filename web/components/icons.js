@@ -91,6 +91,43 @@ export const Icon = {
       <path d="M13.7 20a2 2 0 0 1-3.4 0" />
     </svg>
   ),
+  mail: (q) => (
+    <svg {...base} {...q}>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="M3.5 7l8.5 6 8.5-6" />
+    </svg>
+  ),
+  lock: (q) => (
+    <svg {...base} {...q}>
+      <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
+      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+    </svg>
+  ),
+  eye: (q) => (
+    <svg {...base} {...q}>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+  eyeOff: (q) => (
+    <svg {...base} {...q}>
+      <path d="M9.9 5.8A9.8 9.8 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.8 3.6M6.3 7.9A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 3.3-.6" />
+      <path d="M10 10a3 3 0 0 0 4 4" />
+      <path d="M3.5 3.5l17 17" />
+    </svg>
+  ),
+  phone: (q) => (
+    <svg {...base} {...q}>
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+      <path d="M10.5 18.5h3" />
+    </svg>
+  ),
+  key: (q) => (
+    <svg {...base} {...q}>
+      <circle cx="8" cy="12" r="4" />
+      <path d="M12 12h9M18 12v3.5M15 12v2.5" />
+    </svg>
+  ),
   close: (p) => (
     <svg {...base} {...p}>
       <path d="M6 6l12 12M18 6L6 18" />
