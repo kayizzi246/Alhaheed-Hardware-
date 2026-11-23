@@ -25,6 +25,12 @@
     --brand-dark: 29 78 216;
     --brand-soft: 239 246 255;
 
+    /* The sign-in panel. A vivid blue in daylight; in the dark theme
+       a deeper one, because a bright slab beside a dark form is a
+       lamp pointed at the person reading it. */
+    --panel-from:  37 99 235;
+    --panel-to:    30 58 138;
+
     /* ── Surfaces ──────────────────────────────────────────────────── */
     --bg:          244 246 249;
     --surface:     255 255 255;
@@ -86,6 +92,9 @@
       --brand-dark: 59 130 246;
       --brand-soft: 23 37 61;
 
+      --panel-from:  30 58 138;
+      --panel-to:    12 26 58;
+
       --bg:          12 20 29;
       --surface:     19 29 40;
       --surface-2:   23 34 46;
@@ -125,6 +134,9 @@
     --brand:      96 165 250;
     --brand-dark: 59 130 246;
     --brand-soft: 23 37 61;
+
+    --panel-from:  30 58 138;
+    --panel-to:    12 26 58;
 
     --bg:          12 20 29;
     --surface:     19 29 40;

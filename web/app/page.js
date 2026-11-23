@@ -318,14 +318,19 @@ export default function LoginPage() {
       </main>
 
       {/* ── The shop ─────────────────────────────────────────────── */}
-      <aside className="relative hidden overflow-hidden bg-navy p-10 text-white lg:flex lg:flex-col lg:items-center lg:justify-center xl:p-14">
+      {/* A blue slab, not a near-black one. The two washes over it were
+          orange and red — left from when the brand was warm — and on a
+          navy they turned the whole panel muddy. They are light blue
+          now, which is the same trick doing the job it was meant to:
+          lifting the top-left so the panel is not a flat rectangle. */}
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[rgb(var(--panel-from))] to-[rgb(var(--panel-to))] p-10 text-white lg:flex lg:flex-col lg:items-center lg:justify-center xl:p-14">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(75%_55%_at_50%_0%,rgba(232,134,42,.28),transparent_62%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_50%_at_20%_0%,rgba(255,255,255,.20),transparent_60%)]"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_45%_at_85%_100%,rgba(192,57,43,.20),transparent_60%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_45%_at_90%_100%,rgba(125,211,252,.18),transparent_62%)]"
         />
 
         <div className="relative w-full max-w-[460px]">
