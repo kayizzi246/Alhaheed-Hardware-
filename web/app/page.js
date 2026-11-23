@@ -120,44 +120,39 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
+    <div className="grid min-h-dvh lg:grid-cols-[1.08fr_1fr]">
       {/* ── The shop ─────────────────────────────────────────────── */}
       <aside className="relative hidden overflow-hidden bg-navy px-12 py-14 text-white lg:flex lg:items-center xl:px-16">
         {/* Two washes, not one. A single radial gradient reads as a
             spotlight; a warm one from the top-left with a cooler, wider
-            one behind it gives the slab some depth without becoming a
+            one behind it gives the slab depth without becoming a
             pattern you notice. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(85%_65%_at_10%_-5%,rgba(232,134,42,.28),transparent_58%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(85%_65%_at_8%_-8%,rgba(232,134,42,.30),transparent_56%)]"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_55%_at_95%_100%,rgba(192,57,43,.16),transparent_62%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(65%_50%_at_100%_105%,rgba(192,57,43,.18),transparent_60%)]"
         />
-        {/* A hairline of brand along the edge where the two halves meet. */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-brand/40 to-transparent"
         />
 
-        <div className="relative w-full max-w-lg">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.06] px-3 py-1.5 text-[11.5px] font-semibold tracking-wide text-white/85">
-            <i
-              className={[
-                'size-1.5 rounded-full',
-                reachable === false ? 'bg-bad' : 'bg-ok',
-                reachable === null ? 'animate-pulse' : '',
-              ].join(' ')}
-            />
-            {reachable === null && 'Connecting…'}
-            {reachable === true && 'Shop online'}
-            {reachable === false && 'Shop unreachable'}
-          </span>
+        <div className="relative w-full max-w-xl">
+          <div className="mb-9 flex items-center gap-2.5">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand to-brand-dark text-[15px] font-extrabold shadow-lg">
+              AH
+            </span>
+            <span className="font-display text-[13px] font-extrabold leading-[1.15] tracking-[.05em]">
+              AL HADEED
+              <br />
+              <b className="text-brand">HARDWARE</b>
+            </span>
+          </div>
 
-          {/* 800 is Manrope's heaviest real cut. The extra authority
-              comes from size and tracking, not a faked 900. */}
-          <h2 className="mt-7 font-display text-[46px] font-black leading-[1.04] tracking-[-.032em] xl:text-[56px]">
+          <h2 className="font-display text-[46px] font-black leading-[1.03] tracking-[-.032em] xl:text-[58px]">
             Run the counter
             <br />
             <span className="bg-gradient-to-br from-brand to-[rgb(var(--red))] bg-clip-text text-transparent">
@@ -170,22 +165,25 @@ export default function LoginPage() {
             to the store &mdash; and nobody writes a slip.
           </p>
 
-          <div className="mt-9 grid grid-cols-3 gap-3">
-            <Figure value={shop ? String(shop.products) : '—'} label="Products" />
+          {/* What the shop has on the shelf, right now. Three figures
+              on one rule rather than three boxes: boxes make them look
+              like controls, and these are facts. */}
+          <div className="mt-10 flex items-stretch divide-x divide-white/10 border-y border-white/10 py-5">
+            <Figure value={shop ? String(shop.products) : '—'} label="Products" first />
             <Figure value={shop ? String(shop.inStock) : '—'} label="In stock" />
             <Figure value={shop?.currency ?? 'UGX'} label="Currency" />
           </div>
 
-          <span className="mt-10 block font-display text-[10.5px] font-bold uppercase tracking-[.09em] text-white/40">
+          <span className="mt-9 block font-display text-[10.5px] font-bold uppercase tracking-[.1em] text-white/35">
             How an order moves
           </span>
 
-          {/* The four desks, joined by a line. It is a sequence, and a
-              list of four separate rows does not say so. */}
+          {/* The four desks joined by a line, because it is a sequence
+              and four separate rows do not say so. */}
           <ol className="relative mt-4">
             <span
               aria-hidden="true"
-              className="absolute left-3 top-3 bottom-3 w-px bg-gradient-to-b from-brand/50 via-white/15 to-transparent"
+              className="absolute bottom-4 left-3 top-4 w-px bg-gradient-to-b from-brand/50 via-white/15 to-transparent"
             />
             {[
               ['Customer', 'orders on the app'],
@@ -209,14 +207,13 @@ export default function LoginPage() {
             ))}
           </ol>
 
-          <div className="mt-10 border-t border-white/10 pt-5 text-[13px] leading-relaxed">
-            <strong className="block font-semibold text-white/85">
+          <p className="mt-9 border-t border-white/10 pt-5 text-[13px] leading-relaxed text-white/50">
+            <strong className="font-semibold text-white/80">
               Customers and the Store Manager use the phone app.
             </strong>
-            <span className="text-white/50">
-              This panel is the Cashier, Accounts and Manager desks.
-            </span>
-          </div>
+            <br />
+            This panel is the Cashier, Accounts and Manager desks.
+          </p>
         </div>
       </aside>
 
@@ -226,8 +223,10 @@ export default function LoginPage() {
           <ThemeToggle />
         </div>
 
-        <div className="w-full max-w-[380px]">
-          <div className="mb-9 flex items-center gap-2.5">
+        <div className="w-full max-w-[404px]">
+          {/* The brand only appears on this side when the dark panel
+              is not there to carry it. */}
+          <div className="mb-7 flex items-center gap-2.5 lg:hidden">
             <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-gradient-to-br from-brand to-brand-dark text-sm font-extrabold text-white shadow-sm">
               AH
             </span>
@@ -238,168 +237,173 @@ export default function LoginPage() {
             </span>
           </div>
 
-          <h1 className="text-[29px] leading-[1.12] text-ink">Sign in to your account</h1>
-          <p className="mb-7 mt-2 text-sm text-ink-muted">
-            {shop?.name && shop.name !== 'My Blog' ? shop.name : 'Staff panel'}
-          </p>
+          {/* A card, so the form reads as one object to fill in rather
+              than fields floating on a page. */}
+          <div className="rounded-lg border border-line bg-surface p-7 shadow-lg sm:p-8">
+            <h1 className="text-[27px] leading-[1.14] text-ink">Sign in</h1>
+            <p className="mb-7 mt-2 text-sm text-ink-muted">
+              {shop?.name && shop.name !== 'My Blog' ? shop.name : 'Staff panel'}
+              {reachable === true && (
+                <span className="ml-2 inline-flex items-center gap-1.5 align-[1px] text-[12.5px] text-ok">
+                  <span className="size-1.5 rounded-full bg-ok" />
+                  online
+                </span>
+              )}
+            </p>
 
-          <div aria-live="polite">
-            {error && <Alert>{error}</Alert>}
-            {reachable === false && !error && (
-              <Alert>Can&rsquo;t reach the shop. Check the connection, then try again.</Alert>
-            )}
-          </div>
+            <div aria-live="polite">
+              {error && <Alert>{error}</Alert>}
+              {reachable === false && !error && (
+                <Alert>Can&rsquo;t reach the shop. Check the connection, then try again.</Alert>
+              )}
+            </div>
 
-          {mode === 'password' ? (
-            <form onSubmit={signInWithPassword} noValidate className="space-y-4">
-              <Field label="Phone or email">
-                <Input
-                  id="identifier"
-                  ref={firstField}
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="cashier@alhadeed.ug"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck="false"
-                  enterKeyHint="next"
-                  required
-                />
-              </Field>
-
-              <Field label="Password">
-                <div className="relative">
+            {mode === 'password' ? (
+              <form onSubmit={signInWithPassword} noValidate className="space-y-4">
+                <Field label="Phone or email">
                   <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    enterKeyHint="go"
-                    className="pr-16"
+                    id="identifier"
+                    ref={firstField}
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="cashier@alhadeed.ug"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck="false"
+                    enterKeyHint="next"
                     required
+                  />
+                </Field>
+
+                <Field label="Password">
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      enterKeyHint="go"
+                      className="pr-16"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
+                      tabIndex={-1}
+                      className="absolute inset-y-0 right-0 px-3 text-xs font-semibold text-ink-muted transition-colors hover:text-ink"
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </Field>
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Checkbox
+                    label="Keep me signed in"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    aria-pressed={showPassword}
-                    tabIndex={-1}
-                    className="absolute inset-y-0 right-0 px-3 text-xs font-semibold text-ink-muted transition-colors hover:text-ink"
+                    onClick={() => { setMode('code'); setError(''); }}
+                    className="text-[13px] font-semibold text-brand-dark underline-offset-2 hover:underline"
                   >
-                    {showPassword ? 'Hide' : 'Show'}
+                    Forgot password?
                   </button>
                 </div>
-              </Field>
 
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <Checkbox
-                  label="Keep me signed in"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                />
-                <button
-                  type="button"
-                  onClick={() => { setMode('code'); setError(''); }}
-                  className="text-[13px] font-semibold text-brand-dark underline-offset-2 hover:underline"
-                >
-                  Forgot password?
-                </button>
-              </div>
-
-              <Button
-                size="lg"
-                block
-                className="bg-navy hover:bg-navy-soft"
-                disabled={busy || !identifier.trim() || !password}
-              >
-                {busy && <Spinner />}
-                {busy ? 'Signing in…' : 'Sign in'}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={codeSent ? signInWithCode : requestCode} noValidate className="space-y-4">
-              <Field label="Phone number on your account">
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="0772 123 456"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  disabled={codeSent}
-                  enterKeyHint="go"
-                  required
-                />
-              </Field>
-
-              {codeSent && (
-                <Field
-                  label="The 6-digit code we texted you"
-                  hint={devCode ? `Test mode: your code is ${devCode}` : null}
-                >
+                <Button size="lg" block disabled={busy || !identifier.trim() || !password}>
+                  {busy && <Spinner />}
+                  {busy ? 'Signing in…' : 'Sign in'}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={codeSent ? signInWithCode : requestCode} noValidate className="space-y-4">
+                <Field label="Phone number on your account">
                   <Input
-                    id="code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    autoFocus
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0772 123 456"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    disabled={codeSent}
+                    enterKeyHint="go"
                     required
-                    className="tnum text-center text-[22px] font-bold tracking-[.4em]"
                   />
                 </Field>
-              )}
 
-              <Button
-                size="lg"
-                block
-                className="bg-navy hover:bg-navy-soft"
-                disabled={busy || (codeSent ? code.length !== 6 : phone.trim().length < 9)}
-              >
-                {busy && <Spinner />}
-                {busy ? 'Please wait…' : codeSent ? 'Verify and sign in' : 'Text me a code'}
-              </Button>
+                {codeSent && (
+                  <Field
+                    label="The 6-digit code we texted you"
+                    hint={devCode ? `Test mode: your code is ${devCode}` : null}
+                  >
+                    <Input
+                      id="code"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      autoFocus
+                      required
+                      className="tnum text-center text-[22px] font-bold tracking-[.4em]"
+                    />
+                  </Field>
+                )}
 
-              <Button
-                type="button"
-                variant="ghost"
-                block
-                onClick={() => {
-                  if (codeSent) { setCodeSent(false); setCode(''); setDevCode(''); }
-                  else { setMode('password'); }
-                  setError('');
-                }}
-              >
-                {codeSent ? 'Use a different number' : 'Back to password'}
-              </Button>
-            </form>
-          )}
+                <Button
+                  size="lg"
+                  block
+                  disabled={busy || (codeSent ? code.length !== 6 : phone.trim().length < 9)}
+                >
+                  {busy && <Spinner />}
+                  {busy ? 'Please wait…' : codeSent ? 'Verify and sign in' : 'Text me a code'}
+                </Button>
 
-          {mode === 'password' && (
-            <>
-              <div className="my-5 flex items-center gap-3 text-xs text-ink-faint">
-                <span className="h-px flex-1 bg-line" />
-                or
-                <span className="h-px flex-1 bg-line" />
-              </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  block
+                  onClick={() => {
+                    if (codeSent) { setCodeSent(false); setCode(''); setDevCode(''); }
+                    else { setMode('password'); }
+                    setError('');
+                  }}
+                >
+                  {codeSent ? 'Use a different number' : 'Back to password'}
+                </Button>
+              </form>
+            )}
 
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                block
-                onClick={() => { setMode('code'); setError(''); }}
-              >
-                <span aria-hidden="true">✆</span>
-                Sign in with a code by SMS
-              </Button>
-            </>
-          )}
+            {mode === 'password' && (
+              <>
+                <div className="my-5 flex items-center gap-3 text-xs text-ink-faint">
+                  <span className="h-px flex-1 bg-line" />
+                  or
+                  <span className="h-px flex-1 bg-line" />
+                </div>
 
-          <p className="mt-8 text-center text-[12.5px] leading-relaxed text-ink-muted">
-            No account? Ask the manager to add you under <b className="font-semibold text-ink-2">Users</b> in WordPress.
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  block
+                  onClick={() => { setMode('code'); setError(''); }}
+                >
+                  <span aria-hidden="true">✆</span>
+                  Sign in with a code by SMS
+                </Button>
+              </>
+            )}
+          </div>
+
+          <p className="mt-6 text-center text-[12.5px] leading-relaxed text-ink-muted">
+            No account? Ask the manager to add you under{' '}
+            <b className="font-semibold text-ink-2">Users</b> in WordPress.
           </p>
         </div>
       </main>
@@ -408,11 +412,13 @@ export default function LoginPage() {
 }
 
 /** One figure on the brand panel: the number, then what it counts. */
-function Figure({ value, label }) {
+function Figure({ value, label, first }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[.04] px-3.5 py-3">
-      <strong className="tnum block font-display text-[22px] font-extrabold leading-none">{value}</strong>
-      <span className="mt-1 block text-[11.5px] text-white/50">{label}</span>
+    <div className={first ? 'pr-7' : 'px-7'}>
+      <strong className="tnum block font-display text-[26px] font-extrabold leading-none">
+        {value}
+      </strong>
+      <span className="mt-1.5 block text-[11.5px] text-white/50">{label}</span>
     </div>
   );
 }
