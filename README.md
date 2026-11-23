@@ -8,6 +8,11 @@ slips or queues.
 
 Built to the MVP scope in the concept paper (Annex 1).
 
+
+
+**Signing in:** who can use what, the test accounts, and how to make the
+real ones on the live shop — see [LOGINS.md](LOGINS.md).
+
 ---
 
 ## What is in this repository
