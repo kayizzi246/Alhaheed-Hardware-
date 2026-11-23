@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '@/lib/api';
-import { money, list } from '@/lib/format';
+import { api, upload } from '@/lib/api';
+import { money, list, today } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
   Alert, Button, Card, Empty, Field, Input, Loading, Modal, PageHead,
@@ -21,8 +21,25 @@ export default function ManagerProducts() {
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  /**
+   * The catalogue as a spreadsheet, in the shape the importer reads
+   * back. Export, change the prices in Excel, import — that round trip
+   * is the whole point of an export for a shop this size.
+   */
+  async function exportSheet() {
+    try {
+      const { writeSheet } = await import('@/lib/sheet');
+      const r = await api('/api/manager/products/export');
+      writeSheet(list(r.products), `al-hadeed-products-${today()}.xlsx`);
+      setNotice(`${list(r.products).length} products exported.`);
+    } catch (e) {
+      setError(e.message);
+    }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -63,6 +80,10 @@ export default function ManagerProducts() {
           placeholder="Search name, code or category"
           className="w-[280px]"
         />
+        <Button variant="outline" onClick={() => setImporting(true)}>Import</Button>
+        <Button variant="outline" onClick={exportSheet} disabled={!products?.length}>
+          Export
+        </Button>
         <Button onClick={() => setAdding(true)}>Add product</Button>
       </PageHead>
 
@@ -117,6 +138,13 @@ export default function ManagerProducts() {
       </Card>
 
       <EditProduct product={editing} onClose={() => setEditing(null)} onSave={save} />
+
+      {importing && (
+        <ImportSheet
+          onClose={() => setImporting(false)}
+          onDone={(msg) => { setImporting(false); setNotice(msg); load(); }}
+        />
+      )}
 
       {adding && (
         <AddProduct
@@ -178,6 +206,8 @@ function EditProduct({ product, onClose, onSave }) {
       }
     >
       <div className="space-y-4">
+        <ProductPicture product={product} />
+
         <Field label="Price (UGX)">
           <Input
             type="number"
@@ -271,5 +301,229 @@ function AddProduct({ onClose, onDone, onError }) {
         </div>
       </div>
     </Modal>
+  );
+}
+
+/**
+ * Bring a price list in from a spreadsheet.
+ *
+ * The file is read in the browser, so the person sees what was
+ * understood — how many rows, which columns were recognised, which
+ * were ignored — before a single product is touched. An importer that
+ * writes first and reports afterwards is how a shop loses its prices.
+ *
+ * Matching is on the product code. A code already on the shelf is
+ * updated; a new one is added. Nothing is ever deleted: a spreadsheet
+ * missing a line is a spreadsheet somebody trimmed, not an instruction
+ * to discontinue a product.
+ */
+function ImportSheet({ onClose, onDone }) {
+  const [file, setFile] = useState(null);
+  const [parsed, setParsed] = useState(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function pick(e) {
+    const chosen = e.target.files?.[0];
+    if (!chosen) return;
+    setFile(chosen);
+    setParsed(null);
+    setError('');
+    try {
+      const { readSheet } = await import('@/lib/sheet');
+      setParsed(await readSheet(chosen));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function send() {
+    setBusy(true);
+    setError('');
+    try {
+      const r = await api('/api/manager/products/import', {
+        method: 'POST',
+        body: { rows: parsed.rows },
+      });
+      const bits = [];
+      if (r.added) bits.push(`${r.added} added`);
+      if (r.updated) bits.push(`${r.updated} updated`);
+      if (r.failed?.length) bits.push(`${r.failed.length} skipped`);
+      onDone(bits.length ? bits.join(', ') + '.' : 'Nothing changed.');
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      title="Import from a spreadsheet"
+      description="Excel (.xlsx, .xls) or CSV. Matched on the product code — existing products are updated, new codes are added, nothing is deleted."
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button disabled={busy || !parsed?.rows?.length} onClick={send}>
+            {busy
+              ? 'Writing…'
+              : parsed?.rows?.length
+                ? `Import ${parsed.rows.length} ${parsed.rows.length === 1 ? 'row' : 'rows'}`
+                : 'Import'}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Alert>{error}</Alert>
+
+        <label
+          className={cn(
+            'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-sm border-2 border-dashed px-4 py-8 text-center',
+            'transition-colors duration-150',
+            file ? 'border-brand/40 bg-brand-soft' : 'border-line-firm hover:border-brand/40 hover:bg-surface-2'
+          )}
+        >
+          <input
+            type="file"
+            accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+            className="sr-only"
+            onChange={pick}
+          />
+          <span className="text-sm font-semibold text-ink">
+            {file ? file.name : 'Choose a spreadsheet'}
+          </span>
+          <span className="text-[12.5px] text-ink-muted">
+            {file
+              ? `${(file.size / 1024).toFixed(0)} KB — click to choose a different one`
+              : 'Excel or CSV, up to 2,000 rows'}
+          </span>
+        </label>
+
+        {parsed && (
+          <div className="rounded-sm border border-line bg-surface-2 px-4 py-3 text-[13px]">
+            <p className="font-semibold text-ink">
+              {parsed.rows.length} {parsed.rows.length === 1 ? 'row' : 'rows'} read from “{parsed.sheetName}”
+            </p>
+            <p className="mt-1.5 text-ink-muted">
+              <span className="font-medium text-ink-2">Understood:</span>{' '}
+              {parsed.recognised.join(', ')}
+            </p>
+            {parsed.ignored.length > 0 && (
+              <p className="mt-1 text-ink-muted">
+                <span className="font-medium text-ink-2">Ignored:</span> {parsed.ignored.join(', ')}
+                {' '}— these columns have nowhere to go, and are left alone.
+              </p>
+            )}
+          </div>
+        )}
+
+        {parsed?.rows?.length > 0 && (
+          <div className="overflow-x-auto rounded-sm border border-line">
+            <Table className="text-[12.5px]">
+              <thead>
+                <tr>
+                  {parsed.recognised.map((f) => <Th key={f}>{f}</Th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {parsed.rows.slice(0, 4).map((r, i) => (
+                  <Tr key={i}>
+                    {parsed.recognised.map((f) => (
+                      <Td key={f} className="whitespace-nowrap">{String(r[f] ?? '')}</Td>
+                    ))}
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
+            {parsed.rows.length > 4 && (
+              <p className="border-t border-line px-4 py-2 text-xs text-ink-muted">
+                …and {parsed.rows.length - 4} more.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * The product's photograph, and a way to replace it.
+ *
+ * Sent as multipart rather than in the JSON body: base64 inflates a
+ * picture by a third, and a 4MB photo off a phone would go straight
+ * past the post limit on most shared hosting.
+ *
+ * The preview is the file the person just chose, shown immediately
+ * from the browser's own copy. Waiting for a round trip to find out
+ * whether you picked the right photo is a poor way to spend a minute
+ * on a slow line.
+ */
+function ProductPicture({ product }) {
+  const [preview, setPreview] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  const shown = preview || product.picture;
+
+  async function pick(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('That is not a picture. Use a JPG, PNG or WEBP.');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError('That picture is over 8MB. Most phones can shrink it before sending.');
+      return;
+    }
+
+    setError('');
+    setSaved(false);
+    setPreview(URL.createObjectURL(file));
+    setBusy(true);
+
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      // Not api(): that sets a JSON content type, and multipart needs
+      // the browser to set its own boundary.
+      await upload(`/api/manager/products/${product.id}/image`, body);
+      setSaved(true);
+    } catch (err) {
+      setError(err.message);
+      setPreview(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="size-20 shrink-0 overflow-hidden rounded-sm border border-line bg-surface-sunk">
+        {shown ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={shown} alt="" className="size-full object-cover" />
+        ) : (
+          <div className="grid size-full place-items-center text-[11px] text-ink-faint">
+            No picture
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-sm border border-line bg-surface px-3 py-2 text-[13px] font-semibold text-ink-2 transition-colors hover:border-line-firm hover:text-ink">
+          <input type="file" accept="image/*" className="sr-only" onChange={pick} disabled={busy} />
+          {busy ? 'Uploading…' : shown ? 'Replace picture' : 'Upload a picture'}
+        </label>
+
+        <p className={cn('mt-1.5 text-[11.5px]', error ? 'text-bad' : saved ? 'text-ok' : 'text-ink-muted')}>
+          {error || (saved ? 'Saved. It shows in the app straight away.' : 'JPG, PNG or WEBP, up to 8MB.')}
+        </p>
+      </div>
+    </div>
   );
 }

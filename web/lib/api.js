@@ -85,3 +85,30 @@ export async function downloadCsv(path, filename) {
 }
 
 export { BASE as API_BASE };
+
+/**
+ * Send a file.
+ *
+ * Separate from `api()` because that sets `Content-Type:
+ * application/json`, and multipart must be left to the browser — it
+ * appends the boundary marker that tells the server where each part
+ * starts. Set the header by hand and the body is unreadable at the
+ * other end.
+ */
+export async function upload(path, formData) {
+  const res = await fetch(BASE + path, {
+    method: 'POST',
+    headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+    body: formData,
+  });
+
+  if (res.status === 401 && typeof window !== 'undefined') {
+    clearSession();
+    window.location.href = '/';
+    throw new Error('Session expired');
+  }
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+  return data;
+}

@@ -300,6 +300,9 @@ class AH_Rest {
 		// Company accounts: the contractor who buys on account and the
 		// people they let order on it. Only the phone app uses these.
 		AH_Rest_Company::routes();
+
+		// Pictures, spreadsheet import and export, from the web panel.
+		AH_Catalogue::routes();
 		AH_Rest_Company::routes();
 
 		register_rest_route(
