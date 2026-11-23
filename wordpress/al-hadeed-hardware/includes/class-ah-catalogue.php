@@ -131,7 +131,7 @@ class AH_Catalogue {
 		if ( count( $rows ) > 2000 ) {
 			return new WP_Error(
 				'ah_too_many',
-				'That is more than 2,000 rows. Split the file, or use Import products in WordPress which works in batches.',
+				'That is more than 2,000 rows. Split the file into smaller ones and bring them in a few at a time.',
 				array( 'status' => 400 )
 			);
 		}

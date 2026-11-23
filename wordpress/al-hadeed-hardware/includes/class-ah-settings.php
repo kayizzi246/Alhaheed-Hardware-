@@ -112,7 +112,7 @@ class AH_Settings {
 				<div class="ah-card">
 					<h2 style="margin-top:0">SMS</h2>
 					<p class="description" style="margin-bottom:12px">Login codes and the order
-					confirmation. <strong>log</strong> writes the message to the WordPress debug
+					confirmation. <strong>log</strong> writes the message to the server's error
 					log and sends nothing — free, and useful while setting up.</p>
 					<table class="form-table">
 						<tr>

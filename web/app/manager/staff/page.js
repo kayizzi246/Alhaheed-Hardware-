@@ -56,7 +56,7 @@ export default function ManagerStaff() {
     <>
       <PageHead
         title="Staff"
-        sub="Everyone with a desk. Hiring here makes the WordPress account too."
+        sub="Everyone with a desk, and what each one can reach."
       >
         <Button onClick={() => setHiring(true)}>Hire someone</Button>
       </PageHead>
@@ -183,7 +183,7 @@ function HireDialog({ onClose, onDone }) {
   return (
     <Modal
       title="Hire someone"
-      description="This makes their WordPress account and texts them how to sign in."
+      description="This sets up their sign-in and texts them how to use it."
       onClose={onClose}
       footer={
         <>
@@ -285,9 +285,9 @@ function ChangeDialog({ person, onClose, onDone }) {
         </Field>
 
         <p className="text-[12.5px] leading-relaxed text-ink-muted">
-          Suspending keeps the account and everything it has ever done. Deleting it in
-          WordPress would take their name off the audit trail, which is the one record
-          that answers &ldquo;who did that&rdquo;.
+          Suspending keeps the account and everything it has ever done. Deleting
+          someone takes their name off the audit trail, which is the one record that
+          answers &ldquo;who did that&rdquo;.
         </p>
       </div>
     </Modal>

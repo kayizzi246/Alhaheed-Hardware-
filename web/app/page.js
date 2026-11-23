@@ -311,7 +311,7 @@ export default function LoginPage() {
           <p className="mt-7 text-center text-[13px] text-ink-muted">
             No account?{' '}
             <span className="font-semibold text-ink-2">
-              Ask the manager to add you in WordPress.
+              Ask the manager to set you up.
             </span>
           </p>
         </div>

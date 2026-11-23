@@ -263,7 +263,7 @@ function AddProduct({ onClose, onDone, onError }) {
   return (
     <Modal
       title="Add a product"
-      description="For a long list, use Import products in WordPress instead."
+      description="For a long list, use Import on this page instead."
       onClose={onClose}
       footer={
         <>
