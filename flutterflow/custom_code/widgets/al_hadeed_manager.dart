@@ -88,6 +88,24 @@ const Color _emberPale = Color(0xFFFBECEA);
 
 const Cubic _ease = Cubic(0.23, 1, 0.32, 1);
 
+/// Soft depth for cards: a tight contact shadow and a wide faint one —
+/// the same layered shadow the staff panel's cards use.
+const List<BoxShadow> _cardShadow = [
+  BoxShadow(color: Color(0x0A0F172A), blurRadius: 2, offset: Offset(0, 1)),
+  BoxShadow(
+      color: Color(0x140F172A),
+      blurRadius: 24,
+      spreadRadius: -10,
+      offset: Offset(0, 8)),
+];
+
+/// The brand's blue, deepening — hero cards, the header, the add button.
+const LinearGradient _heroGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+);
+
 double _ui = 1.0;
 
 bool get _isApple =>
@@ -759,87 +777,120 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final owner = _Session().isCompanyOwner;
-    final items = <(String, String, IconData, Widget)>[
-      ('shop', 'Shop', Icons.storefront_outlined, const AlHadeedShop()),
-      ('cart', 'Cart', Icons.shopping_cart_outlined, const AlHadeedCart()),
-      ('orders', 'Orders', Icons.receipt_long_outlined, const AlHadeedOrders()),
+    // Outline when idle, filled where you are.
+    final items = <(String, String, IconData, IconData, Widget)>[
+      ('shop', 'Shop', Icons.storefront_outlined, Icons.storefront_rounded,
+          const AlHadeedShop()),
+      ('cart', 'Cart', Icons.shopping_cart_outlined,
+          Icons.shopping_cart_rounded, const AlHadeedCart()),
+      ('orders', 'Orders', Icons.receipt_long_outlined,
+          Icons.receipt_long_rounded, const AlHadeedOrders()),
       (
         'company',
         owner ? 'Company' : 'Account',
         owner ? Icons.business_outlined : Icons.person_outline_rounded,
+        owner ? Icons.business_rounded : Icons.person_rounded,
         const AlHadeedCompany()
       ),
     ];
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: _white,
-        border: Border(top: BorderSide(color: _hairline)),
-      ),
-      padding: EdgeInsets.only(
-          top: 8, bottom: MediaQuery.paddingOf(context).bottom + 8),
-      child: Row(
-        children: [
-          for (final (key, label, icon, page) in items)
-            Expanded(
-              child: _Pressable(
-                scale: 0.92,
-                onTap: key == current ? null : () => _go(context, page),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
+    // A floating bar rather than a slab across the bottom: it sits on
+    // the page, and the tab you are on is lit by a soft pill.
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          12, 6, 12, MediaQuery.paddingOf(context).bottom + 10),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _hairline),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x0D0F172A), blurRadius: 3, offset: Offset(0, 1)),
+            BoxShadow(
+                color: Color(0x1F0F172A),
+                blurRadius: 30,
+                spreadRadius: -10,
+                offset: Offset(0, 14)),
+          ],
+        ),
+        child: Row(
+          children: [
+            for (final (key, label, icon, iconOn, page) in items)
+              Expanded(
+                child: _Pressable(
+                  scale: 0.94,
+                  onTap: key == current ? null : () => _go(context, page),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: _ease,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color:
+                          key == current ? _brandPale : _white.withOpacity(0),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(icon,
-                            size: 22, color: key == current ? _brand : _light),
-                        if (key == 'cart')
-                          ListenableBuilder(
-                            listenable: _CartStore(),
-                            builder: (_, __) {
-                              final n = _CartStore().count;
-                              if (n == 0) return const SizedBox.shrink();
-                              return Positioned(
-                                right: -8,
-                                top: -5,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 5, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: _brand,
-                                    borderRadius: BorderRadius.circular(9),
-                                  ),
-                                  constraints:
-                                      const BoxConstraints(minWidth: 17),
-                                  child: Text('$n',
-                                      textAlign: TextAlign.center,
-                                      style: _txt(10.5,
-                                          weight: FontWeight.w700,
-                                          color: _white)),
-                                ),
-                              );
-                            },
-                          ),
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Icon(key == current ? iconOn : icon,
+                                size: 23,
+                                color: key == current ? _brand : _light),
+                            if (key == 'cart')
+                              ListenableBuilder(
+                                listenable: _CartStore(),
+                                builder: (_, __) {
+                                  final n = _CartStore().count;
+                                  if (n == 0) return const SizedBox.shrink();
+                                  return Positioned(
+                                    right: -9,
+                                    top: -6,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        gradient: _heroGradient,
+                                        borderRadius: BorderRadius.circular(9),
+                                        border:
+                                            Border.all(color: _white, width: 2),
+                                      ),
+                                      constraints:
+                                          const BoxConstraints(minWidth: 19),
+                                      child: Text('$n',
+                                          textAlign: TextAlign.center,
+                                          style: _txt(10,
+                                              weight: FontWeight.w800,
+                                              color: _white)),
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(label,
+                            style: _txt(10.5,
+                                weight: key == current
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: key == current ? _brand : _light)),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(label,
-                        style: _txt(10.5,
-                            weight: key == current
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: key == current ? _brand : _light)),
-                  ],
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-/// The navy header every screen wears.
+/// The header every screen wears: the brand's blue, rounded at its foot.
 class _Header extends StatelessWidget {
   const _Header({required this.subtitle, this.trailing});
 
@@ -849,40 +900,82 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
-        padding: EdgeInsets.fromLTRB(
-            18, MediaQuery.paddingOf(context).top + 12, 12, 14),
+        clipBehavior: Clip.antiAlias,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [_navy, _navyDark],
+            colors: [Color(0xFF2563EB), Color(0xFF1E3A8A)],
           ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
+          boxShadow: [
+            BoxShadow(
+                color: Color(0x332563EB),
+                blurRadius: 24,
+                spreadRadius: -8,
+                offset: Offset(0, 10)),
+          ],
         ),
-        child: Row(
+        child: Stack(
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // A soft light in the corner, so the blue has depth rather
+            // than being a flat slab.
+            Positioned(
+              right: -60,
+              top: -90,
+              child: Container(
+                width: 230,
+                height: 230,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [
+                    _white.withOpacity(0.22),
+                    _white.withOpacity(0),
+                  ]),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                  16, MediaQuery.paddingOf(context).top + 12, 12, 18),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Text('AL HADEED ',
-                          style: _title(16.5,
-                              weight: FontWeight.w800, color: _white)),
-                      Text('HARDWARE',
-                          style: _title(16.5,
-                              weight: FontWeight.w800, color: _brand)),
-                    ],
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _white.withOpacity(0.16),
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: _white.withOpacity(0.24)),
+                    ),
+                    child: Text('AH',
+                        style: _title(14,
+                            weight: FontWeight.w800, color: _white)),
                   ),
-                  const SizedBox(height: 3),
-                  Text(subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _txt(12, color: _white.withOpacity(0.75))),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Al Hadeed Hardware',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _title(17,
+                                weight: FontWeight.w800, color: _white)),
+                        const SizedBox(height: 2),
+                        Text(subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                _txt(12.5, color: _white.withOpacity(0.8))),
+                      ],
+                    ),
+                  ),
+                  if (trailing != null) trailing!,
                 ],
               ),
             ),
-            if (trailing != null) trailing!,
           ],
         ),
       );
@@ -913,13 +1006,27 @@ class _Empty extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // A soft rounded tile with a ring, not a flat grey disc.
               Container(
-                width: 76,
-                height: 76,
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
-                    color: tone == _ember ? _emberPale : _tile,
-                    shape: BoxShape.circle),
-                child: Icon(icon, size: 32, color: tone),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: tone == _ember
+                        ? [_emberPale, _white]
+                        : [_brandPale, _white],
+                  ),
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(
+                      color: tone == _ember
+                          ? _ember.withOpacity(0.18)
+                          : _brand.withOpacity(0.14)),
+                  boxShadow: _cardShadow,
+                ),
+                child: Icon(icon,
+                    size: 32, color: tone == _ember ? _ember : _brand),
               ),
               const SizedBox(height: 16),
               Text(title, textAlign: TextAlign.center, style: _title(19)),
@@ -1213,31 +1320,89 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
         children: [
           // The headline. One number, stated in words — not a chart,
           // because there is nothing here to compare.
+          // The day's sales, as the panel shows it: deep blue, the week
+          // drawn faintly in its corner.
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(18),
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [_navy, _navyDark],
-              ),
-              borderRadius: BorderRadius.circular(18),
+              gradient: _heroGradient,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: const [
+                BoxShadow(
+                    color: Color(0x592563EB),
+                    blurRadius: 28,
+                    spreadRadius: -10,
+                    offset: Offset(0, 12)),
+              ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Stack(
               children: [
-                Text('SALES TODAY',
-                    style: _txt(11.5,
-                        weight: FontWeight.w700,
-                        color: _white.withOpacity(0.65))),
-                const SizedBox(height: 7),
-                Text(_ugx((d['salesToday'] as num?)?.toInt() ?? 0),
-                    style:
-                        _title(30, weight: FontWeight.w800, color: _white)),
-                const SizedBox(height: 4),
-                Text('${d['ordersToday'] ?? 0} orders today',
-                    style: _txt(13, color: _white.withOpacity(0.75))),
+                Positioned(
+                  right: -50,
+                  top: -70,
+                  child: Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(colors: [
+                        _white.withOpacity(0.2),
+                        _white.withOpacity(0),
+                      ]),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  width: 170,
+                  height: 64,
+                  child: CustomPaint(
+                    painter: _SparkPainter(((d['last7Days'] as List?) ??
+                            const [])
+                        .map((x) =>
+                            ((x as Map)['total'] as num?)?.toDouble() ?? 0)
+                        .toList()),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: _white.withOpacity(0.16),
+                              borderRadius: BorderRadius.circular(11),
+                              border: Border.all(
+                                  color: _white.withOpacity(0.22)),
+                            ),
+                            child: const Icon(Icons.payments_outlined,
+                                size: 18, color: _white),
+                          ),
+                          const SizedBox(width: 10),
+                          Text('Sales today',
+                              style: _txt(13,
+                                  weight: FontWeight.w600,
+                                  color: _white.withOpacity(0.85))),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(_ugx((d['salesToday'] as num?)?.toInt() ?? 0),
+                          style: _title(31,
+                              weight: FontWeight.w800, color: _white)),
+                      const SizedBox(height: 8),
+                      Text('${d['ordersToday'] ?? 0} orders today',
+                          style:
+                              _txt(13, color: _white.withOpacity(0.8))),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -1247,11 +1412,13 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
             children: [
               Expanded(
                   child: _tile('Cash', _ugx(
-                      (byMethod['cash'] as num?)?.toInt() ?? 0))),
+                      (byMethod['cash'] as num?)?.toInt() ?? 0),
+                      icon: Icons.payments_outlined, accent: _green)),
               const SizedBox(width: 10),
               Expanded(
                   child: _tile('Mobile Money', _ugx(
-                      (byMethod['mobile_money'] as num?)?.toInt() ?? 0))),
+                      (byMethod['mobile_money'] as num?)?.toInt() ?? 0),
+                      icon: Icons.phone_iphone_rounded, accent: _brand)),
             ],
           ),
           const SizedBox(height: 10),
@@ -1259,13 +1426,16 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
             children: [
               Expanded(
                   child: _tile('Card', _ugx(
-                      (byMethod['card'] as num?)?.toInt() ?? 0))),
+                      (byMethod['card'] as num?)?.toInt() ?? 0),
+                      icon: Icons.credit_card_rounded, accent: _blue)),
               const SizedBox(width: 10),
               Expanded(
                 child: _tile(
                   'Low stock',
                   '${lowStock.length}',
                   tone: lowStock.isEmpty ? null : _ember,
+                  icon: Icons.inventory_2_outlined,
+                  accent: lowStock.isEmpty ? _green : _ember,
                 ),
               ),
             ],
@@ -1366,22 +1536,48 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
     );
   }
 
-  Widget _tile(String label, String value, {Color? tone}) => Container(
+  /// A figure, as the panel draws one: an icon in a soft tinted tile,
+  /// the label beside it, the number large beneath.
+  Widget _tile(String label, String value,
+          {Color? tone, IconData? icon, Color accent = _brand}) =>
+      Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: _white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _hairline),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _hairline.withOpacity(0.7)),
+          boxShadow: _cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: _txt(11.5, color: _mid)),
-            const SizedBox(height: 6),
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, size: 16, color: accent),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _txt(12, weight: FontWeight.w600, color: _mid)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Text(value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: _title(17,
+                style: _title(18,
                     weight: FontWeight.w800, color: tone ?? _ink)),
           ],
         ),
@@ -1398,12 +1594,20 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             color: _white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _hairline),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: n > 0 && tappable
+                    ? _brand.withOpacity(0.22)
+                    : _hairline.withOpacity(0.7)),
+            boxShadow: _cardShadow,
           ),
           child: Column(
             children: [
-              Text('$n', style: _title(21, weight: FontWeight.w800)),
+              // Blue where a desk has work; quiet where it has none.
+              Text('$n',
+                  style: _title(22,
+                      weight: FontWeight.w800,
+                      color: n > 0 && tappable ? _brand : _ink)),
               const SizedBox(height: 3),
               Text(label,
                   maxLines: 1,
@@ -1499,8 +1703,9 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       decoration: BoxDecoration(
         color: _white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _hairline),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _hairline.withOpacity(0.7)),
+        boxShadow: _cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1537,12 +1742,31 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
                             height: max == 0
                                 ? 3
                                 : (3 + (days[i].$3 / max) * 82),
+                            // The chosen day in the brand's gradient with
+                            // a glow; the rest a pale wash of the same.
                             decoration: BoxDecoration(
-                              color: i == selected
-                                  ? _brandDark
-                                  : _brand.withOpacity(0.55),
+                              gradient: i == selected
+                                  ? _heroGradient
+                                  : LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        _brand.withOpacity(0.32),
+                                        _brand.withOpacity(0.12),
+                                      ],
+                                    ),
                               borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(4)),
+                                  top: Radius.circular(8),
+                                  bottom: Radius.circular(3)),
+                              boxShadow: i == selected
+                                  ? const [
+                                      BoxShadow(
+                                          color: Color(0x592563EB),
+                                          blurRadius: 14,
+                                          spreadRadius: -4,
+                                          offset: Offset(0, 6)),
+                                    ]
+                                  : null,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -1965,4 +2189,55 @@ class _ProfileSheet extends StatelessWidget {
           ],
         ),
       );
+}
+
+
+/// The last seven days, drawn faintly in the corner of the sales card —
+/// not for reading values from, but for seeing at a glance whether
+/// today is up or down on the days before it.
+class _SparkPainter extends CustomPainter {
+  _SparkPainter(this.values);
+
+  final List<double> values;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2) return;
+    final top = values.reduce((a, b) => a > b ? a : b);
+    final max = top <= 0 ? 1.0 : top;
+    final pts = <Offset>[
+      for (var i = 0; i < values.length; i++)
+        Offset(size.width * i / (values.length - 1),
+            size.height - 4 - (values[i] / max) * (size.height - 10)),
+    ];
+    final line = Path()..moveTo(pts.first.dx, pts.first.dy);
+    for (final p in pts.skip(1)) {
+      line.lineTo(p.dx, p.dy);
+    }
+    final area = Path.from(line)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(
+      area,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_white.withOpacity(0.24), _white.withOpacity(0)],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawPath(
+      line,
+      Paint()
+        ..color = _white.withOpacity(0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8
+        ..strokeJoin = StrokeJoin.round,
+    );
+    canvas.drawCircle(pts.last, 3, Paint()..color = _white);
+  }
+
+  @override
+  bool shouldRepaint(_SparkPainter old) => old.values != values;
 }

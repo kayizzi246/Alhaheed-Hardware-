@@ -17,7 +17,7 @@ So: when you change a token, a helper or the API base, change it in all four
 files. They are listed here once so you can diff them.
 
 - `_apiBase` — the one line to change when you deploy
-- tokens — `_navy`, `_brand`, `_ink`, type scale, `_liquid`, `_Glass`
+- tokens — `_navy`, `_brand`, `_ink`, type scale, `_liquid`, `_Glass`, `_cardShadow` (soft layered card depth), `_heroGradient` (the brand blue for hero cards, the header and the add button)
 - `_Pressable`, `_Skeleton`, `_Field`, `_Chip`, `_Sheet`, `_Empty`, `_toast`
 - `_ApiError`, `_unwrap`, `_apiGet`, `_apiPost`
 - `_ugx`, `_shortUgx`, `_statusColours`, `_statusLabel`, `_categoryColour`
