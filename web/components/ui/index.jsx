@@ -423,10 +423,15 @@ export const DialogContent = React.forwardRef(
         ref={ref}
         className={cn(
           'fixed left-1/2 top-1/2 z-50 w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2',
+          // Tall content scrolls inside the dialog rather than pushing
+          // its buttons off the bottom of a laptop screen.
+          'max-h-[min(88vh,840px)] overflow-y-auto',
           'rounded-lg border border-line bg-surface shadow-lg',
           // A modal is not anchored to a trigger, so it scales from its
-          // own centre — and from .96, never 0.
-          'data-[state=open]:animate-pop-in',
+          // own centre — and from .96, never 0. `dialog-in` rather than
+          // `pop-in` because this box is centred by a translate, and
+          // pop-in's final `transform: none` would throw that away.
+          'data-[state=open]:animate-dialog-in',
           className
         )}
         {...props}

@@ -90,6 +90,20 @@ export default {
           from: { opacity: '0', transform: 'scale(.96) translateY(-4px)' },
           to: { opacity: '1', transform: 'none' },
         },
+        /**
+         * The same entrance, for something centred with a translate.
+         *
+         * `pop-in` ends on `transform: none`, and with fill-mode both
+         * that final value sticks — wiping out the
+         * `-translate-x-1/2 -translate-y-1/2` that put the dialog in
+         * the middle. The box then sat half its own width right and
+         * half its height low, which is exactly where it was landing.
+         * So the centring travels inside the keyframe.
+         */
+        'dialog-in': {
+          from: { opacity: '0', transform: 'translate(-50%, -50%) scale(.96)' },
+          to: { opacity: '1', transform: 'translate(-50%, -50%) scale(1)' },
+        },
         'rise-in': {
           from: { opacity: '0', transform: 'translateY(6px)' },
           to: { opacity: '1', transform: 'none' },
@@ -100,6 +114,7 @@ export default {
       },
       animation: {
         'pop-in': 'pop-in 160ms cubic-bezier(0.23, 1, 0.32, 1) both',
+        'dialog-in': 'dialog-in 170ms cubic-bezier(0.23, 1, 0.32, 1) both',
         'rise-in': 'rise-in 220ms cubic-bezier(0.23, 1, 0.32, 1) both',
         shimmer: 'shimmer 1.1s linear infinite',
       },
