@@ -161,7 +161,7 @@ class AH_Suppliers {
 				'supplies'     => sanitize_text_field( (string) $req->get_param( 'supplies' ) ),
 				'notes'        => sanitize_textarea_field( (string) $req->get_param( 'notes' ) ),
 				'active'       => 1,
-				'created_by'   => get_current_user_id(),
+				'created_by'   => get_current_user_id(), // set by the token since the auth fix
 				'created_at'   => current_time( 'mysql' ),
 			)
 		);

@@ -1,9 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
+import { PasswordField, SignInCard, makePassword, passwordProblem } from '@/components/StaffBits';
 import { cn } from '@/lib/cn';
-import { list } from '@/lib/format';
+import { list, dateTime } from '@/lib/format';
 import {
   Alert, Button, Card, CardHead, CardTitle, Chip, Empty, Field, Input, Loading,
   Modal, PageHead, Select, Stat, Stats, Table, TableWrap, Td, Th, Tr,
@@ -26,9 +28,8 @@ const REACH = [
 /**
  * Who works here and at which desk.
  *
- * Staff accounts are WordPress users, so they are created there —
- * Users → Add New, with the right role. This screen is the register:
- * who exists, what they can reach, and whether they are still active.
+ * Hire from here: name, number, desk and a password the manager hands
+ * over in person. Open anyone to see what they have been doing.
  */
 export default function ManagerStaff() {
   const [staff, setStaff] = useState(null);
@@ -85,24 +86,36 @@ export default function ManagerStaff() {
           <TableWrap>
             <Table>
               <thead>
-                <tr><Th>Name</Th><Th>Desk</Th><Th>Phone</Th><Th>Email</Th><Th>Status</Th><Th /></tr>
+                <tr><Th>Name</Th><Th>Desk</Th><Th>Phone</Th><Th>Last on</Th><Th>Status</Th><Th /></tr>
               </thead>
               <tbody>
                 {staff.map((s) => (
                   <Tr key={s.id}>
-                    <Td className="font-semibold text-ink">{s.fullName}</Td>
+                    <Td>
+                      <Link href={`/manager/staff/${s.id}`} className="font-semibold text-ink hover:text-brand hover:underline">
+                        {s.fullName}
+                      </Link>
+                    </Td>
                     <Td>{ROLE_LABEL[s.role] || s.role}</Td>
                     <Td className="tnum">{s.phone || '—'}</Td>
-                    <Td>{s.email || '—'}</Td>
+                    <Td className="tnum text-ink-muted">{s.lastSeen ? dateTime(s.lastSeen) : 'not yet'}</Td>
                     <Td>
                       <Chip tone={s.status === 'active' ? 'good' : 'grey'}>
                         {s.status === 'active' ? 'Active' : 'Suspended'}
                       </Chip>
                     </Td>
-                    <Td className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => setChanging(s)}>
-                        Change
-                      </Button>
+                    <Td>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setChanging(s)}>
+                          Change
+                        </Button>
+                        <Link
+                          href={`/manager/staff/${s.id}`}
+                          className="inline-flex h-8 items-center rounded-sm bg-brand px-3 text-[13px] font-semibold text-white hover:bg-brand-dark"
+                        >
+                          Open
+                        </Link>
+                      </div>
                     </Td>
                   </Tr>
                 ))}
@@ -154,17 +167,17 @@ const DESKS = [
 ];
 
 /**
- * Put somebody on a desk.
+ * Put somebody on a desk, with a password the manager chooses.
  *
- * No password field, on purpose. A manager typing a password for
- * somebody else means two people know it, and the first thing that
- * person does is carry on using it. They are texted and sign in with a
- * code, which is how the desks are meant to be opened anyway.
+ * The manager hands it over in person, and can sign in as them with it
+ * to see their screen. It is shown once, after saving, and never sent
+ * by SMS.
  */
 function HireDialog({ onClose, onDone }) {
-  const [form, setForm] = useState({ fullName: '', phone: '', email: '', desk: 'cashier' });
+  const [form, setForm] = useState({ fullName: '', phone: '', email: '', desk: 'cashier', password: makePassword() });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [hired, setHired] = useState(null);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   async function submit(e) {
@@ -173,22 +186,52 @@ function HireDialog({ onClose, onDone }) {
     setError('');
     try {
       const r = await api('/api/manager/staff/create', { method: 'POST', body: form });
-      onDone(`${r.staff.fullName} added to the ${DESKS.find(([v]) => v === form.desk)?.[1]} desk. They have been texted.`);
+      setHired({ name: r.staff.fullName, id: r.staff.id, phone: r.signInWith || r.staff.phone, password: form.password });
     } catch (err) {
       setError(err.message);
       setBusy(false);
     }
   }
 
+  const deskName = DESKS.find(([v]) => v === form.desk)?.[1];
+
+  if (hired) {
+    const finish = () => onDone(`${hired.name} is on the ${deskName} desk.`);
+    return (
+      <Modal
+        title={`${hired.name} is on the ${deskName} desk`}
+        description="Give them these. They have been texted that their account is ready — not the password."
+        onClose={finish}
+        footer={
+          <>
+            <Link
+              href={`/manager/staff/${hired.id}`}
+              className="inline-flex h-10 items-center rounded-sm border border-line px-4 text-sm font-semibold text-ink hover:bg-surface-2"
+            >
+              Open their page
+            </Link>
+            <Button onClick={finish}>Done</Button>
+          </>
+        }
+      >
+        <SignInCard phone={hired.phone} password={hired.password} />
+      </Modal>
+    );
+  }
+
   return (
     <Modal
       title="Hire someone"
-      description="This sets up their sign-in and texts them how to use it."
+      description="Their sign-in is ready as soon as you save. You hand them the password."
       onClose={onClose}
       footer={
         <>
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" form="hire" disabled={busy || !form.fullName.trim() || !form.phone.trim()}>
+          <Button
+            type="submit"
+            form="hire"
+            disabled={busy || !form.fullName.trim() || !form.phone.trim() || !form.password || !!passwordProblem(form.password)}
+          >
             {busy ? 'Adding…' : 'Add them'}
           </Button>
         </>
@@ -216,10 +259,11 @@ function HireDialog({ onClose, onDone }) {
           </Select>
         </Field>
 
-        <p className="text-[12.5px] leading-relaxed text-ink-muted">
-          No password is set here. They are texted and sign in with a code — which means
-          nobody but them ever knows it.
-        </p>
+        <PasswordField
+          value={form.password}
+          onChange={(v) => setForm((f) => ({ ...f, password: v }))}
+          hint="Already made for you — change it if you like. You can set a new one later."
+        />
       </form>
     </Modal>
   );

@@ -92,7 +92,17 @@ export default function LoginPage() {
   }, []);
 
   const land = useCallback((r) => {
-    if (!HOME[r.user.role]) throw new Error('This account has no desk on the web panel.');
+    if (!HOME[r.user.role]) {
+      // Say where to go, not just "no". A store manager hired a minute
+      // ago has the right password and needs to hear it is the phone app.
+      throw new Error(
+        r.user.role === 'store'
+          ? 'Store Manager accounts sign in on the Al Hadeed phone app, not here. Use the same number and password there.'
+          : r.user.role === 'customer'
+            ? 'This is a customer account. Customers order on the Al Hadeed phone app.'
+            : 'This account has no desk on the staff panel.'
+      );
+    }
     setSession(r.token, r.user, { remember });
     router.replace(HOME[r.user.role]);
   }, [remember, router]);

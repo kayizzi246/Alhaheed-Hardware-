@@ -23,9 +23,9 @@ other two work from the phone, which is the point of the phone app.
 | **Manager** | yes | yes | all four desks |
 | **Administrator** | — | yes, as a manager | all of WordPress |
 
-A Store Manager who tries the web panel is turned away with *"This
-account has no desk on the web panel."* That is deliberate, not a
-fault: the store's work happens walking the aisles with a phone, not
+A Store Manager who tries the web panel is told *"Store Manager
+accounts sign in on the Al Hadeed phone app, not here."* That is
+deliberate, not a fault: the store's work happens walking the aisles with a phone, not
 sitting at a counter.
 
 The rule is enforced on the server as well as in the browser. A guard
@@ -53,6 +53,36 @@ Same password for all of them: **`DeskTest123!`**
 `admin` signs into the web panel too, and arrives as a manager:
 administrators hold every desk capability, so the API gives them the
 most privileged one.
+
+### Hiring from the panel
+
+Sign in as `manager`, open **Staff → Hire someone**. Name, phone, desk,
+and a password — one is made for you (`Cement-Lorry-48` style, easy to
+read across a counter), or type your own: 8+ characters with a letter
+and a number. After saving, the sign-in details are shown **once**, to
+hand over in person. They are never sent by SMS; the person is only
+texted that their account is ready.
+
+Click anyone's name to open their page: what they took today and this
+month, every receipt and what Accounts made of it (with the payment
+screenshot), and everything they did, newest first. It refreshes
+itself every 15 seconds.
+
+From their page: **Set a new password** (signs them out everywhere at
+once) and **Suspend** (also signs them out). A manager cannot reset
+another manager's password or the owner's — that would be a way to take
+over the account.
+
+Because you set the password, you can sign in as them to see exactly
+their screen. Store Managers sign in on the phone app, not the panel.
+
+Made while testing this, on the test site only:
+
+| Name | Desk | Sign in with | Password |
+| --- | --- | --- | --- |
+| Brenda Achieng | Cashier | 0789555101 | `NewPass2026` |
+| Ronald Ssali | Store Manager — app | 0789555102 | `Shelves2026` |
+| Joan Namutebi | Store Manager — app | 0789555103 | `Shelves-Joan-77` |
 
 ### A company account
 

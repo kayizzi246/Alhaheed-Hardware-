@@ -708,14 +708,14 @@ class AH_Rest_Desks {
 
 		$in     = implode( ',', $ids );
 		$skip   = "'wc-cancelled','wc-ah-rejected','wc-refunded','trash'";
-		$hpos   = class_exists( 'AutomatticWooCommerceUtilitiesOrderUtil' )
-			&& AutomatticWooCommerceUtilitiesOrderUtil::custom_orders_table_usage_is_enabled();
+		$hpos   = class_exists( '\Automattic\WooCommerce\Utilities\OrderUtil' )
+			&& \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
 
 		if ( $hpos ) {
 			$rows = $wpdb->get_results(
 				"SELECT customer_id, COUNT(*) AS orders, COALESCE(SUM(total_amount),0) AS spent
 				   FROM {$wpdb->prefix}wc_orders
-				  WHERE customer_id IN ({$in}) AND status NOT IN ({$skip})
+				  WHERE customer_id IN ({$in}) AND type = 'shop_order' AND status NOT IN ({$skip})
 				  GROUP BY customer_id",
 				ARRAY_A
 			);

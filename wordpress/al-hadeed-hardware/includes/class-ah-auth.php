@@ -87,7 +87,24 @@ class AH_Auth {
 		if ( 'suspended' === get_user_meta( $user->ID, 'ah_status', true ) ) {
 			return null;
 		}
+		// A password reset ends every session opened before it. Otherwise
+		// a cashier whose password was changed because they left would
+		// stay signed in until the end of the day.
+		$after = (int) get_user_meta( $user->ID, 'ah_tokens_after', true );
+		if ( $after && ( empty( $payload['iat'] ) || (int) $payload['iat'] < $after ) ) {
+			return null;
+		}
 		return $user;
+	}
+
+	/** Sign somebody out everywhere: every token issued before now stops working. */
+	public static function end_sessions( $user_id ) {
+		// Compared with < , so a sign-in in the same second as the reset
+		// — the person trying their new password straight away — works.
+		update_user_meta( $user_id, 'ah_tokens_after', time() );
+		if ( class_exists( 'WP_Session_Tokens' ) ) {
+			WP_Session_Tokens::get_instance( $user_id )->destroy_all();
+		}
 	}
 
 	/** The caller of the current REST request, or null. */
@@ -114,6 +131,16 @@ class AH_Auth {
 		$user = null;
 		if ( $header && preg_match( '/Bearer\s+(.+)/i', $header, $m ) ) {
 			$user = self::user_from_token( trim( $m[1] ) );
+
+			// Tell WordPress too. Without this, a request signed with a
+			// token was anonymous to everything that asks WordPress who
+			// is there: get_current_user_id() returned 0, so the audit
+			// trail never recorded who hired or suspended anyone, and the
+			// guard that stops a manager suspending themselves compared
+			// against 0 and never fired.
+			if ( $user && get_current_user_id() !== (int) $user->ID ) {
+				wp_set_current_user( $user->ID );
+			}
 		}
 
 		// Somebody already signed into wp-admin counts too, which is
@@ -123,6 +150,17 @@ class AH_Auth {
 		}
 
 		$cache = $user ? $user : false;
+
+		// When somebody was last on, for the manager's staff screen. The
+		// screen has always shown it and nothing ever wrote it. Written
+		// at most every five minutes, so it is not a write per click.
+		if ( $user ) {
+			$seen = get_user_meta( $user->ID, 'ah_last_seen', true );
+			if ( ! $seen || strtotime( $seen ) < current_time( 'timestamp' ) - 300 ) {
+				update_user_meta( $user->ID, 'ah_last_seen', current_time( 'mysql' ) );
+			}
+		}
+
 		return $user;
 	}
 
