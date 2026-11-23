@@ -24,9 +24,9 @@ export default {
     extend: {
       colors: {
         brand: {
-          DEFAULT: 'rgb(var(--orange) / <alpha-value>)',
-          dark: 'rgb(var(--orange-dark) / <alpha-value>)',
-          soft: 'rgb(var(--orange-soft) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
+          dark: 'rgb(var(--brand-dark) / <alpha-value>)',
+          soft: 'rgb(var(--brand-soft) / <alpha-value>)',
         },
         navy: {
           DEFAULT: 'rgb(var(--navy) / <alpha-value>)',

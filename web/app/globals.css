@@ -18,12 +18,12 @@
 @layer base {
   :root {
     /* ── Brand ─────────────────────────────────────────────────────── */
-    --navy:        30 19 16;   /* the dark is warm, not blue */
-    --navy-deep:   18 10 8;
-    --navy-soft:   50 32 26;
-    --orange:      232 134 42;
-    --orange-dark: 201 111 24;
-    --orange-soft: 253 243 231;
+    --navy:        15 27 53;   /* the slab, cool to sit with the blue */
+    --navy-deep:   9 17 35;
+    --navy-soft:   27 44 79;
+    --brand:      37 99 235;
+    --brand-dark: 29 78 216;
+    --brand-soft: 239 246 255;
 
     /* ── Surfaces ──────────────────────────────────────────────────── */
     --bg:          244 246 249;
@@ -42,19 +42,19 @@
     /* ── States ────────────────────────────────────────────────────── */
     --green:       21 128 61;
     --green-bg:    232 246 237;
-    --red:         192 57 43;   /* brand red, and still the danger colour */
+    --red:         192 57 43;   /* danger only now — the brand is blue */
     --red-bg:      253 237 237;
     --amber:       180 83 9;
     --amber-bg:    253 242 226;
-    --blue:        37 99 168;
-    --blue-bg:     233 241 251;
+    --blue:        14 116 144;
+    --blue-bg:     224 242 247;
 
     /* ── Charts ────────────────────────────────────────────────────── */
     /* Checked, not guessed: two warm hues an orange apart are the same
        colour to a protan reader, so the third leaves the family. */
-    --cat-a: #f0932b;
-    --cat-b: #c0392b;
-    --cat-c: #7a2e8f;
+    --cat-a: #2563eb;
+    --cat-b: #e8862a;
+    --cat-c: #b5179e;
 
     /* ── Form ──────────────────────────────────────────────────────── */
     --radius:      12px;
@@ -79,12 +79,12 @@
   /* Dark, when the device asks and the person has not overridden. */
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --navy:        26 17 14;
-      --navy-deep:   13 8 7;
-      --navy-soft:   43 28 23;
-      --orange:      240 149 47;
-      --orange-dark: 212 125 28;
-      --orange-soft: 42 31 18;
+      --navy:        13 23 44;
+      --navy-deep:   8 14 28;
+      --navy-soft:   25 40 70;
+      --brand:      96 165 250;
+      --brand-dark: 59 130 246;
+      --brand-soft: 23 37 61;
 
       --bg:          12 20 29;
       --surface:     19 29 40;
@@ -104,12 +104,12 @@
       --red-bg:      44 20 22;
       --amber:       251 191 36;
       --amber-bg:    42 30 12;
-      --blue:        124 178 240;
-      --blue-bg:     17 36 58;
+      --blue:        103 190 209;
+      --blue-bg:     12 36 43;
 
-      --cat-a: #c07f34;
-      --cat-b: #cf4470;
-      --cat-c: #9f63c4;
+      --cat-a: #60a5fa;
+      --cat-b: #f0952f;
+      --cat-c: #e06bd0;
 
       --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.4);
       --shadow:      0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.55);
@@ -119,12 +119,12 @@
 
   /* And when they have. The toggle writes this attribute. */
   :root[data-theme="dark"] {
-    --navy:        26 17 14;
-    --navy-deep:   13 8 7;
-    --navy-soft:   43 28 23;
-    --orange:      240 149 47;
-    --orange-dark: 212 125 28;
-    --orange-soft: 42 31 18;
+    --navy:        13 23 44;
+    --navy-deep:   8 14 28;
+    --navy-soft:   25 40 70;
+    --brand:      96 165 250;
+    --brand-dark: 59 130 246;
+    --brand-soft: 23 37 61;
 
     --bg:          12 20 29;
     --surface:     19 29 40;
@@ -144,12 +144,12 @@
     --red-bg:      44 20 22;
     --amber:       251 191 36;
     --amber-bg:    42 30 12;
-    --blue:        124 178 240;
-    --blue-bg:     17 36 58;
+    --blue:        103 190 209;
+    --blue-bg:     12 36 43;
 
-    --cat-a: #c07f34;
-    --cat-b: #cf4470;
-    --cat-c: #9f63c4;
+    --cat-a: #60a5fa;
+    --cat-b: #f0952f;
+    --cat-c: #e06bd0;
 
     --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow:      0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.55);
@@ -192,7 +192,7 @@
   /* One focus ring for the whole panel rather than one per component.
      Mouse users never see it; keyboard users always do. */
   :focus-visible {
-    outline: 2px solid rgb(var(--orange));
+    outline: 2px solid rgb(var(--brand));
     outline-offset: 2px;
     border-radius: 4px;
   }

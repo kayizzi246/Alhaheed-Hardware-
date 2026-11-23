@@ -24,12 +24,12 @@
   --ah-muted: 215 25% 96%;
   --ah-muted-foreground: 210 16% 51%;
 
-  --ah-accent: 28 60% 96%;
-  --ah-accent-foreground: 27 78% 44%;
+  --ah-accent: 214 95% 96%;
+  --ah-accent-foreground: 224 76% 40%;
 
-  /* Orange is the action. It is the only saturated thing on a screen
+  /* Blue is the action. It is the only saturated thing on a screen
      unless something has gone wrong. */
-  --ah-primary: 28 81% 54%;
+  --ah-primary: 221 83% 53%;
   --ah-primary-foreground: 0 0% 100%;
 
   --ah-secondary: 215 25% 96%;
@@ -46,16 +46,16 @@
 
   --ah-border: 214 32% 92%;
   --ah-input: 213 27% 86%;
-  --ah-ring: 28 81% 54%;
+  --ah-ring: 221 83% 53%;
 
   --ah-radius: 0.75rem;
 
   /* Categorical, for the payment mix. Checked rather than guessed: two
      warm hues are the same colour to a protan reader, so the third
      steps out of the family. */
-  --ah-cat-a: 31 87% 56%;
-  --ah-cat-b: 5 64% 46%;
-  --ah-cat-c: 286 51% 37%;
+  --ah-cat-a: 221 83% 53%;
+  --ah-cat-b: 31 87% 56%;
+  --ah-cat-c: 316 77% 46%;
 
   font-family: theme('fontFamily.sans');
   font-size: 15px;
@@ -90,10 +90,10 @@
   --ah-muted: 215 16% 18%;
   --ah-muted-foreground: 214 14% 65%;
 
-  --ah-accent: 26 32% 17%;
-  --ah-accent-foreground: 30 85% 64%;
+  --ah-accent: 222 40% 18%;
+  --ah-accent-foreground: 213 94% 73%;
 
-  --ah-primary: 28 78% 52%;
+  --ah-primary: 217 91% 60%;
   --ah-primary-foreground: 0 0% 100%;
 
   --ah-secondary: 215 16% 18%;
@@ -105,11 +105,11 @@
 
   --ah-border: 215 14% 23%;
   --ah-input: 215 14% 28%;
-  --ah-ring: 28 81% 56%;
+  --ah-ring: 217 91% 62%;
 
-  --ah-cat-a: 31 85% 58%;
-  --ah-cat-b: 348 68% 57%;
-  --ah-cat-c: 280 52% 62%;
+  --ah-cat-a: 213 94% 73%;
+  --ah-cat-b: 31 85% 58%;
+  --ah-cat-c: 309 70% 65%;
 
   background: hsl(var(--ah-background));
 }
