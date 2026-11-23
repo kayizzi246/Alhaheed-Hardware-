@@ -63,11 +63,45 @@ class AH_Rest_Desks {
 
 		// ── The order register, and the manager's lists ───────────────
 		$route( '/orders', $get, $any_desk, array( __CLASS__, 'register' ) );
+
+		// Tapping a stage on the manager's phone opens what is sitting
+		// in it. The app has asked for this since it was written; the
+		// route was never registered, so every tap showed an error.
+		$route(
+			'/orders/queue/(?P<stage>[a-z_]+)',
+			$get,
+			$any_desk,
+			array( __CLASS__, 'stage_queue' )
+		);
 		$route( '/manager/staff', $get, $manager, array( __CLASS__, 'staff' ) );
 		$route( '/manager/customers', $get, $manager, array( __CLASS__, 'customers' ) );
 		$route( '/manager/audit', $get, $manager, array( __CLASS__, 'audit' ) );
 		$route( '/manager/products', array( $get, $post ), $manager, array( __CLASS__, 'products' ) );
 		$route( '/manager/products/(?P<id>\d+)', $post, $manager, array( __CLASS__, 'update_product' ) );
+	}
+
+	/**
+	 * What is sitting at one desk.
+	 *
+	 * The counting and the listing are deliberately separate jobs —
+	 * the dashboard counts without loading, this loads because
+	 * somebody is about to read it.
+	 */
+	public static function stage_queue( $req ) {
+		$stage = sanitize_key( $req->get_param( 'stage' ) );
+
+		if ( ! isset( AH_Flow::stages()[ $stage ] ) ) {
+			return new WP_Error(
+				'ah_bad_stage',
+				'There is no such desk',
+				array( 'status' => 404 )
+			);
+		}
+
+		return array(
+			'stage'  => $stage,
+			'orders' => AH_Flow::queue_for( $stage, 100 ),
+		);
 	}
 
 	// -----------------------------------------------------------------

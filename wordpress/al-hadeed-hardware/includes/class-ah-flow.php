@@ -44,7 +44,14 @@ class AH_Flow {
 		}
 
 		$order->update_meta_data( '_ah_order_no', 'AH-' . $order->get_order_number() );
-		$order->update_meta_data( '_ah_source', 'web' );
+
+		// Only if nobody has already said where it came from. This used
+		// to overwrite unconditionally, and since it runs after the
+		// ordering routes have stamped an order 'app', every order
+		// placed on the phone was filed as a website order.
+		if ( ! $order->get_meta( '_ah_source' ) ) {
+			$order->update_meta_data( '_ah_source', 'web' );
+		}
 		$order->save();
 
 		self::log_event(

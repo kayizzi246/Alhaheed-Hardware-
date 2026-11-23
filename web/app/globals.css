@@ -237,3 +237,25 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── No zooming into forms on a phone ──────────────────────────────
+   Safari on iOS zooms the page in when it focuses a field whose text
+   is smaller than 16px, and does not zoom back out afterwards. The
+   shared field styles already set 16px on small screens; this is the
+   safety net for any control that does not use them — a date picker,
+   a search box, something added later.
+
+   The fix is the font size, deliberately, and not `maximum-scale=1`
+   on the viewport: that stops the zoom by taking pinch-to-zoom away
+   from everybody, which a shopkeeper reading a long order on a small
+   phone needs more than we need tidy forms.
+
+   !important because it has to beat a utility class, which is the one
+   place that is the right tool. */
+@media (max-width: 639px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

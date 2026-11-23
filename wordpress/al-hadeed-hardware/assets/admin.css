@@ -764,3 +764,17 @@
   .ah-wrap .button:active, .ah-wrap .button-primary:active, .ah-pipe:active { transform: none; }
   .ah-pipe:hover { transform: none; }
 }
+
+/* ── No zooming into forms on a phone ──────────────────────────────
+   Safari on iOS zooms in on any field whose text is under 16px and
+   does not zoom back out. wp-admin's own inputs are 14px, so the
+   shop's settings and order screens threw themselves sideways on the
+   first tap. Scoped to our own pages: the rest of wp-admin is not
+   ours to restyle. */
+@media (max-width: 639px) {
+  .ah-wrap input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  .ah-wrap select,
+  .ah-wrap textarea {
+    font-size: 16px !important;
+  }
+}

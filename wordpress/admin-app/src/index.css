@@ -236,3 +236,21 @@ body.ah-dark #wpfooter a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── No zooming into forms on a phone ──────────────────────────────
+   Safari on iOS zooms the page in whenever it focuses a field whose
+   text is under 16px, and leaves it zoomed afterwards. wp-admin on a
+   phone is already tight; a form that throws the layout sideways on
+   the first tap makes it unusable.
+
+   The fix is the font size rather than `maximum-scale=1` on the
+   viewport — and here the viewport is not ours to set anyway, since
+   wp-admin owns the page. !important because it has to beat a utility
+   class, which is the one place that is the right tool. */
+@media (max-width: 639px) {
+  #ah-app input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  #ah-app select,
+  #ah-app textarea {
+    font-size: 16px !important;
+  }
+}

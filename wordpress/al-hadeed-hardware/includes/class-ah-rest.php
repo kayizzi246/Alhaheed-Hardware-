@@ -188,6 +188,18 @@ class AH_Rest {
 		);
 
 		// ── Ordering ──────────────────────────────────────────────────
+		// A customer the shop already knows. The phone app posts here
+		// whenever it holds a session, and posted into a 404 until this
+		// existed — so a returning customer, who is the shop's best
+		// kind, could not buy anything.
+		register_rest_route(
+			$ns, '/orders',
+			array(
+				'methods'             => $post,
+				'permission_callback' => array( __CLASS__, 'signed_in' ),
+				'callback'            => array( __CLASS__, 'place_order' ),
+			)
+		);
 		register_rest_route(
 			$ns, '/orders/guest',
 			array(
@@ -622,8 +634,107 @@ class AH_Rest {
 			$user = get_user_by( 'id', $user_id );
 		}
 
-		// Build the order through WooCommerce, so stock, taxes and every
-		// other plugin on the site see it as an ordinary order.
+		$order = self::build_order( $user, $items, $phone, $name, $how, $where );
+		if ( is_wp_error( $order ) ) {
+			return $order;
+		}
+
+		$sms = AH_Sms::send( $phone, AH_Sms::order_placed_message( $order ) );
+
+		return array(
+			'order'    => AH_Shape::order( $order, true ),
+			'token'    => AH_Auth::issue( $user->ID ),
+			'user'     => AH_Shape::user( $user ),
+			'smsSent'  => (bool) $sms['ok'],
+		);
+	}
+
+	/**
+	 * Place an order for a customer the shop already knows.
+	 *
+	 * Everything below the account is the same work as a guest order,
+	 * which is why both go through build_order(). What differs is only
+	 * where the name and number come from: here they are on the
+	 * account rather than typed into the checkout each time.
+	 */
+	public static function place_order( $req ) {
+		$user = AH_Auth::current();
+
+		// Staff order as customers from their own phones often enough,
+		// but an order filed against a desk account confuses every
+		// report that counts customers, so it is refused plainly.
+		if ( AH_Roles::desk_of( $user ) ) {
+			return self::err(
+				'ah_staff_account',
+				'This is a staff account. Orders are placed from a customer account.',
+				403
+			);
+		}
+
+		$items = (array) $req->get_param( 'items' );
+		if ( ! $items ) {
+			return self::err( 'ah_empty', 'Your order is empty', 400 );
+		}
+
+		// The app sends 'fulfilment' here and 'delivery' on the guest
+		// route. Both are accepted rather than made to match, because
+		// an app already in somebody's hand cannot be changed today.
+		$how = (string) ( $req->get_param( 'fulfilment' ) ?: $req->get_param( 'delivery' ) );
+		if ( 'delivery' === $how ) {
+			$how = 'shop_delivery';
+		}
+		if ( ! in_array( $how, array( 'shop_delivery', 'pickup', 'own_transport' ), true ) ) {
+			$how = 'pickup';
+		}
+
+		$where = trim(
+			(string) ( $req->get_param( 'deliveryAddress' ) ?: $req->get_param( 'location' ) )
+		);
+		if ( '' === $where ) {
+			$where = (string) get_user_meta( $user->ID, 'ah_location', true );
+		}
+
+		if ( 'shop_delivery' === $how && '' === $where ) {
+			return self::err( 'ah_no_address', 'Tell us where to deliver, so the driver can find you', 400 );
+		}
+
+		$phone = (string) get_user_meta( $user->ID, 'ah_phone', true );
+		$name  = $user->display_name ? $user->display_name : trim( (string) $req->get_param( 'fullName' ) );
+
+		$order = self::build_order( $user, $items, $phone, $name, $how, $where );
+		if ( is_wp_error( $order ) ) {
+			return $order;
+		}
+
+		$note = trim( (string) $req->get_param( 'notes' ) );
+		if ( '' !== $note ) {
+			$order->set_customer_note( $order->get_customer_note() . "\n" . sanitize_textarea_field( $note ) );
+			$order->save();
+		}
+
+		// A customer with no number on the account is not an error —
+		// they are standing in the shop with the app open — but there
+		// is nowhere to send the confirmation.
+		$sms = $phone ? AH_Sms::send( $phone, AH_Sms::order_placed_message( $order ) ) : array( 'ok' => false );
+
+		return array(
+			'order'   => AH_Shape::order( $order, true ),
+			'smsSent' => (bool) $sms['ok'],
+		);
+	}
+
+	/**
+	 * Turn a basket into a saved WooCommerce order.
+	 *
+	 * Built through WooCommerce rather than by hand so that stock,
+	 * taxes and every other plugin on the site see an ordinary order.
+	 * A half-built order is deleted rather than left behind: an order
+	 * that failed on its third line must not sit in the cashier's
+	 * queue holding two.
+	 *
+	 * @return WC_Order|WP_Error
+	 */
+	private static function build_order( $user, $items, $phone, $name, $how, $where ) {
 		$order = wc_create_order( array( 'customer_id' => $user->ID ) );
 
 		foreach ( $items as $line ) {
@@ -651,31 +762,31 @@ class AH_Rest {
 			$order->add_product( $product, $qty );
 		}
 
-		$order->set_billing_phone( $phone );
-		$order->set_billing_first_name( $name );
-		if ( 'shop_delivery' === $how ) {
+		if ( $phone ) {
+			$order->set_billing_phone( $phone );
+		}
+		if ( $name ) {
+			$order->set_billing_first_name( $name );
+		}
+		if ( 'shop_delivery' === $how && $where ) {
 			$order->set_shipping_address_1( $where );
 		}
+
 		$order->update_meta_data( '_ah_fulfilment', 'shop_delivery' === $how ? 'delivery' : 'pickup' );
 		$order->update_meta_data( '_ah_source', 'app' );
 		$order->update_meta_data( '_ah_delivery_choice', $how );
 		if ( $where ) {
 			$order->update_meta_data( '_ah_location', $where );
 		}
+
 		$order->set_customer_note( self::delivery_note( $how, $where ) );
 		$order->calculate_totals();
 		$order->set_status( 'pending' );
 		$order->save();
 
 		AH_Flow::on_new_order( $order );
-		$sms = AH_Sms::send( $phone, AH_Sms::order_placed_message( $order ) );
 
-		return array(
-			'order'    => AH_Shape::order( $order, true ),
-			'token'    => AH_Auth::issue( $user->ID ),
-			'user'     => AH_Shape::user( $user ),
-			'smsSent'  => (bool) $sms['ok'],
-		);
+		return $order;
 	}
 
 	private static function delivery_note( $how, $where ) {

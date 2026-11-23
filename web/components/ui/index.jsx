@@ -166,8 +166,13 @@ export const StatusChip = ({ status, children }) => (
 
 /* ── Form ────────────────────────────────────────────────────────── */
 
+// `text-base sm:text-sm` is not a typographic choice. Safari on iOS
+// zooms the whole page in whenever a field it is focusing has text
+// under 16px, and then leaves it zoomed — so tapping into a form threw
+// the layout sideways on every phone. 16px on a phone, back to 14px
+// from the small breakpoint up, where no browser does this.
 const fieldBase =
-  'w-full rounded-sm border border-line bg-surface px-3 text-sm text-ink ' +
+  'w-full rounded-sm border border-line bg-surface px-3 text-base sm:text-sm text-ink ' +
   'placeholder:text-ink-faint transition-[border-color,box-shadow] duration-150 ease-out ' +
   'focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/20 ' +
   'disabled:cursor-not-allowed disabled:opacity-60';
