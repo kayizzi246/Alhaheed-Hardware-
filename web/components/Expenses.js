@@ -132,7 +132,36 @@ export default function Expenses() {
               : 'Try a different filter.'}
           </Empty>
         ) : (
-          <TableWrap>
+          <>
+          {/* On a phone: one card per request, the decision buttons in
+              reach — the table put them past the edge of the screen. */}
+          <ul className="divide-y divide-line md:hidden">
+            {rows.map((e) => (
+              <li key={e.id} className="px-4 py-3.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 text-[14.5px] font-semibold text-ink">{e.details}</span>
+                  <span className="tnum text-[15px] font-bold text-ink">{money(e.amount)}</span>
+                </div>
+                <p className="mt-1 text-[12.5px] text-ink-muted">
+                  <span className="tnum">{e.ref}</span> · {e.kind_label} · {e.raised_by} · <span className="tnum">{dateTime(e.created_at)}</span>
+                </p>
+                <div className="mt-1.5">
+                  <Chip tone={TONE[e.status] || 'grey'}>{e.status_label}</Chip>
+                  {e.decision_note && <span className="mt-1 block text-xs text-ink-muted">{e.decision_note}</span>}
+                </div>
+                {data.canApprove && e.status === 'raised' && (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button variant="danger" onClick={() => setDeciding({ e, approve: false })}>Decline</Button>
+                    <Button variant="good" onClick={() => setDeciding({ e, approve: true })}>Approve</Button>
+                  </div>
+                )}
+                {data.canPay && e.status === 'approved' && (
+                  <Button className="mt-3 w-full" onClick={() => setPaying(e)}>Pay out</Button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <TableWrap className="hidden md:block">
             <Table>
               <thead>
                 <tr>
@@ -184,6 +213,7 @@ export default function Expenses() {
               </tbody>
             </Table>
           </TableWrap>
+          </>
         )}
       </Card>
 

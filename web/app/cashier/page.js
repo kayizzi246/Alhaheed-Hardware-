@@ -91,8 +91,10 @@ export default function CashierQueue() {
         ) : (
           <ul className="divide-y divide-line">
             {orders.map((o) => (
-              <li key={o.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4">
-                <div className="min-w-0 flex-1">
+              <li key={o.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-5">
+                {/* Wide enough before it wraps that the customer's name is
+                    never squeezed down to one letter on a phone. */}
+                <div className="min-w-[13rem] flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     {/* The order number is read across a desk, so it is
                         the biggest thing in the row after the amount. */}
@@ -111,7 +113,7 @@ export default function CashierQueue() {
                   </p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex w-full shrink-0 items-center justify-between gap-3 sm:w-auto sm:justify-end">
                   <span className="tnum font-display text-[17px] font-bold text-ink">{money(o.total)}</span>
                   <Button onClick={() => setPaying(o)}>Receive payment</Button>
                 </div>

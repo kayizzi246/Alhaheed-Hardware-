@@ -192,7 +192,7 @@ export default function LoginPage() {
 
           <div className="my-6 flex items-center gap-3 text-[12.5px] text-ink-faint">
             <span className="h-px flex-1 bg-line" />
-            {mode === 'password' ? 'or continue with your details' : 'a code will be texted to you'}
+            {mode === 'password' ? 'your phone number and password' : 'we will text a code to your phone'}
             <span className="h-px flex-1 bg-line" />
           </div>
 

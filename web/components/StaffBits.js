@@ -73,7 +73,7 @@ export function SignInCard({ phone, password }) {
         </div>
         <div className="flex justify-between gap-4 py-1">
           <dt className="text-ink-muted">Password</dt>
-          <dd className="tnum break-all font-semibold text-ink">{password}</dd>
+          <dd className="tnum whitespace-normal break-all font-semibold text-ink">{password}</dd>
         </div>
       </dl>
       <Button

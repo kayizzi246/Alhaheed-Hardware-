@@ -102,7 +102,33 @@ function ManagerOrders() {
             Try a different status, or clear the search box.
           </Empty>
         ) : (
-          <TableWrap>
+          <>
+          {/* On a phone: one tap-able row per order, everything that
+              matters in view, no sideways scrolling to find "Open". */}
+          <ul className="divide-y divide-line md:hidden">
+            {orders.map((o) => (
+              <li key={o.id}>
+                <button
+                  type="button"
+                  onClick={() => setOpenId(o.id)}
+                  className="block w-full px-4 py-3 text-left active:bg-surface-2"
+                >
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="tnum text-[15px] font-bold text-ink">{o.order_no}</span>
+                    <span className="tnum text-[15px] font-bold text-ink">{money(o.total)}</span>
+                  </span>
+                  <span className="mt-1 flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-[13.5px] text-ink-2">{o.company_name || o.ordered_by_name}</span>
+                    <StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip>
+                  </span>
+                  <span className="tnum mt-1 block text-xs text-ink-muted">
+                    {o.item_count} {o.item_count === 1 ? 'item' : 'items'} · {dateTime(o.created_at)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <TableWrap className="hidden md:block">
             <Table>
               <thead>
                 <tr>
@@ -112,7 +138,10 @@ function ManagerOrders() {
               </thead>
               <tbody>
                 {orders.map((o) => (
-                  <Tr key={o.id}>
+                  // The whole row opens the order, not only the small
+                  // button at the end of it.
+                  <Tr key={o.id} onClick={() => setOpenId(o.id)} className="cursor-pointer">
+
                     <Td className="tnum font-bold text-ink">{o.order_no}</Td>
                     <Td className="font-medium text-ink">{o.company_name || o.ordered_by_name}</Td>
                     <Td><StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip></Td>
@@ -120,7 +149,7 @@ function ManagerOrders() {
                     <Td num className="font-semibold text-ink">{money(o.total)}</Td>
                     <Td className="tnum whitespace-nowrap text-ink-muted">{dateTime(o.created_at)}</Td>
                     <Td className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => setOpenId(o.id)}>
+                      <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setOpenId(o.id); }}>
                         Open
                       </Button>
                     </Td>
@@ -129,6 +158,7 @@ function ManagerOrders() {
               </tbody>
             </Table>
           </TableWrap>
+          </>
         )}
       </Card>
 

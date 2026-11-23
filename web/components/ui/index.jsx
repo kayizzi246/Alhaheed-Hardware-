@@ -372,14 +372,18 @@ export function Stat({ label, value, note, lead, tone }) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-line bg-surface px-4 py-3.5 shadow-sm',
+        'min-w-0 rounded-lg border border-line bg-surface px-3 py-3 shadow-sm [container-type:inline-size] sm:px-4 sm:py-3.5',
         lead && 'border-brand/30 bg-brand-soft'
       )}
     >
-      <p className="text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">{label}</p>
+      <p className="text-[10.5px] font-bold uppercase tracking-[.06em] text-ink-muted sm:text-[11px] sm:tracking-[.07em]">{label}</p>
       <p
         className={cn(
-          'tnum mt-1.5 text-[27px] font-extrabold leading-none text-ink',
+          // Big for short figures ("7", "UGX 849K"); only a long full
+          // amount ("UGX 12,345,000") steps down to fit its tile.
+          String(value ?? '').length > 11
+            ? 'tnum mt-1.5 text-[clamp(15px,10cqi,27px)] font-extrabold leading-none text-ink'
+            : 'tnum mt-1.5 text-[clamp(20px,14cqi,27px)] font-extrabold leading-none text-ink',
           lead && 'text-brand-dark',
           tone === 'ok' && 'text-ok',
           tone === 'bad' && 'text-bad'
@@ -387,13 +391,15 @@ export function Stat({ label, value, note, lead, tone }) {
       >
         {value}
       </p>
-      {note && <p className="mt-1.5 text-xs text-ink-muted">{note}</p>}
+      {note && <p className="mt-1.5 truncate text-xs text-ink-muted">{note}</p>}
     </div>
   );
 }
 
+// Two across even on a phone. One per row filled the whole first screen
+// with figures and pushed the actual work — the queue — out of sight.
 export const Stats = ({ children, className }) => (
-  <div className={cn('mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4', className)}>{children}</div>
+  <div className={cn('mb-5 grid grid-cols-2 gap-2.5 sm:mb-6 sm:gap-3 xl:grid-cols-4', className)}>{children}</div>
 );
 
 /** When the screen last checked. It polls; it does not pretend to push. */

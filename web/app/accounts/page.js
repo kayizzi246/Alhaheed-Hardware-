@@ -102,7 +102,37 @@ export default function VerifyPayments() {
             Every payment the cashiers have taken has been verified.
           </Empty>
         ) : (
-          <TableWrap>
+          <>
+          {/* On a phone, one card per payment with its buttons in reach.
+              The table put Verify past the right edge of the screen. */}
+          <ul className="divide-y divide-line md:hidden">
+            {orders.map((o) => (
+              <li key={o.id} className="px-4 py-3.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="tnum text-[15px] font-bold text-ink">{o.order_no}</span>
+                  <span className="tnum text-[15px] font-bold text-ink">{money(o.amount_paid)}</span>
+                </div>
+                <p className="mt-0.5 text-[13.5px] font-medium text-ink">{o.company_name || o.ordered_by_name}</p>
+                <p className="mt-1 text-[12.5px] text-ink-muted">
+                  {methodLabel(o.method)}
+                  {o.transaction_ref ? <> · <span className="tnum">{o.transaction_ref}</span></> : null}
+                </p>
+                <p className="text-[12.5px] text-ink-muted">
+                  <span className="tnum">{o.receipt_no}</span> · {o.cashier_name} · <span className="tnum">{time(o.created_at)}</span>
+                </p>
+                {o.has_proof && (
+                  <button type="button" onClick={() => setViewing(o)} className="mt-1.5 text-[13px] font-semibold text-brand">
+                    See the screenshot
+                  </button>
+                )}
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Button variant="danger" disabled={busyId === o.id} onClick={() => setRejecting(o)}>Reject</Button>
+                  <Button variant="good" disabled={busyId === o.id} onClick={() => verify(o, true)}>Verify</Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <TableWrap className="hidden md:block">
             <Table>
               <thead>
                 <tr>
@@ -166,6 +196,7 @@ export default function VerifyPayments() {
               </tbody>
             </Table>
           </TableWrap>
+          </>
         )}
       </Card>
 
@@ -281,7 +312,7 @@ function ProofModal({ order, onClose, onVerify, onReject }) {
         </div>
         <div className="min-w-0">
           <dt className="text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">Transaction ID</dt>
-          <dd className="tnum mt-0.5 break-all font-semibold text-ink">{order.transaction_ref}</dd>
+          <dd className="tnum whitespace-normal mt-0.5 break-all font-semibold text-ink">{order.transaction_ref}</dd>
         </div>
       </dl>
       <Alert>{error}</Alert>

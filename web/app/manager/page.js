@@ -98,8 +98,10 @@ export default function ManagerConsole() {
       <Alert>{error}</Alert>
 
       {/* ── The row of figures ─────────────────────────────────────── */}
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Kpi label="Sales today" value={money(d.salesToday)} delta={delta} note="vs daily average" lead />
+      {/* Two across on a phone, the day's sales across the top. One per
+          row put five tiles between the manager and everything else. */}
+      <div className="mb-4 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-5">
+        <Kpi label="Sales today" value={money(d.salesToday)} delta={delta} note="vs daily average" lead className="col-span-2 sm:col-span-1" />
         <Kpi label="Orders today" value={String(d.ordersToday)} note={`${waiting} still open`} />
         <Kpi label="Average order" value={money(avgOrder)} note="per order today" />
         <Kpi label="Waiting on a desk" value={String(waiting)} note="cashier, accounts, store" tone={waiting ? 'warn' : null} />
@@ -108,7 +110,11 @@ export default function ManagerConsole() {
 
       {/* ── Trajectory and funnel ──────────────────────────────────── */}
       <div className="mb-4 grid gap-4 xl:grid-cols-2">
-        <Panel title="Takings — last 7 days" note="Verified sales only">
+        {/* Said plainly, because beside "Sales today" a chart reading
+            UGX 0 for today looks like a fault: it only counts a payment
+            once Accounts has checked it. */}
+        <Panel title="Checked takings — last 7 days" note="A payment counts here once Accounts has verified it">
+
           <Trajectory days={days} average={average} />
         </Panel>
 
@@ -165,12 +171,13 @@ export default function ManagerConsole() {
 
 /* ── Pieces ───────────────────────────────────────────────────────── */
 
-function Kpi({ label, value, delta, note, tone, lead }) {
+function Kpi({ label, value, delta, note, tone, lead, className }) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-line bg-surface px-4 py-3.5 shadow-sm',
+        'min-w-0 rounded-lg border border-line bg-surface px-3 py-3 shadow-sm [container-type:inline-size] sm:px-4 sm:py-3.5',
         lead && 'border-brand/30 bg-brand-soft',
+        className,
         tone === 'warn' && 'border-warn/30',
         tone === 'bad' && 'border-bad/30'
       )}
@@ -178,7 +185,9 @@ function Kpi({ label, value, delta, note, tone, lead }) {
       <span className="block text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">{label}</span>
       <strong
         className={cn(
-          'tnum mt-1.5 block font-display text-[26px] font-extrabold leading-none tracking-[-.02em] text-ink',
+          String(value).length > 11
+            ? 'tnum mt-1.5 block font-display text-[clamp(15px,10cqi,26px)] font-extrabold leading-none tracking-[-.02em] text-ink'
+            : 'tnum mt-1.5 block font-display text-[clamp(20px,14cqi,26px)] font-extrabold leading-none tracking-[-.02em] text-ink',
           lead && 'text-brand-dark',
           tone === 'warn' && 'text-warn',
           tone === 'bad' && 'text-bad'
@@ -186,7 +195,7 @@ function Kpi({ label, value, delta, note, tone, lead }) {
       >
         {value}
       </strong>
-      <span className="mt-2 flex items-center gap-1.5 text-xs text-ink-muted">
+      <span className="mt-2 flex min-w-0 items-center gap-1.5 truncate text-xs text-ink-muted">
         {delta !== null && delta !== undefined && (
           <span
             className={cn(
@@ -254,7 +263,8 @@ function Trajectory({ days, average }) {
           {money(chosen.total)}
         </strong>
         <span className="text-[12.5px] text-ink-muted">
-          {dayName(chosen.day)} {String(chosen.day).slice(5)} · {chosen.receipts} receipts
+          {dayName(chosen.day)} {String(chosen.day).slice(5)} · {chosen.receipts} verified{' '}
+          {chosen.receipts === 1 ? 'receipt' : 'receipts'}
         </span>
       </div>
 
@@ -420,9 +430,18 @@ function Latest({ rows }) {
             href={`/manager/orders/${o.id}`}
             className="flex items-center gap-2.5 rounded-sm px-2 py-2 text-[13px] transition-colors duration-150 hover:bg-surface-2"
           >
-            <span className="tnum shrink-0 font-bold text-ink">{o.order_no}</span>
-            <span className="min-w-0 flex-1 truncate text-ink-muted">{o.company_name || o.ordered_by_name}</span>
-            <StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip>
+            {/* One line on a wide screen; on a phone the status drops
+                under the name, where it fits instead of pushing the row
+                past the edge. */}
+            <span className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-2.5">
+              <span className="flex min-w-0 items-baseline gap-2.5 sm:flex-1">
+                <span className="tnum shrink-0 font-bold text-ink">{o.order_no}</span>
+                <span className="min-w-0 truncate text-ink-muted">{o.company_name || o.ordered_by_name}</span>
+              </span>
+              <span className="mt-1 block sm:mt-0">
+                <StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip>
+              </span>
+            </span>
             <span className="tnum shrink-0 font-semibold text-ink">{money(o.total)}</span>
             <span className="tnum hidden shrink-0 text-ink-faint sm:block">{time(o.created_at)}</span>
           </Link>
@@ -436,8 +455,8 @@ function ConsoleSkeleton() {
   return (
     <>
       <h1 className="mb-6 text-[26px] text-ink">The shop today</h1>
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-[96px]" />)}
+      <div className="mb-4 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-5">
+        {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className={i === 0 ? 'col-span-2 h-[96px] sm:col-span-1' : 'h-[96px]'} />)}
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <Skeleton className="h-[250px]" />

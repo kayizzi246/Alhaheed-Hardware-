@@ -228,6 +228,9 @@
   .tnum {
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum';
+    /* An order number, an amount or a time is one thing. Broken across
+       two lines — "AH-" above "87" — it reads as two. */
+    white-space: nowrap;
   }
 }
 
