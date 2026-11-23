@@ -306,6 +306,10 @@ class AH_Rest {
 
 		// Hiring onto a desk, from the panel.
 		AH_Staff::routes();
+
+		// Internal spending: raised at a desk, approved by the manager,
+		// paid by the cashier. No customer ever sees any of it.
+		AH_Expenses::routes();
 		AH_Rest_Company::routes();
 
 		register_rest_route(

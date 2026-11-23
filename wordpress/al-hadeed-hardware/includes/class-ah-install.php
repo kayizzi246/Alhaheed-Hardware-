@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.0.0';
+	const DB_VERSION = '1.1.0';
 
 	public static function activate() {
 		self::tables();
@@ -88,6 +88,38 @@ class AH_Install {
 			created_at  DATETIME        NOT NULL,
 			PRIMARY KEY (id),
 			KEY entry_date (entry_date)
+		) {$charset};";
+
+
+		// Money going OUT of the shop that is not a customer refund:
+		// transport, fuel, a part for the grinder, lunch for the crew.
+		//
+		// It is not the cash book. The cash book is a record of what
+		// happened; this is a request that has not happened yet and may
+		// never. Only when the manager approves it and the cashier pays
+		// does a cash_book row appear — so the book keeps meaning
+		// "money that actually moved".
+		$sql[] = "CREATE TABLE {$p}ah_expenses (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			ref          VARCHAR(20)     NOT NULL,
+			kind         VARCHAR(32)     NOT NULL DEFAULT 'expense',
+			details      TEXT            NOT NULL,
+			amount       BIGINT          NOT NULL DEFAULT 0,
+			method       VARCHAR(32)     NULL,
+			status       VARCHAR(24)     NOT NULL DEFAULT 'raised',
+			raised_by    BIGINT UNSIGNED NOT NULL,
+			raised_desk  VARCHAR(16)     NOT NULL,
+			decided_by   BIGINT UNSIGNED NULL,
+			decided_at   DATETIME        NULL,
+			decision_note TEXT           NULL,
+			paid_by      BIGINT UNSIGNED NULL,
+			paid_at      DATETIME        NULL,
+			cash_book_id BIGINT UNSIGNED NULL,
+			created_at   DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY ref (ref),
+			KEY status (status),
+			KEY created_at (created_at)
 		) {$charset};";
 
 		$sql[] = "CREATE TABLE {$p}ah_events (
