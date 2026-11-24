@@ -158,7 +158,7 @@ function Release({ order, onClose, onDone }) {
             </Field>
 
             {order.delivery_address && how === 'out_for_delivery' && (
-              <p className="rounded-md border border-border bg-muted/50 px-3 py-2.5 text-[13px]">
+              <p className="rounded-md border border-border bg-muted/50 px-4 py-3 text-[13px]">
                 <span className="font-semibold">Going to:</span> {order.delivery_address}
               </p>
             )}

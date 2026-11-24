@@ -63,14 +63,14 @@ Button.displayName = 'Button';
 export const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('rounded-lg border border-border bg-card text-card-foreground shadow-sm', className)}
+    className={cn('rounded-2xl border border-border bg-card text-card-foreground shadow-sm', className)}
     {...props}
   />
 ));
 Card.displayName = 'Card';
 
 export const CardHeader = ({ className, ...props }) => (
-  <div className={cn('flex items-start justify-between gap-3 border-b border-border px-4 py-3', className)} {...props} />
+  <div className={cn('flex items-start justify-between gap-3 border-b border-border px-5 py-4', className)} {...props} />
 );
 
 export const CardTitle = ({ className, ...props }) => (
@@ -82,13 +82,13 @@ export const CardNote = ({ className, ...props }) => (
 );
 
 export const CardBody = ({ className, ...props }) => (
-  <div className={cn('p-4', className)} {...props} />
+  <div className={cn('p-5', className)} {...props} />
 );
 
 /* ── Badge ───────────────────────────────────────────────────────── */
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11.5px] font-semibold whitespace-nowrap',
+  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 leading-none text-[11.5px] font-semibold whitespace-nowrap',
   {
     variants: {
       tone: {
@@ -144,7 +144,7 @@ export const Input = React.forwardRef(({ className, ...props }, ref) => (
     ref={ref}
     className={cn(
       'h-10 w-full rounded-md border border-input bg-card px-3 text-sm text-foreground',
-      'placeholder:text-muted-foreground/70',
+      'placeholder:text-muted-foreground',
       'transition-[border-color,box-shadow] duration-150',
       'focus:border-primary focus:ring-[3px] focus:ring-primary/20',
       'disabled:cursor-not-allowed disabled:opacity-60',
@@ -156,7 +156,7 @@ export const Input = React.forwardRef(({ className, ...props }, ref) => (
 Input.displayName = 'Input';
 
 export const Label = ({ className, ...props }) => (
-  <label className={cn('mb-1.5 block text-xs font-semibold text-muted-foreground', className)} {...props} />
+  <label className={cn('mb-2 block text-[13px] font-semibold text-secondary-foreground', className)} {...props} />
 );
 
 export const Field = ({ label, hint, children, className }) => (
@@ -225,7 +225,7 @@ export const DialogContent = React.forwardRef(({ className, title, description, 
       )}
       {...props}
     >
-      <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+      <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-5">
         <div>
           <DialogPrimitive.Title className="text-base font-semibold tracking-[-.01em]">{title}</DialogPrimitive.Title>
           {description && (
@@ -246,11 +246,11 @@ export const DialogContent = React.forwardRef(({ className, title, description, 
 DialogContent.displayName = 'DialogContent';
 
 export const DialogBody = ({ className, ...props }) => (
-  <div className={cn('px-5 py-4', className)} {...props} />
+  <div className={cn('px-6 py-5', className)} {...props} />
 );
 
 export const DialogFooter = ({ className, ...props }) => (
-  <div className={cn('flex justify-end gap-2 border-t border-border bg-muted/40 px-5 py-3', className)} {...props} />
+  <div className={cn('flex justify-end gap-2 border-t border-border bg-muted/40 px-6 py-4', className)} {...props} />
 );
 
 /* ── Tabs ────────────────────────────────────────────────────────── */
@@ -283,7 +283,7 @@ export const Table = ({ className, ...props }) => (
 export const Th = ({ className, right, ...props }) => (
   <th
     className={cn(
-      'border-b border-border bg-muted/50 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[.06em] text-muted-foreground',
+      'border-b border-border bg-muted/50 px-5 py-3 text-[11px] font-bold uppercase tracking-[.06em] text-muted-foreground',
       right ? 'text-right' : 'text-left',
       className
     )}
@@ -293,7 +293,7 @@ export const Th = ({ className, right, ...props }) => (
 
 export const Td = ({ className, right, ...props }) => (
   <td
-    className={cn('border-b border-border px-4 py-3 align-middle', right && 'text-right tnum', className)}
+    className={cn('border-b border-border px-5 py-3.5 align-middle', right && 'text-right tnum', className)}
     {...props}
   />
 );

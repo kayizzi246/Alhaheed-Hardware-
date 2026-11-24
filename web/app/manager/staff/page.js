@@ -114,7 +114,7 @@ export default function ManagerStaff() {
                         </Button>
                         <Link
                           href={`/manager/staff/${s.id}`}
-                          className="inline-flex h-8 items-center rounded-sm bg-brand px-3 text-[13px] font-semibold text-white hover:bg-brand-dark"
+                          className="inline-flex h-8 items-center rounded-sm bg-fill px-3 text-[13px] font-semibold text-white hover:bg-fill-dark"
                         >
                           Open
                         </Link>

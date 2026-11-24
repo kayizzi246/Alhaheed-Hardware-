@@ -40,18 +40,18 @@ const buttonVariants = cva(
         // A light edge along the top and a coloured glow beneath: the
         // button reads as something to press, not a painted rectangle.
         primary:
-          'bg-[linear-gradient(180deg,rgb(var(--brand)/0.9),rgb(var(--brand)))] text-white ' +
-          'shadow-[inset_0_1px_0_rgb(255_255_255/0.22),0_1px_2px_rgb(15_23_42/0.14),0_6px_16px_-8px_rgb(var(--brand)/0.75)] ' +
-          'hover:brightness-[1.07] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.24),0_2px_4px_rgb(15_23_42/0.14),0_10px_22px_-10px_rgb(var(--brand)/0.85)]',
+          'bg-[linear-gradient(180deg,rgb(var(--fill)/0.94),rgb(var(--fill)))] text-white ' +
+          'shadow-[inset_0_1px_0_rgb(255_255_255/0.22),0_1px_2px_rgb(15_27_51/0.14),0_6px_16px_-8px_rgb(var(--fill)/0.50)] ' +
+          'hover:brightness-[1.07] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.24),0_2px_4px_rgb(15_27_51/0.14),0_10px_22px_-10px_rgb(var(--fill)/0.60)]',
         outline:
-          'border border-line bg-surface text-ink-2 shadow-[0_1px_2px_rgb(15_23_42/0.05)] hover:border-line-firm hover:bg-surface-2 hover:text-ink',
+          'border border-line bg-surface text-ink-2 shadow-[0_1px_2px_rgb(15_27_51/0.05)] hover:border-line-firm hover:bg-surface-2 hover:text-ink',
         ghost:
           'text-ink-muted hover:bg-surface-2 hover:text-ink',
         danger:
           'border border-bad/25 bg-bad-bg text-bad hover:border-bad/40',
         good:
-          'bg-[linear-gradient(180deg,rgb(var(--green)/0.9),rgb(var(--green)))] text-white ' +
-          'shadow-[inset_0_1px_0_rgb(255_255_255/0.2),0_1px_2px_rgb(15_23_42/0.14),0_6px_16px_-8px_rgb(var(--green)/0.7)] hover:brightness-110',
+          'bg-[linear-gradient(180deg,rgb(18_126_76),rgb(14_116_68))] text-white ' +
+          'shadow-[inset_0_1px_0_rgb(255_255_255/0.2),0_1px_2px_rgb(15_27_51/0.14),0_6px_16px_-8px_rgb(var(--green)/0.7)] hover:brightness-110',
       },
       size: {
         sm: 'h-8 px-3 text-[13px]',
@@ -100,7 +100,7 @@ IconButton.displayName = 'IconButton';
 export const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.04),0_6px_20px_-12px_rgb(15_23_42/0.12)]', className)}
+    className={cn('overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgb(15_27_51/0.04),0_6px_20px_-12px_rgb(15_27_51/0.12)]', className)}
     {...props}
   />
 ));
@@ -109,7 +109,7 @@ Card.displayName = 'Card';
 export const CardHead = ({ className, children, ...props }) => (
   <div
     className={cn(
-      'flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4',
+      'flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-6',
       className
     )}
     {...props}
@@ -127,13 +127,13 @@ export const CardNote = ({ className, ...props }) => (
 );
 
 export const CardBody = ({ className, ...props }) => (
-  <div className={cn('p-5', className)} {...props} />
+  <div className={cn('p-4 sm:p-6', className)} {...props} />
 );
 
 /* ── Chip ────────────────────────────────────────────────────────── */
 
 const chipVariants = cva(
-  'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-[11.5px] font-semibold',
+  'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-[5px] text-[11.5px] leading-none font-semibold',
   {
     variants: {
       tone: {
@@ -180,7 +180,7 @@ export const StatusChip = ({ status, children }) => (
 // the layout sideways on every phone. 16px on a phone, back to 14px
 // from the small breakpoint up, where no browser does this.
 const fieldBase =
-  'w-full rounded-sm border border-line bg-surface px-3 text-base sm:text-sm text-ink ' +
+  'w-full rounded-sm border border-line-firm/80 bg-surface px-3.5 text-base sm:text-sm text-ink ' +
   'placeholder:text-ink-faint transition-[border-color,box-shadow] duration-150 ease-out ' +
   'focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/20 ' +
   'disabled:cursor-not-allowed disabled:opacity-60';
@@ -229,7 +229,7 @@ export const Select = React.forwardRef(
           aria-label={rest['aria-label']}
           className={cn(
             fieldBase,
-            'group inline-flex h-11 items-center justify-between gap-2 text-left shadow-[0_1px_2px_rgb(15_23_42/0.04)]',
+            'group inline-flex h-11 items-center justify-between gap-2 text-left shadow-[0_1px_2px_rgb(15_27_51/0.04)]',
             'hover:border-line-firm data-[state=open]:border-brand data-[state=open]:ring-[3px] data-[state=open]:ring-brand/20',
             'data-[placeholder]:text-ink-faint [&>span]:min-w-0 [&>span]:truncate',
             className
@@ -256,7 +256,7 @@ export const Select = React.forwardRef(
               'z-[60] min-w-[var(--radix-select-trigger-width)] max-w-[min(92vw,420px)] overflow-hidden',
               'max-h-[min(360px,var(--radix-select-content-available-height))]',
               'rounded-xl border border-line bg-surface p-1 text-ink',
-              'shadow-[0_16px_40px_-12px_rgb(15_23_42/0.22),0_3px_8px_rgb(15_23_42/0.06)]',
+              'shadow-[0_16px_40px_-12px_rgb(15_27_51/0.22),0_3px_8px_rgb(15_27_51/0.06)]',
               'origin-[var(--radix-select-content-transform-origin)] data-[state=open]:animate-pop-in'
             )}
           >
@@ -296,15 +296,15 @@ export const Textarea = React.forwardRef(({ className, ...props }, ref) => (
 Textarea.displayName = 'Textarea';
 
 export const Label = ({ className, ...props }) => (
-  <label className={cn('mb-1.5 block text-xs font-semibold text-ink-muted', className)} {...props} />
+  <label className={cn('mb-2 block text-[13px] font-semibold text-ink-2', className)} {...props} />
 );
 
 export const Field = ({ label, hint, error, children, className }) => (
   <div className={cn('min-w-0', className)}>
     {label && <Label>{label}</Label>}
     {children}
-    {hint && !error && <p className="mt-1 text-[11.5px] text-ink-muted">{hint}</p>}
-    {error && <p className="mt-1 text-[11.5px] font-medium text-bad">{error}</p>}
+    {hint && !error && <p className="mt-1.5 text-[12.5px] text-ink-muted">{hint}</p>}
+    {error && <p className="mt-1.5 text-[12.5px] font-medium text-bad">{error}</p>}
   </div>
 );
 
@@ -319,7 +319,7 @@ export function Checkbox({ label, className, ...props }) {
           className={cn(
             'size-[17px] rounded-[5px] border border-line-firm bg-surface',
             'transition-[background-color,border-color] duration-150 ease-out',
-            'peer-checked:border-brand peer-checked:bg-brand',
+            'peer-checked:border-brand peer-checked:bg-fill',
             'peer-focus-visible:ring-[3px] peer-focus-visible:ring-brand/25'
           )}
         />
@@ -381,7 +381,7 @@ export const Table = ({ className, ...props }) => (
 export const Th = ({ className, num, ...props }) => (
   <th
     className={cn(
-      'whitespace-nowrap border-b border-line bg-surface-2 px-4 py-2.5',
+      'whitespace-nowrap border-b border-line bg-surface-2 px-4 py-3 sm:first:pl-6 sm:last:pr-6',
       'text-[11px] font-bold uppercase tracking-[.06em] text-ink-muted',
       num ? 'text-right' : 'text-left',
       className
@@ -392,7 +392,7 @@ export const Th = ({ className, num, ...props }) => (
 
 export const Td = ({ className, num, ...props }) => (
   <td
-    className={cn('border-b border-line px-4 py-3 align-middle text-ink-2', num && 'tnum text-right', className)}
+    className={cn('border-b border-line px-4 py-3.5 align-middle sm:first:pl-6 sm:last:pr-6 text-ink-2', num && 'tnum text-right', className)}
     {...props}
   />
 );
@@ -458,7 +458,7 @@ export function Alert({ kind = 'bad', children, onDone }) {
     <div
       role={kind === 'bad' ? 'alert' : 'status'}
       className={cn(
-        'mb-4 animate-rise-in rounded-sm border px-4 py-3 text-[13.5px]',
+        'mb-6 animate-rise-in rounded-sm border px-4 py-3 text-[13.5px]',
         kind === 'bad' && 'border-bad/25 bg-bad-bg text-bad',
         kind === 'ok' && 'border-ok/25 bg-ok-bg text-ok'
       )}
@@ -486,7 +486,7 @@ export const Spinner = ({ className }) => (
 /* ── Page furniture ──────────────────────────────────────────────── */
 
 export const PageHead = ({ title, sub, children }) => (
-  <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <header className="mb-6 flex flex-wrap items-end justify-between gap-4 lg:mb-8">
     <div className="min-w-0">
       <h1 className="text-[26px] leading-tight text-ink">{title}</h1>
       {sub && <p className="mt-1 text-sm text-ink-muted">{sub}</p>}
@@ -526,14 +526,14 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
     <Box
       {...(href ? { href } : {})}
       className={cn(
-        'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl p-4 [container-type:inline-size] sm:p-5',
+        'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl p-4 [container-type:inline-size] sm:p-6',
         'transition-[transform,box-shadow,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
         big
-          ? 'bg-[linear-gradient(135deg,rgb(var(--brand))_0%,rgb(var(--brand-dark))_100%)] text-white shadow-[0_12px_32px_-12px_rgb(var(--brand)/0.55)]'
-          : 'border border-line bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.04),0_6px_20px_-12px_rgb(15_23_42/0.12)]',
+          ? 'bg-[linear-gradient(135deg,rgb(var(--fill))_0%,rgb(var(--fill-dark))_100%)] text-white shadow-[0_12px_32px_-12px_rgb(var(--fill)/0.40)]'
+          : 'border border-line bg-surface shadow-[0_1px_2px_rgb(15_27_51/0.04),0_6px_20px_-12px_rgb(15_27_51/0.12)]',
         href && (big
-          ? 'hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgb(var(--brand)/0.65)] active:scale-[0.985]'
-          : 'hover:-translate-y-0.5 hover:border-line-firm hover:shadow-[0_2px_4px_rgb(15_23_42/0.05),0_14px_32px_-14px_rgb(15_23_42/0.22)] active:scale-[0.985]'),
+          ? 'hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgb(var(--fill)/0.50)] active:scale-[0.985]'
+          : 'hover:-translate-y-0.5 hover:border-line-firm hover:shadow-[0_2px_4px_rgb(15_27_51/0.05),0_14px_32px_-14px_rgb(15_27_51/0.22)] active:scale-[0.985]'),
         'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand/30',
         className
       )}
@@ -543,7 +543,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
         <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 -z-10 size-56 rounded-full bg-white/15 blur-3xl" />
       )}
 
-      <div className="flex items-start gap-2.5">
+      <div className="flex min-h-9 items-center gap-3">
         {icon && (
           <span
             className={cn(
@@ -557,8 +557,8 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
         <span
           className={cn(
             'min-w-0 flex-1 text-[13px] font-semibold leading-tight [overflow-wrap:anywhere]',
-            icon && 'pt-[9px]',
-            big ? 'text-white/85' : 'text-ink-muted'
+            
+            big ? 'text-white/90' : 'text-ink-muted'
           )}
         >
           {label}
@@ -569,8 +569,8 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
             aria-hidden="true"
             className={cn(
               'size-4 shrink-0 -translate-x-1 opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100',
-              icon && 'mt-[10px]',
-              big ? 'text-white/80' : 'text-ink-faint'
+              
+              big ? 'text-white/90' : 'text-ink-faint'
             )}
           >
             <path d="M5 11l6-6M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -590,7 +590,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
       </strong>
 
       {(note || (delta !== null && delta !== undefined)) && (
-        <span className={cn('mt-3 flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px] leading-snug', big ? 'text-white/80' : 'text-ink-muted')}>
+        <span className={cn('mt-3 flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px] leading-snug', big ? 'text-white/90' : 'text-ink-muted')}>
           {delta !== null && delta !== undefined && (
             <span
               className={cn(
@@ -648,7 +648,7 @@ function Sparkline({ values }) {
 // Two across even on a phone. One per row filled the whole first screen
 // with figures and pushed the actual work — the queue — out of sight.
 export const Stats = ({ children, className }) => (
-  <div className={cn('mb-5 grid grid-cols-2 gap-3 sm:mb-6 sm:gap-4 xl:grid-cols-4', className)}>{children}</div>
+  <div className={cn('mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:mb-8 lg:gap-5 xl:grid-cols-4', className)}>{children}</div>
 );
 
 /** When the screen last checked. It polls; it does not pretend to push. */
@@ -686,7 +686,7 @@ export const DialogContent = React.forwardRef(
           // Tall content scrolls inside the dialog rather than pushing
           // its buttons off the bottom of a laptop screen.
           'max-h-[min(88vh,840px)] overflow-y-auto',
-          'rounded-2xl border border-line/80 bg-surface shadow-[0_24px_64px_-16px_rgb(15_23_42/0.35),0_4px_12px_-4px_rgb(15_23_42/0.12)]',
+          'rounded-2xl border border-line/80 bg-surface shadow-[0_24px_64px_-16px_rgb(15_27_51/0.35),0_4px_12px_-4px_rgb(15_27_51/0.12)]',
           // A modal is not anchored to a trigger, so it scales from its
           // own centre — and from .96, never 0. `dialog-in` rather than
           // `pop-in` because this box is centred by a translate, and
@@ -696,7 +696,7 @@ export const DialogContent = React.forwardRef(
         )}
         {...props}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
+        <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-6">
           <div className="min-w-0">
             <DialogPrimitive.Title className="text-base font-bold text-ink">{title}</DialogPrimitive.Title>
             {description && (
@@ -717,11 +717,11 @@ export const DialogContent = React.forwardRef(
 DialogContent.displayName = 'DialogContent';
 
 export const DialogBody = ({ className, ...props }) => (
-  <div className={cn('px-5 py-4', className)} {...props} />
+  <div className={cn('px-4 py-5 sm:px-6', className)} {...props} />
 );
 
 export const DialogFoot = ({ className, ...props }) => (
-  <div className={cn('flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2/70 px-5 py-3.5', className)} {...props} />
+  <div className={cn('flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2/70 px-4 py-4 sm:px-6', className)} {...props} />
 );
 
 /**

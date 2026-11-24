@@ -143,7 +143,7 @@ export default function CashierQueue() {
         ) : (
           <ul className="divide-y divide-line">
             {recent.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-5 py-3 text-[13.5px]">
+              <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 sm:px-6 py-3 text-[13.5px]">
                 <span className="tnum font-bold text-ink">{r.order_no}</span>
                 <span className="min-w-0 flex-1 truncate text-ink-muted">
                   {r.receipt_no} · {methodLabel(r.method)}

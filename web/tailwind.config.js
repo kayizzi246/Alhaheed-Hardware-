@@ -28,6 +28,13 @@ export default {
           dark: 'rgb(var(--brand-dark) / <alpha-value>)',
           soft: 'rgb(var(--brand-soft) / <alpha-value>)',
         },
+        // What sits under white text. Apart from `brand`, which is for
+        // text and marks: in the dark theme that has to be pale, and white
+        // on pale blue cannot be read.
+        fill: {
+          DEFAULT: 'rgb(var(--fill) / <alpha-value>)',
+          dark: 'rgb(var(--fill-dark) / <alpha-value>)',
+        },
         navy: {
           DEFAULT: 'rgb(var(--navy) / <alpha-value>)',
           deep: 'rgb(var(--navy-deep) / <alpha-value>)',

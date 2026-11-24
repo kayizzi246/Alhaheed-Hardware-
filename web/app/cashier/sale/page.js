@@ -196,7 +196,7 @@ export default function CounterSale() {
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 pb-24 lg:grid-cols-[minmax(0,1fr)_380px] lg:pb-0">
         {/* ── The shelf ──────────────────────────────────────────────── */}
         <Card>
-          <div className="border-b border-line p-3">
+          <div className="border-b border-line p-4">
             <Input
               ref={search}
               type="search"
@@ -224,7 +224,7 @@ export default function CounterSale() {
                       disabled={out || full}
                       onClick={() => add(p)}
                       className={cn(
-                        'flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors duration-100',
+                        'flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-100',
                         'hover:bg-surface-2 active:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent',
                         line && 'bg-brand-soft/50'
                       )}
@@ -251,7 +251,7 @@ export default function CounterSale() {
                       <span
                         className={cn(
                           'tnum grid h-7 min-w-7 shrink-0 place-items-center rounded-full px-2 text-xs font-bold',
-                          line ? 'bg-brand text-white' : 'border border-line text-ink-muted'
+                          line ? 'bg-fill text-white' : 'border border-line text-ink-muted'
                         )}
                         aria-label={line ? `${line.qty} in the sale` : 'Add'}
                       >
@@ -272,7 +272,7 @@ export default function CounterSale() {
               <CardTitle>Who is it for?</CardTitle>
               <span className="text-[12.5px] text-ink-muted">optional</span>
             </CardHead>
-            <div className="space-y-3 p-4">
+            <div className="space-y-4 p-4 sm:p-6">
               <Field
                 label="Their phone number"
                 hint={
@@ -319,7 +319,7 @@ export default function CounterSale() {
             ) : (
               <ul className="divide-y divide-line">
                 {basket.map((l) => (
-                  <li key={l.product.id} className="flex items-center gap-2.5 px-4 py-2.5">
+                  <li key={l.product.id} className="flex items-center gap-3 px-4 py-3 sm:px-6">
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13.5px] font-medium text-ink">{l.product.name}</span>
                       <span className="tnum block text-xs text-ink-muted">{money(l.product.price)} × {l.qty}</span>
@@ -350,7 +350,7 @@ export default function CounterSale() {
                 ))}
               </ul>
             )}
-            <div className="border-t border-line p-4 max-lg:hidden">
+            <div className="border-t border-line p-6 max-lg:hidden">
               <Alert>{problem}</Alert>
               <div className="mb-3 flex items-baseline justify-between">
                 <span className="text-sm font-semibold text-ink-muted">Total</span>

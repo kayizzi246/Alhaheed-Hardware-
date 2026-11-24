@@ -65,35 +65,35 @@ const String _apiBase = 'https://pearlfx.online';
 //  TOKENS — identical in shop, cart, orders, company and manager.
 // ═══════════════════════════════════════════════════════════════
 const Color _white = Color(0xFFFFFFFF);
-const Color _bg = Color(0xFFF4F6F8);
-const Color _ink = Color(0xFF102A3F);
-const Color _inkSoft = Color(0xFF33475B);
-const Color _mid = Color(0xFF6B7A88);
-const Color _light = Color(0xFFA3AFB9);
-const Color _hairline = Color(0xFFE3E8ED);
-const Color _tile = Color(0xFFF7F8FA);
-const Color _navy = Color(0xFF14334F);
-const Color _navyDark = Color(0xFF0D2439);
-const Color _brand = Color(0xFF2563EB);
-const Color _brandDark = Color(0xFF1D4ED8);
-const Color _brandPale = Color(0xFFEFF6FF);
-const Color _green = Color(0xFF1E8E5A);
-const Color _greenPale = Color(0xFFE8F5EE);
-const Color _blue = Color(0xFF2D6CA2);
-const Color _bluePale = Color(0xFFE8F0F8);
-const Color _amber = Color(0xFFB45309);
-const Color _amberPale = Color(0xFFFDF2E2);
-const Color _ember = Color(0xFFC0392B);
-const Color _emberPale = Color(0xFFFBECEA);
+const Color _bg = Color(0xFFF5F7FB);
+const Color _ink = Color(0xFF0F1B33);
+const Color _inkSoft = Color(0xFF394862);
+const Color _mid = Color(0xFF55637D);
+const Color _light = Color(0xFF626F88);
+const Color _hairline = Color(0xFFE2E8F2);
+const Color _tile = Color(0xFFF9FAFD);
+const Color _navy = Color(0xFF111C38);
+const Color _navyDark = Color(0xFF0A1226);
+const Color _brand = Color(0xFF2158E8);
+const Color _brandDark = Color(0xFF1B46C2);
+const Color _brandPale = Color(0xFFEDF3FF);
+const Color _green = Color(0xFF0E7444);
+const Color _greenPale = Color(0xFFE6F6ED);
+const Color _blue = Color(0xFF0B658D);
+const Color _bluePale = Color(0xFFE3F3FB);
+const Color _amber = Color(0xFF9A5205);
+const Color _amberPale = Color(0xFFFEF3E0);
+const Color _ember = Color(0xFFC02B2B);
+const Color _emberPale = Color(0xFFFDECEC);
 
 const Cubic _ease = Cubic(0.23, 1, 0.32, 1);
 
 /// Soft depth for cards: a tight contact shadow and a wide faint one —
 /// the same layered shadow the staff panel's cards use.
 const List<BoxShadow> _cardShadow = [
-  BoxShadow(color: Color(0x0A0F172A), blurRadius: 2, offset: Offset(0, 1)),
+  BoxShadow(color: Color(0x0A0F1B33), blurRadius: 2, offset: Offset(0, 1)),
   BoxShadow(
-      color: Color(0x140F172A),
+      color: Color(0x140F1B33),
       blurRadius: 24,
       spreadRadius: -10,
       offset: Offset(0, 8)),
@@ -103,7 +103,7 @@ const List<BoxShadow> _cardShadow = [
 const LinearGradient _heroGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+  colors: [Color(0xFF2E67EE), Color(0xFF1B46C2)],
 );
 
 double _ui = 1.0;
@@ -161,7 +161,7 @@ BoxDecoration _liquid({
   final List<Color> fill;
   final Color rim;
   if (tint != null) {
-    fill = [Color.lerp(tint, _white, 0.20)!, tint];
+    fill = [Color.lerp(tint, _white, 0.10)!, tint];
     rim = _white.withOpacity(0.40);
   } else if (onDark) {
     fill = [_white.withOpacity(0.30), _white.withOpacity(0.12)];
@@ -755,7 +755,7 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(8),
@@ -811,7 +811,7 @@ class _BottomBar extends StatelessWidget {
     // the page, and the tab you are on is lit by a soft pill.
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          12, 6, 12, MediaQuery.paddingOf(context).bottom + 10),
+          16, 6, 16, MediaQuery.paddingOf(context).bottom + 10),
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
@@ -820,9 +820,9 @@ class _BottomBar extends StatelessWidget {
           border: Border.all(color: _hairline),
           boxShadow: const [
             BoxShadow(
-                color: Color(0x0D0F172A), blurRadius: 3, offset: Offset(0, 1)),
+                color: Color(0x0D0F1B33), blurRadius: 3, offset: Offset(0, 1)),
             BoxShadow(
-                color: Color(0x1F0F172A),
+                color: Color(0x1F0F1B33),
                 blurRadius: 30,
                 spreadRadius: -10,
                 offset: Offset(0, 14)),
@@ -918,12 +918,12 @@ class _Header extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF2563EB), Color(0xFF1E3A8A)],
+            colors: [Color(0xFF245CEC), Color(0xFF182D70)],
           ),
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
           boxShadow: [
             BoxShadow(
-                color: Color(0x332563EB),
+                color: Color(0x332158E8),
                 blurRadius: 24,
                 spreadRadius: -8,
                 offset: Offset(0, 10)),
@@ -950,7 +950,7 @@ class _Header extends StatelessWidget {
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(
-                  16, MediaQuery.paddingOf(context).top + 12, 12, 18),
+                  16, MediaQuery.paddingOf(context).top + 14, 16, 20),
               child: Row(
                 children: [
                   Container(
@@ -981,7 +981,7 @@ class _Header extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style:
-                                _txt(12.5, color: _white.withOpacity(0.8))),
+                                _txt(12.5, color: _white.withOpacity(0.92))),
                       ],
                     ),
                   ),
@@ -1361,7 +1361,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
   /// Navy where the customers' bar is white: one glance says which side
   /// of the app this is.
   Widget _bar(List<_TabSpec> tabs, int at, MediaQueryData mq) => Padding(
-        padding: EdgeInsets.fromLTRB(12, 6, 12, mq.padding.bottom + 10),
+        padding: EdgeInsets.fromLTRB(16, 6, 16, mq.padding.bottom + 10),
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
@@ -1369,7 +1369,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: const [
               BoxShadow(
-                  color: Color(0x400F172A),
+                  color: Color(0x400F1B33),
                   blurRadius: 30,
                   spreadRadius: -10,
                   offset: Offset(0, 14)),
@@ -1395,7 +1395,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
                         children: [
                           Icon(i == at ? tabs[i].$3 : tabs[i].$2,
                               size: 23,
-                              color: _white.withOpacity(i == at ? 1 : 0.6)),
+                              color: _white.withOpacity(i == at ? 1 : 0.75)),
                           const SizedBox(height: 3),
                           Text(tabs[i].$1,
                               maxLines: 1,
@@ -1405,7 +1405,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
                                       ? FontWeight.w700
                                       : FontWeight.w500,
                                   color:
-                                      _white.withOpacity(i == at ? 1 : 0.6))),
+                                      _white.withOpacity(i == at ? 1 : 0.75))),
                         ],
                       ),
                     ),
@@ -1546,7 +1546,7 @@ class _ListTabState extends State<_ListTab> {
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(
                             parent: BouncingScrollPhysics()),
-                        padding: const EdgeInsets.fromLTRB(14, 18, 14, 20),
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
                         children: [
                           Row(
                             children: [
@@ -1623,11 +1623,15 @@ class _SmallButton extends StatelessWidget {
 /// The wide button at the foot of a sheet.
 class _BigButton extends StatelessWidget {
   const _BigButton(this.label, this.onTap,
-      {this.busy = false, this.tint = _brand});
+      {this.busy = false, this.tint = _brand, this.soft = false});
   final String label;
   final VoidCallback? onTap;
   final bool busy;
   final Color tint;
+
+  /// For the choice that is not the main one: pale, so two buttons side
+  /// by side never shout at once.
+  final bool soft;
 
   @override
   Widget build(BuildContext context) => _Pressable(
@@ -1638,15 +1642,23 @@ class _BigButton extends StatelessWidget {
           child: Container(
             height: 50,
             alignment: Alignment.center,
-            decoration: _liquid(tint: tint, radius: 25),
+            decoration: soft
+                ? BoxDecoration(
+                    color: _emberPale,
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(color: tint.withOpacity(0.22)),
+                  )
+                : _liquid(tint: tint, radius: 25),
             child: busy
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: _white))
+                        strokeWidth: 2, color: soft ? tint : _white))
                 : Text(label,
-                    style: _txt(15, weight: FontWeight.w600, color: _white)),
+                    style: _txt(15,
+                        weight: FontWeight.w600,
+                        color: soft ? tint : _white)),
           ),
         ),
       );
@@ -1661,8 +1673,8 @@ class _PlainCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: _cardBox(),
         child: Row(
           children: [
@@ -1714,8 +1726,8 @@ class _OrderCard extends StatelessWidget {
       scale: 0.98,
       onTap: () => _open(context),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: _cardBox(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2110,8 +2122,8 @@ class _RequestCardState extends State<_RequestCard> {
     final e = widget.request;
     final status = '${e['status']}';
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: _cardBox(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2150,7 +2162,7 @@ class _RequestCardState extends State<_RequestCard> {
             Row(children: [
               Expanded(
                   child: _BigButton('Decline', _decline,
-                      busy: _busy, tint: _ember)),
+                      busy: _busy, tint: _ember, soft: true)),
               const SizedBox(width: 10),
               Expanded(
                   child: _BigButton(
@@ -2326,7 +2338,7 @@ class _AccountTab extends StatelessWidget {
         _Header(subtitle: '${_deskName(s.role)} · ${s.fullName}'),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(14, 24, 14, 20),
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
             children: [
               Container(
                 padding: const EdgeInsets.all(20),
@@ -2357,7 +2369,7 @@ class _AccountTab extends StatelessWidget {
                 ]),
               ),
               const SizedBox(height: 16),
-              _BigButton('Sign out', onSignOut, tint: _ember),
+              _BigButton('Sign out', onSignOut, tint: _ember, soft: true),
               const SizedBox(height: 10),
               Text('Signing out returns this phone to the shop.',
                   textAlign: TextAlign.center, style: _txt(12.5, color: _mid)),

@@ -169,7 +169,7 @@ export default function LoginPage() {
 
         <div className="w-full max-w-[380px]">
           <div className="mb-9 flex items-center gap-2.5">
-            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-brand to-brand-dark text-[13px] font-extrabold text-white shadow-sm">
+            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-fill to-fill-dark text-[13px] font-extrabold text-white shadow-sm">
               AH
             </span>
             <span className="font-display text-[15px] font-extrabold tracking-[-.01em] text-ink">
@@ -488,7 +488,7 @@ function OrderFlowArt() {
             <span
               className={[
                 'tnum grid size-7 shrink-0 place-items-center rounded-lg text-[11.5px] font-extrabold',
-                i === 0 ? 'bg-brand text-white' : 'bg-white/12 text-white/70',
+                i === 0 ? 'bg-fill text-white' : 'bg-white/12 text-white/70',
               ].join(' ')}
             >
               {i + 1}

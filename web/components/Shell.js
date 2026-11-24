@@ -114,23 +114,23 @@ export default function Shell({ allow, children }) {
           menuOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'
         )}
       >
-        <div className="flex items-center gap-2.5 border-b border-white/10 px-4 py-4">
-          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-brand to-brand-dark text-[13px] font-extrabold text-white shadow-sm">
+        <div className="flex items-center h-16 shrink-0 gap-3 border-b border-white/10 px-5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-fill to-fill-dark text-[13px] font-extrabold text-white shadow-sm">
             AH
           </span>
           <span className="font-display text-[12.5px] font-extrabold leading-[1.15] tracking-[.04em] text-white">
             AL HADEED
             <br />
-            <b className="text-brand">HARDWARE</b>
+            <b className="text-blue-300">HARDWARE</b>
           </span>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2.5 py-3">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
           {items.map((item, i) =>
             item.group ? (
               <p
                 key={`g${i}`}
-                className="mb-1.5 mt-4 px-3 font-display text-[10.5px] font-bold uppercase tracking-[.08em] text-white/35"
+                className="mb-2 mt-6 px-3 font-display text-[10.5px] font-bold uppercase tracking-[.08em] text-white/60"
               >
                 {item.group}
               </p>
@@ -140,11 +140,11 @@ export default function Shell({ allow, children }) {
                 href={item.href}
                 aria-current={item === current ? 'page' : undefined}
                 className={cn(
-                  'relative mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2.5',
+                  'relative mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5',
                   'font-display text-[14.5px] font-medium transition-colors duration-150 ease-out',
                   item === current
                     ? 'bg-[linear-gradient(90deg,rgb(var(--brand)/0.30),rgb(var(--brand)/0.06))] font-semibold text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.07)]'
-                    : 'text-white/60 hover:bg-white/[.05] hover:text-white/90'
+                    : 'text-white/75 hover:bg-white/[.06] hover:text-white'
                 )}
               >
                 {/* A bar as well as a tint, so the current row is still
@@ -152,7 +152,7 @@ export default function Shell({ allow, children }) {
                 {item === current && (
                   <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-brand shadow-[0_0_12px_rgb(var(--brand))]" />
                 )}
-                <span className={cn('shrink-0 transition-colors duration-150', item === current ? 'text-white' : 'text-white/45')}>
+                <span className={cn('shrink-0 transition-colors duration-150', item === current ? 'text-white' : 'text-white/65')}>
                   {Icon[item.icon]?.()}
                 </span>
                 {item.label}
@@ -161,10 +161,10 @@ export default function Shell({ allow, children }) {
           )}
         </nav>
 
-        <div className="border-t border-white/10 px-4 py-3">
+        <div className="border-t border-white/10 px-6 py-4">
           <span
             title="These screens re-check the shop on their own"
-            className={cn('inline-flex items-center gap-2 text-xs', failing ? 'text-bad' : 'text-white/45')}
+            className={cn('inline-flex items-center gap-2 text-xs', failing ? 'text-bad' : 'text-white/65')}
           >
             <i className={cn('size-1.5 rounded-full', failing ? 'bg-bad' : 'bg-ok')} />
             {freshness(at, failing)}
@@ -173,7 +173,7 @@ export default function Shell({ allow, children }) {
       </aside>
 
       {/* ── The bar ───────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-surface/95 px-5 py-2.5 backdrop-blur max-lg:px-3.5">
+      <header className="sticky top-0 z-30 flex items-center h-16 gap-3 border-b border-line/80 bg-surface/85 px-4 backdrop-blur-xl backdrop-saturate-150 lg:px-8">
         <IconButton className="lg:hidden" onClick={() => setMenuOpen((m) => !m)} aria-label="Menu" aria-expanded={menuOpen}>
           {Icon.menu()}
         </IconButton>
@@ -207,7 +207,7 @@ export default function Shell({ allow, children }) {
                 role="menu"
                 className="absolute right-0 top-[calc(100%+8px)] z-30 w-56 origin-top-right animate-pop-in overflow-hidden rounded-lg border border-line bg-surface shadow-lg"
               >
-                <div className="border-b border-line px-3.5 py-3">
+                <div className="border-b border-line px-4 py-3">
                   <b className="block text-[13.5px] font-semibold text-ink">{user.fullName}</b>
                   <span className="text-xs text-ink-muted">{user.phone || user.email}</span>
                 </div>
@@ -218,7 +218,7 @@ export default function Shell({ allow, children }) {
                   type="button"
                   role="menuitem"
                   onClick={signOut}
-                  className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left text-[13.5px] font-medium text-bad transition-colors hover:bg-surface-2"
+                  className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-[13.5px] font-medium text-bad transition-colors hover:bg-surface-2"
                 >
                   {Icon.logout()} Sign out
                 </button>
@@ -229,7 +229,7 @@ export default function Shell({ allow, children }) {
       </header>
 
       <Offline />
-      <main className="mx-auto max-w-[1800px] px-6 pb-16 pt-6 max-lg:px-3.5">{children}</main>
+      <main className="mx-auto max-w-[1800px] px-4 pb-16 pt-6 lg:px-8 lg:pt-8">{children}</main>
 
       {/* The veil only exists on a phone, where the rail slides over. */}
       {menuOpen && (
@@ -304,7 +304,7 @@ function Alerts({ unread, home, onSeen }) {
         {unread > 0 && (
           <b
             aria-hidden="true"
-            className="tnum absolute right-[3px] top-[4px] grid h-[17px] min-w-[17px] place-items-center rounded-full border-2 border-surface bg-brand px-1 text-[10px] font-bold text-white"
+            className="tnum absolute right-[3px] top-[4px] grid h-[17px] min-w-[17px] place-items-center rounded-full border-2 border-surface bg-fill px-1 text-[10px] font-bold text-white"
           >
             {unread}
           </b>
@@ -374,14 +374,14 @@ function Alerts({ unread, home, onSeen }) {
                       </>
                     );
                     const inner = cn(
-                      'block border-b border-line py-3 pl-[26px] pr-4 transition-colors duration-150',
+                      'block border-b border-line py-3.5 pl-8 pr-5 transition-colors duration-150',
                       !n.read && 'bg-brand-soft'
                     );
                     return (
                       <div key={n.id} className="relative">
                         {/* A mark as well as a tint: colour alone is not
                             a difference everyone can see. */}
-                        {!n.read && <span className="absolute left-3 top-[17px] size-1.5 rounded-full bg-brand" />}
+                        {!n.read && <span className="absolute left-4 top-[21px] size-1.5 rounded-full bg-brand" />}
                         {n.order_id ? (
                           <Link href={`${home}/orders/${n.order_id}`} onClick={() => setOpen(false)} className={cn(inner, 'hover:bg-surface-2')}>
                             {body}
@@ -492,7 +492,7 @@ function Offline() {
     <div
       role="status"
       className={cn(
-        'sticky top-[57px] z-20 px-6 py-2 text-center text-[13px] font-medium max-lg:px-3.5',
+        'sticky top-16 z-20 px-4 py-2.5 text-center text-[13px] font-medium lg:px-8',
         down ? 'bg-warn-bg text-warn' : 'bg-ok-bg text-ok'
       )}
     >

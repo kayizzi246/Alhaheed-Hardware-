@@ -58,16 +58,16 @@ export function ThemeButton() {
 export function Tiles({ items, loading }) {
   if (loading) {
     return (
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {items.map((t) => <Skeleton key={t.label} className="h-[88px]" />)}
       </div>
     );
   }
   return (
-    <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {items.map((t) => (
-        <Card key={t.label} className={cn('px-4 py-3.5', t.lead && 'border-primary/30 bg-accent')}>
-          <p className="text-[11px] font-bold uppercase tracking-[.07em] text-muted-foreground">{t.label}</p>
+        <Card key={t.label} className={cn('p-5', t.lead && 'border-primary/30 bg-accent')}>
+          <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{t.label}</p>
           <p className={cn('tnum mt-1.5 text-[27px] font-bold leading-none tracking-[-.02em]', t.lead && 'text-accent-foreground')}>
             {t.value}
           </p>
@@ -117,7 +117,7 @@ export function OrderRow({ order, defaultOpen = false, actions, children }) {
   const waited = minutesSince(order.created_at);
 
   return (
-    <div className="px-4 py-3.5">
+    <div className="px-5 py-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <button
           type="button"
@@ -165,7 +165,7 @@ export function OrderRow({ order, defaultOpen = false, actions, children }) {
       </div>
 
       {open && (
-        <div className="mt-3 rounded-md border border-border bg-muted/40 p-3 animate-ah-in">
+        <div className="mt-3 rounded-md border border-border bg-muted/40 p-4 animate-ah-in">
           {loading && <p className="text-sm text-muted-foreground">Reading the order…</p>}
           {!loading && items && items.length > 0 && (
             <ul className="space-y-1.5">

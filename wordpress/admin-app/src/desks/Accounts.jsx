@@ -220,7 +220,7 @@ function PaymentFacts({ order }) {
 
   return (
     <div className="space-y-3">
-      <dl className="grid grid-cols-3 gap-2 rounded-md border bg-muted/50 px-3 py-2.5 text-[13px]">
+      <dl className="grid grid-cols-3 gap-2 rounded-md border bg-muted/50 px-4 py-3 text-[13px]">
         <div>
           <dt className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Received</dt>
           <dd className="tnum mt-0.5 font-semibold">{money(order.amount_paid ?? order.total)}</dd>

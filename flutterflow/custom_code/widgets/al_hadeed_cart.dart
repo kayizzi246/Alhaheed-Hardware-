@@ -65,35 +65,35 @@ const String _apiBase = 'https://pearlfx.online';
 //  TOKENS — identical in shop, cart, orders, company and manager.
 // ═══════════════════════════════════════════════════════════════
 const Color _white = Color(0xFFFFFFFF);
-const Color _bg = Color(0xFFF4F6F8);
-const Color _ink = Color(0xFF102A3F);
-const Color _inkSoft = Color(0xFF33475B);
-const Color _mid = Color(0xFF6B7A88);
-const Color _light = Color(0xFFA3AFB9);
-const Color _hairline = Color(0xFFE3E8ED);
-const Color _tile = Color(0xFFF7F8FA);
-const Color _navy = Color(0xFF14334F);
-const Color _navyDark = Color(0xFF0D2439);
-const Color _brand = Color(0xFF2563EB);
-const Color _brandDark = Color(0xFF1D4ED8);
-const Color _brandPale = Color(0xFFEFF6FF);
-const Color _green = Color(0xFF1E8E5A);
-const Color _greenPale = Color(0xFFE8F5EE);
-const Color _blue = Color(0xFF2D6CA2);
-const Color _bluePale = Color(0xFFE8F0F8);
-const Color _amber = Color(0xFFB45309);
-const Color _amberPale = Color(0xFFFDF2E2);
-const Color _ember = Color(0xFFC0392B);
-const Color _emberPale = Color(0xFFFBECEA);
+const Color _bg = Color(0xFFF5F7FB);
+const Color _ink = Color(0xFF0F1B33);
+const Color _inkSoft = Color(0xFF394862);
+const Color _mid = Color(0xFF55637D);
+const Color _light = Color(0xFF626F88);
+const Color _hairline = Color(0xFFE2E8F2);
+const Color _tile = Color(0xFFF9FAFD);
+const Color _navy = Color(0xFF111C38);
+const Color _navyDark = Color(0xFF0A1226);
+const Color _brand = Color(0xFF2158E8);
+const Color _brandDark = Color(0xFF1B46C2);
+const Color _brandPale = Color(0xFFEDF3FF);
+const Color _green = Color(0xFF0E7444);
+const Color _greenPale = Color(0xFFE6F6ED);
+const Color _blue = Color(0xFF0B658D);
+const Color _bluePale = Color(0xFFE3F3FB);
+const Color _amber = Color(0xFF9A5205);
+const Color _amberPale = Color(0xFFFEF3E0);
+const Color _ember = Color(0xFFC02B2B);
+const Color _emberPale = Color(0xFFFDECEC);
 
 const Cubic _ease = Cubic(0.23, 1, 0.32, 1);
 
 /// Soft depth for cards: a tight contact shadow and a wide faint one —
 /// the same layered shadow the staff panel's cards use.
 const List<BoxShadow> _cardShadow = [
-  BoxShadow(color: Color(0x0A0F172A), blurRadius: 2, offset: Offset(0, 1)),
+  BoxShadow(color: Color(0x0A0F1B33), blurRadius: 2, offset: Offset(0, 1)),
   BoxShadow(
-      color: Color(0x140F172A),
+      color: Color(0x140F1B33),
       blurRadius: 24,
       spreadRadius: -10,
       offset: Offset(0, 8)),
@@ -103,7 +103,7 @@ const List<BoxShadow> _cardShadow = [
 const LinearGradient _heroGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+  colors: [Color(0xFF2E67EE), Color(0xFF1B46C2)],
 );
 
 double _ui = 1.0;
@@ -161,7 +161,7 @@ BoxDecoration _liquid({
   final List<Color> fill;
   final Color rim;
   if (tint != null) {
-    fill = [Color.lerp(tint, _white, 0.20)!, tint];
+    fill = [Color.lerp(tint, _white, 0.10)!, tint];
     rim = _white.withOpacity(0.40);
   } else if (onDark) {
     fill = [_white.withOpacity(0.30), _white.withOpacity(0.12)];
@@ -755,7 +755,7 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(8),
@@ -811,7 +811,7 @@ class _BottomBar extends StatelessWidget {
     // the page, and the tab you are on is lit by a soft pill.
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          12, 6, 12, MediaQuery.paddingOf(context).bottom + 10),
+          16, 6, 16, MediaQuery.paddingOf(context).bottom + 10),
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
@@ -820,9 +820,9 @@ class _BottomBar extends StatelessWidget {
           border: Border.all(color: _hairline),
           boxShadow: const [
             BoxShadow(
-                color: Color(0x0D0F172A), blurRadius: 3, offset: Offset(0, 1)),
+                color: Color(0x0D0F1B33), blurRadius: 3, offset: Offset(0, 1)),
             BoxShadow(
-                color: Color(0x1F0F172A),
+                color: Color(0x1F0F1B33),
                 blurRadius: 30,
                 spreadRadius: -10,
                 offset: Offset(0, 14)),
@@ -918,12 +918,12 @@ class _Header extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF2563EB), Color(0xFF1E3A8A)],
+            colors: [Color(0xFF245CEC), Color(0xFF182D70)],
           ),
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
           boxShadow: [
             BoxShadow(
-                color: Color(0x332563EB),
+                color: Color(0x332158E8),
                 blurRadius: 24,
                 spreadRadius: -8,
                 offset: Offset(0, 10)),
@@ -950,7 +950,7 @@ class _Header extends StatelessWidget {
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(
-                  16, MediaQuery.paddingOf(context).top + 12, 12, 18),
+                  16, MediaQuery.paddingOf(context).top + 14, 16, 20),
               child: Row(
                 children: [
                   Container(
@@ -981,7 +981,7 @@ class _Header extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style:
-                                _txt(12.5, color: _white.withOpacity(0.8))),
+                                _txt(12.5, color: _white.withOpacity(0.92))),
                       ],
                     ),
                   ),
@@ -1465,7 +1465,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
         Expanded(
           child: ListView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             children: [
               _label('YOUR ORDER (${_CartStore().lines.length} ITEMS)'),
               const SizedBox(height: 10),
@@ -1615,7 +1615,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
         scale: 0.99,
         onTap: _askPhone,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: _white,
             borderRadius: BorderRadius.circular(14),
@@ -1665,7 +1665,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
         scale: 0.99,
         onTap: () => setState(() => _delivery = value),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: on ? _brandPale : _white,
             borderRadius: BorderRadius.circular(14),
@@ -1715,7 +1715,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
     final colour = _categoryColour(line['category'] as String?);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _white,
@@ -1844,7 +1844,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
     required String text,
   }) =>
       Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(14),
@@ -1865,7 +1865,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
   /// scroll. A call to action you have to reach is one most people never
   /// reach, and on this screen it is the whole point.
   Widget _placeBar() => Padding(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         child: _Glass(
           height: 66,
           radius: 33,
@@ -2092,7 +2092,7 @@ class _OrderPlacedSheet extends StatelessWidget {
             const SizedBox(height: 14),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(13),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: smsSent ? _greenPale : _brandPale,
                 borderRadius: BorderRadius.circular(13),

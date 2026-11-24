@@ -15,45 +15,45 @@
    ===================================================================== */
 
 #ah-app {
-  --ah-background: 220 20% 97%;
-  --ah-foreground: 210 57% 14%;
+  --ah-background: 220 43% 97%;
+  --ah-foreground: 220 55% 13%;
 
   --ah-card: 0 0% 100%;
-  --ah-card-foreground: 210 57% 14%;
+  --ah-card-foreground: 220 55% 13%;
 
-  --ah-muted: 215 25% 96%;
-  --ah-muted-foreground: 210 16% 51%;
+  --ah-muted: 218 44% 95%;
+  --ah-muted-foreground: 219 19% 41%;
 
-  --ah-accent: 214 95% 96%;
-  --ah-accent-foreground: 224 76% 40%;
+  --ah-accent: 220 100% 96%;
+  --ah-accent-foreground: 225 76% 43%;
 
   /* Blue is the action. It is the only saturated thing on a screen
      unless something has gone wrong. */
-  --ah-primary: 221 83% 53%;
+  --ah-primary: 223 81% 52%;
   --ah-primary-foreground: 0 0% 100%;
 
-  --ah-secondary: 215 25% 96%;
-  --ah-secondary-foreground: 210 40% 25%;
+  --ah-secondary: 218 44% 95%;
+  --ah-secondary-foreground: 218 26% 30%;
 
-  --ah-destructive: 5 64% 46%;
+  --ah-destructive: 0 63% 46%;
   --ah-destructive-foreground: 0 0% 100%;
 
-  --ah-success: 142 69% 29%;
+  --ah-success: 152 78% 25%;
   --ah-success-foreground: 0 0% 100%;
 
-  --ah-warning: 32 94% 37%;
+  --ah-warning: 31 94% 31%;
   --ah-warning-foreground: 0 0% 100%;
 
-  --ah-border: 214 32% 92%;
-  --ah-input: 213 27% 86%;
-  --ah-ring: 221 83% 53%;
+  --ah-border: 217 38% 92%;
+  --ah-input: 217 32% 84%;
+  --ah-ring: 223 81% 52%;
 
   --ah-radius: 0.75rem;
 
   /* Categorical, for the payment mix. Checked rather than guessed: two
      warm hues are the same colour to a protan reader, so the third
      steps out of the family. */
-  --ah-cat-a: 221 83% 53%;
+  --ah-cat-a: 223 81% 52%;
   --ah-cat-b: 31 87% 56%;
   --ah-cat-c: 316 77% 46%;
 
@@ -81,33 +81,34 @@
    ===================================================================== */
 
 #ah-app[data-theme='dark'] {
-  --ah-background: 220 18% 10%;
-  --ah-foreground: 210 20% 92%;
+  --ah-background: 222 50% 8%;
+  --ah-foreground: 217 62% 95%;
 
-  --ah-card: 215 20% 13%;
-  --ah-card-foreground: 210 20% 92%;
+  --ah-card: 222 43% 12%;
+  --ah-card-foreground: 217 62% 95%;
 
-  --ah-muted: 215 16% 18%;
-  --ah-muted-foreground: 214 14% 65%;
+  --ah-muted: 221 41% 15%;
+  --ah-muted-foreground: 218 25% 68%;
 
-  --ah-accent: 222 40% 18%;
-  --ah-accent-foreground: 213 94% 73%;
+  --ah-accent: 222 50% 20%;
+  --ah-accent-foreground: 219 100% 81%;
 
-  --ah-primary: 217 91% 60%;
+  --ah-primary: 222 85% 56%;
   --ah-primary-foreground: 0 0% 100%;
 
-  --ah-secondary: 215 16% 18%;
-  --ah-secondary-foreground: 210 20% 88%;
+  --ah-secondary: 221 41% 15%;
+  --ah-secondary-foreground: 218 32% 80%;
 
-  --ah-destructive: 5 72% 60%;
-  --ah-success: 142 48% 48%;
-  --ah-warning: 36 80% 58%;
+  --ah-destructive: 0 100% 76%;
+  --ah-success: 147 60% 60%;
+  --ah-warning: 38 94% 66%;
 
-  --ah-border: 215 14% 23%;
-  --ah-input: 215 14% 28%;
-  --ah-ring: 217 91% 62%;
+  --ah-success-foreground: 222 45% 12%;
+  --ah-border: 221 36% 22%;
+  --ah-input: 220 32% 31%;
+  --ah-ring: 219 100% 75%;
 
-  --ah-cat-a: 213 94% 73%;
+  --ah-cat-a: 219 100% 75%;
   --ah-cat-b: 31 85% 58%;
   --ah-cat-c: 309 70% 65%;
 
@@ -118,7 +119,7 @@
    do it in — otherwise a white wp-admin shows through around it. */
 #ah-app[data-theme='dark'] {
   margin: 0;
-  padding: 10px 22px 40px 12px;
+  padding: 20px 24px 48px 24px;
   min-height: calc(100vh - 32px);
 }
 
@@ -128,7 +129,7 @@ body.ah-dark #wpcontent,
 body.ah-dark #wpbody,
 body.ah-dark #wpbody-content,
 body.ah-dark #wpfooter {
-  background: hsl(220 18% 10%);
+  background: hsl(222 50% 8%);
 }
 
 body.ah-dark #wpfooter,
@@ -139,7 +140,7 @@ body.ah-dark #wpfooter a {
 /* wp-admin wraps everything in #wpbody-content with its own padding
    and a white background; this takes the page back. */
 #ah-app {
-  margin: 10px 22px 0 2px;
+  margin: 20px 24px 0 4px;
   padding: 0;
 }
 
