@@ -205,6 +205,12 @@ class AH_Auth {
 		return 'yes' === AH_Sms::option( 'otp_dev_mode', 'yes' );
 	}
 
+	/** A copy on somebody's own computer, not a site on the internet. */
+	public static function is_local() {
+		$host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+		return in_array( $host, array( 'localhost', '127.0.0.1', '10.0.2.2' ), true );
+	}
+
 	public static function issue_otp( $phone ) {
 		global $wpdb;
 		$table = AH_Install::table( 'otp' );

@@ -42,6 +42,7 @@ class AH_Settings {
 
 	public static function init() {
 		add_action( 'admin_init', array( __CLASS__, 'register' ) );
+		add_action( 'admin_post_ah_test_sms', array( __CLASS__, 'test_sms' ) );
 		add_action( 'phpmailer_init', array( __CLASS__, 'mailer' ) );
 	}
 
@@ -97,6 +98,27 @@ class AH_Settings {
 		);
 	}
 
+	/** One real message through the saved gateway, and what it answered. */
+	public static function test_sms() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Not allowed.', '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'ah_test_sms' );
+
+		$phone = isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '';
+		$sent  = AH_Sms::send( $phone, AH_Sms::shop_name() . ': test message. SMS is working.' );
+		if ( $sent['ok'] && 'log' === $sent['provider'] ) {
+			$say = 'Nothing was sent: the gateway is still set to "log". Choose EgoSMS and save first.';
+		} elseif ( $sent['ok'] ) {
+			$say = 'Accepted by ' . $sent['provider'] . ' for ' . $sent['to'] . '. Check the phone.';
+		} else {
+			$say = 'Not sent. ' . $sent['provider'] . ' said: ' . $sent['error'];
+		}
+		set_transient( 'ah_test_sms_' . get_current_user_id(), $say, 60 );
+		wp_safe_redirect( wp_get_referer() ?: admin_url() );
+		exit;
+	}
+
 	public static function sanitize( $input ) {
 		$out = array();
 		foreach ( self::defaults() as $key => $default ) {
@@ -105,8 +127,13 @@ class AH_Settings {
 			// sanitize_text_field() strips characters that are perfectly
 			// legal in a mail password, and a password silently altered
 			// on save is an afternoon lost to "but I typed it right".
-			$out[ $key ] = 'smtp_pass' === $key ? (string) $value : sanitize_text_field( $value );
+			$out[ $key ] = in_array( $key, array( 'smtp_pass', 'sms_api_key' ), true ) ? (string) $value : sanitize_text_field( $value );
 		}
+
+		// An unticked box is not sent at all, so "missing" means "off".
+		// Filling it from the default turned test mode back on at every
+		// save: it could never be switched off.
+		$out['otp_dev_mode'] = isset( $input['otp_dev_mode'] ) && 'yes' === $input['otp_dev_mode'] ? 'yes' : 'no';
 
 		// A mistyped address here means every message bounces, and the
 		// bounce goes somewhere nobody is watching. Better to refuse it
@@ -195,6 +222,7 @@ class AH_Settings {
 									<?php
 									foreach ( array(
 										'log'            => 'log — write to the debug log, send nothing',
+										'egosms'         => 'EgoSMS',
 										'africastalking' => "Africa's Talking",
 										'generic'        => 'Generic — any JSON POST endpoint',
 									) as $value => $label ) {
@@ -210,13 +238,15 @@ class AH_Settings {
 							</td>
 						</tr>
 						<tr>
-							<th><label for="ah_sms_username">Username</label></th>
+							<th><label for="ah_sms_username">API username</label></th>
 							<td><input id="ah_sms_username" class="regular-text" type="text"
 								name="<?php echo esc_attr( self::OPTION ); ?>[sms_username]"
-								value="<?php echo esc_attr( $o['sms_username'] ); ?>"></td>
+								value="<?php echo esc_attr( $o['sms_username'] ); ?>">
+							<p class="description">EgoSMS: both of these are on comms.egosms.co under
+							Settings &rsaquo; API Settings. They are not your login password.</p></td>
 						</tr>
 						<tr>
-							<th><label for="ah_sms_api_key">API key</label></th>
+							<th><label for="ah_sms_api_key">API password / key</label></th>
 							<td><input id="ah_sms_api_key" class="regular-text" type="password"
 								name="<?php echo esc_attr( self::OPTION ); ?>[sms_api_key]"
 								value="<?php echo esc_attr( $o['sms_api_key'] ); ?>"></td>
@@ -350,6 +380,24 @@ class AH_Settings {
 
 				<?php submit_button( 'Save settings' ); ?>
 			</form>
+
+			<div class="ah-card">
+				<h2 style="margin-top:0">Send a test SMS</h2>
+				<?php
+				$say = get_transient( 'ah_test_sms_' . get_current_user_id() );
+				if ( $say ) {
+					delete_transient( 'ah_test_sms_' . get_current_user_id() );
+					printf( '<p><strong>%s</strong></p>', esc_html( $say ) );
+				}
+				?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<input type="hidden" name="action" value="ah_test_sms">
+					<?php wp_nonce_field( 'ah_test_sms' ); ?>
+					<input class="regular-text" type="tel" name="phone" placeholder="0772 123 456" required>
+					<button class="button">Send test</button>
+					<p class="description">Save the settings first. This uses one SMS of credit.</p>
+				</form>
+			</div>
 		</div>
 		<?php
 	}

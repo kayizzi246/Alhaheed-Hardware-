@@ -346,7 +346,9 @@ class _SkeletonState extends State<_Skeleton>
 /// or outline fighting the flat look.
 class _Field extends StatelessWidget {
   const _Field({
+    super.key,
     required this.controller,
+    this.obscure = false,
     required this.hint,
     this.validator,
     this.keyboardType,
@@ -358,6 +360,7 @@ class _Field extends StatelessWidget {
   });
 
   final TextEditingController controller;
+  final bool obscure;
   final String hint;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
@@ -371,6 +374,8 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) => TextFormField(
         controller: controller,
         validator: validator,
+        obscureText: obscure,
+        autocorrect: !obscure,
         keyboardType: keyboardType,
         maxLines: maxLines,
         maxLength: maxLength,
@@ -409,8 +414,9 @@ class _Field extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 
 class _ApiError implements Exception {
-  _ApiError(this.message, {this.unauthorised = false});
+  _ApiError(this.message, {this.unauthorised = false, this.code});
   final String message;
+  final String? code;
   final bool unauthorised;
   @override
   String toString() => message;
@@ -433,6 +439,7 @@ Map<String, dynamic> _unwrap(http.Response res) {
     throw _ApiError(
       error is String ? error : 'Something went wrong.',
       unauthorised: res.statusCode == 401,
+      code: body['code']?.toString(),
     );
   }
   return body;
@@ -547,11 +554,17 @@ class _Session extends ChangeNotifier {
       } catch (_) {
         user = null;
       }
+    } else {
+      user = null;
     }
     notifyListeners();
   }
 
   bool get signedIn => token != null && user != null;
+
+  /// 'customer', or the desk: 'store' | 'cashier' | 'accounts' | 'manager'.
+  String get role => user?['role'] as String? ?? 'customer';
+  bool get isStaff => signedIn && role != 'customer';
   String get fullName => user?['fullName'] as String? ?? '';
   String get phone => user?['phone'] as String? ?? '';
   String get accountType => user?['accountType'] as String? ?? 'individual';
@@ -572,7 +585,7 @@ class _Session extends ChangeNotifier {
   /// The line under the logo. A company's buyer can see at a glance
   /// whose account an order will land on.
   String get subtitle {
-    if (!signedIn) return 'Browse and order — no account needed';
+    if (!signedIn) return 'Browse the shop, sign in to order';
     if (!isCompany) return fullName;
     if (isCompanyOwner) return '$companyName · Owner view';
     return '$companyName · ordering as $fullName'
@@ -1200,21 +1213,6 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
         if (decided == true) _load();
       });
 
-  Future<void> _openProfile() => showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => const _ProfileSheet(),
-      ).then((_) {
-        if (!_Session().signedIn && mounted) {
-          Navigator.of(context).pushReplacement(PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const AlHadeedShop(),
-            transitionDuration: Duration.zero,
-          ));
-        }
-      });
-
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
@@ -1249,18 +1247,6 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
                           height: 38,
                           decoration: _liquid(circle: true, onDark: true),
                           child: const Icon(Icons.refresh_rounded,
-                              size: 19, color: _white),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _Pressable(
-                        scale: 0.9,
-                        onTap: _openProfile,
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: _liquid(circle: true, onDark: true),
-                          child: const Icon(Icons.person_outline_rounded,
                               size: 19, color: _white),
                         ),
                       ),

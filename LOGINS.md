@@ -98,10 +98,27 @@ account and lets their people order on it.
 
 ### Customers
 
-Created by ordering. The app asks for a phone number at checkout and
-makes the account itself — a first-time customer never signs in at
-all. Their usernames look like `ah256770111002`, which is the number
+Customers look around without an account and sign in on the cart page to
+order: with an SMS code (a new number gives a name and the account is
+made) or with an email and password. Their usernames look like `ah256770111002`, which is the number
 with the punctuation taken out.
+
+### The account for Google Play's reviewers
+
+They cannot receive an SMS in Kampala, so they get a password.
+
+- On the test site: `tester@example.com` / `Review2026!`
+- On the live shop: **Users → Add New**, role **Customer**, an email you
+  own and a new password. Put those under **Play Console → App content →
+  App access**, and say: *Account → Sign in → Password*. Never give
+  Google a staff account.
+
+### One app, two sides
+
+Everybody signs in from **Account → Sign in**. A customer stays in the
+shop. A Store Manager, Cashier, Accounts or Manager login turns the app
+into their desk, with its own dark bar and no way back to the shop
+except **Account → Sign out**. A sign-in lasts 12 hours.
 
 ---
 
@@ -193,7 +210,13 @@ on the live site.
    the phone field. Without it they cannot use the SMS code, and the
    customer texts will not reach them.
 
-5. **Check the shop's own settings.** **Al Hadeed → Settings** — the
+5. **Switch SMS on (EgoSMS).** **Al Hadeed → Settings → SMS**: gateway
+   **EgoSMS**, then the API username and API password from
+   comms.egosms.co → Settings → API Settings, and the sender ID EgoSMS
+   approved. Save, use **Send a test SMS**, and when it arrives untick
+   **Test mode** and save again. Left ticked, every code is `123456`.
+
+6. **Check the shop's own settings.** **Al Hadeed → Settings** — the
    shop name, the currency and the SMS gateway. The name appears on
    every receipt and on the sign-in screen, so a shop still called "My
    Blog" is the first thing anybody will notice.

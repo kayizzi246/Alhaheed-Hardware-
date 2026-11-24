@@ -9,7 +9,8 @@
  *   log            writes to the WordPress debug log and sends nothing.
  *                  The default: no account, no credit, no cost, and the
  *                  login codes are readable while you are setting up.
- *   africastalking the usual choice in Uganda
+ *   egosms         EgoSMS / Pahappa Comms, the shop's gateway
+ *   africastalking another one used in Uganda
  *   generic        any gateway that takes a JSON POST
  *
  * A failure never stops the shop. The cashier still takes the money if
@@ -72,6 +73,9 @@ class AH_Sms {
 			return array( 'ok' => true, 'provider' => $provider, 'to' => $to );
 		}
 
+		if ( 'egosms' === $provider ) {
+			return self::via_egosms( $to, $message );
+		}
 		if ( 'africastalking' === $provider ) {
 			return self::via_africastalking( $to, $message );
 		}
@@ -80,6 +84,59 @@ class AH_Sms {
 		}
 
 		return array( 'ok' => false, 'provider' => $provider, 'to' => $to, 'error' => 'unknown provider' );
+	}
+
+	/**
+	 * EgoSMS (Pahappa Comms).
+	 *
+	 * https://developers.pahappa.com/docs/sending-sms/api-specs-and-usage/
+	 * It answers HTTP 200 even when it refuses the message, so `Status` in
+	 * the body is what must be read.
+	 */
+	private static function via_egosms( $to, $message ) {
+		$user = trim( self::option( 'sms_username' ) );
+		$pass = self::option( 'sms_api_key' );
+		if ( '' === $user || '' === $pass ) {
+			return self::fail( 'egosms', $to, 'API username or API password is not set' );
+		}
+
+		$one = array(
+			// International, without the plus.
+			'number'   => ltrim( $to, '+' ),
+			'message'  => $message,
+			'priority' => 0,
+		);
+		$from = trim( self::option( 'sms_sender_id' ) );
+		if ( '' !== $from ) {
+			$one['senderid'] = $from;
+		}
+
+		$res = wp_remote_post(
+			apply_filters( 'ah_egosms_url', 'https://comms.egosms.co/api/v1/json/' ),
+			array(
+				'timeout' => 20,
+				'headers' => array( 'Content-Type' => 'application/json', 'Accept' => 'application/json' ),
+				'body'    => wp_json_encode(
+					array(
+						'method'   => 'SendSms',
+						'userdata' => array( 'username' => $user, 'password' => $pass ),
+						'msgdata'  => array( $one ),
+					)
+				),
+			)
+		);
+
+		if ( is_wp_error( $res ) ) {
+			return self::fail( 'egosms', $to, $res->get_error_message() );
+		}
+		$json = json_decode( wp_remote_retrieve_body( $res ), true );
+		if ( ! is_array( $json ) || ! isset( $json['Status'] ) ) {
+			return self::fail( 'egosms', $to, 'HTTP ' . wp_remote_retrieve_response_code( $res ) . ', no status in the answer' );
+		}
+		if ( 'OK' !== strtoupper( (string) $json['Status'] ) ) {
+			return self::fail( 'egosms', $to, isset( $json['Message'] ) ? (string) $json['Message'] : 'refused' );
+		}
+		return array( 'ok' => true, 'provider' => 'egosms', 'to' => $to );
 	}
 
 	private static function via_africastalking( $to, $message ) {

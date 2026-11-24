@@ -346,7 +346,9 @@ class _SkeletonState extends State<_Skeleton>
 /// or outline fighting the flat look.
 class _Field extends StatelessWidget {
   const _Field({
+    super.key,
     required this.controller,
+    this.obscure = false,
     required this.hint,
     this.validator,
     this.keyboardType,
@@ -358,6 +360,7 @@ class _Field extends StatelessWidget {
   });
 
   final TextEditingController controller;
+  final bool obscure;
   final String hint;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
@@ -371,6 +374,8 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) => TextFormField(
         controller: controller,
         validator: validator,
+        obscureText: obscure,
+        autocorrect: !obscure,
         keyboardType: keyboardType,
         maxLines: maxLines,
         maxLength: maxLength,
@@ -409,8 +414,9 @@ class _Field extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 
 class _ApiError implements Exception {
-  _ApiError(this.message, {this.unauthorised = false});
+  _ApiError(this.message, {this.unauthorised = false, this.code});
   final String message;
+  final String? code;
   final bool unauthorised;
   @override
   String toString() => message;
@@ -433,6 +439,7 @@ Map<String, dynamic> _unwrap(http.Response res) {
     throw _ApiError(
       error is String ? error : 'Something went wrong.',
       unauthorised: res.statusCode == 401,
+      code: body['code']?.toString(),
     );
   }
   return body;
@@ -547,11 +554,17 @@ class _Session extends ChangeNotifier {
       } catch (_) {
         user = null;
       }
+    } else {
+      user = null;
     }
     notifyListeners();
   }
 
   bool get signedIn => token != null && user != null;
+
+  /// 'customer', or the desk: 'store' | 'cashier' | 'accounts' | 'manager'.
+  String get role => user?['role'] as String? ?? 'customer';
+  bool get isStaff => signedIn && role != 'customer';
   String get fullName => user?['fullName'] as String? ?? '';
   String get phone => user?['phone'] as String? ?? '';
   String get accountType => user?['accountType'] as String? ?? 'individual';
@@ -572,7 +585,7 @@ class _Session extends ChangeNotifier {
   /// The line under the logo. A company's buyer can see at a glance
   /// whose account an order will land on.
   String get subtitle {
-    if (!signedIn) return 'Browse and order — no account needed';
+    if (!signedIn) return 'Browse the shop, sign in to order';
     if (!isCompany) return fullName;
     if (isCompanyOwner) return '$companyName · Owner view';
     return '$companyName · ordering as $fullName'
@@ -1215,6 +1228,7 @@ class AlHadeedShop extends StatefulWidget {
 }
 
 class _AlHadeedShopState extends State<AlHadeedShop> {
+  bool _sessionRead = false;
   final _search = TextEditingController();
 
   List<Map<String, dynamic>> _products = [];
@@ -1238,6 +1252,9 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
 
   Future<void> _boot() async {
     await _Session().load();
+    if (!mounted) return;
+    setState(() => _sessionRead = true);
+    if (_Session().isStaff) return;
     await _CartStore().load();
     if (!mounted) return;
     // Nobody is asked who they are to look at a shelf. The catalogue is
@@ -1289,9 +1306,7 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
     }).toList(growable: false);
   }
 
-  /// Signing in is optional here — it is for seeing past orders, or for
-  /// a company's staff ordering against the company account. A first-time
-  /// customer never has to open it: the checkout takes their number.
+  /// Looking needs no account; ordering does, and the cart asks for it.
   Future<void> _openSignIn() => showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -1329,6 +1344,12 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     _ui = (mq.size.width / 390).clamp(0.86, 1.08);
+    if (!_sessionRead) return Container(color: _bg);
+    // Staff have their own side of the app. It replaces this screen, so
+    // there is no shop underneath to go back to.
+    if (_Session().isStaff) {
+      return AlHadeedStaff(width: widget.width, height: widget.height);
+    }
 
     return MediaQuery(
       data: mq.copyWith(
@@ -1354,7 +1375,8 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
                     subtitle: _Session().subtitle,
                     trailing: _Pressable(
                       scale: 0.9,
-                      onTap: _openProfile,
+                      onTap:
+                          _Session().signedIn ? _openProfile : _openSignIn,
                       child: Container(
                         width: 38,
                         height: 38,
@@ -1672,9 +1694,15 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  SHEET — SIGN IN (phone, then the 6-digit code)
+//  SHEET — SIGN IN
+//
+//  Identical in al_hadeed_shop.dart, al_hadeed_cart.dart and
+//  al_hadeed_company.dart.
 // ═══════════════════════════════════════════════════════════════
 
+/// One sign-in for everybody: a customer with an SMS code, or anybody
+/// with a password. Whose account it turns out to be decides which side
+/// of the app opens. Pops `true` once signed in.
 class _SignInSheet extends StatefulWidget {
   const _SignInSheet();
 
@@ -1683,219 +1711,243 @@ class _SignInSheet extends StatefulWidget {
 }
 
 class _SignInSheetState extends State<_SignInSheet> {
-  final _formKey = GlobalKey<FormState>();
   final _phone = TextEditingController();
+  final _name = TextEditingController();
   final _code = TextEditingController();
+  final _who = TextEditingController();
+  final _password = TextEditingController();
 
+  bool _usePassword = false;
+  bool _askName = false;
   bool _sent = false;
   bool _busy = false;
+  bool _hidden = true;
   String? _error;
   String? _devCode;
 
   @override
   void dispose() {
-    _phone.dispose();
-    _code.dispose();
+    for (final c in [_phone, _name, _code, _who, _password]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  /// Ugandan numbers are 10 digits as people write them (0772 123 456),
-  /// 9 without the leading zero, 12 with the country code. Nine is the
-  /// shortest thing that could be real.
-  String? _validatePhone(String? v) =>
-      (v == null || v.replaceAll(RegExp(r'[^0-9]'), '').length < 9)
-          ? 'Enter the phone number on your account.'
-          : null;
-
-  Future<void> _request() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      final r = await _apiPost(
-          '/api/auth/otp/request', {'phone': _phone.text.trim()});
-      if (!mounted) return;
-      setState(() {
-        _sent = true;
-        _busy = false;
-        // In development the server hands the code straight back, so
-        // nobody has to wire up an SMS gateway to try the app.
-        _devCode = r['devCode']?.toString();
-      });
-    } on _ApiError catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.message;
-        _busy = false;
-      });
+  bool get _ready {
+    if (_busy) return false;
+    if (_usePassword) {
+      return _who.text.trim().length >= 3 && _password.text.isNotEmpty;
     }
+    if (_sent) return _code.text.trim().length == 6;
+    return _phone.text.replaceAll(RegExp(r'[^0-9]'), '').length >= 9 &&
+        (!_askName || _name.text.trim().length >= 2);
   }
 
-  Future<void> _verify() async {
+  Future<void> _submit() async {
     setState(() {
       _busy = true;
       _error = null;
     });
-    // Captured before the await: this sheet is popped on success, so by
-    // then its own context is gone.
     final navigator = Navigator.of(context);
     try {
-      final r = await _apiPost('/api/auth/otp/verify', {
-        'phone': _phone.text.trim(),
-        'code': _code.text.trim(),
-      });
-      final user = (r['user'] as Map).cast<String, dynamic>();
-      await _Session().save(r['token'] as String, user);
+      if (!_usePassword && !_sent) {
+        final r = await _apiPost('/api/auth/otp/request', {
+          'phone': _phone.text.trim(),
+          if (_askName) 'fullName': _name.text.trim(),
+        });
+        if (!mounted) return;
+        setState(() {
+          _sent = true;
+          _busy = false;
+          // Only ever sent back by a shop still in test mode.
+          _devCode = r['devCode']?.toString();
+        });
+        return;
+      }
 
-      // Sign-in gives companyId but not the company's name, and the name is
-      // what the header shows. /auth/me returns the company row, so it is
-      // folded in and saved again. A failure here is cosmetic only — the
-      // sign-in itself already worked.
+      final r = _usePassword
+          ? await _apiPost('/api/auth/login', {
+              'identifier': _who.text.trim(),
+              'password': _password.text,
+            })
+          : await _apiPost('/api/auth/otp/verify', {
+              'phone': _phone.text.trim(),
+              'code': _code.text.trim(),
+              if (_askName) 'fullName': _name.text.trim(),
+            });
+      final token = r['token'] as String;
+      final user = (r['user'] as Map).cast<String, dynamic>();
+      await _Session().save(token, user);
+
+      // The sign-in gives a company's id but not its name, which the
+      // header shows. Cosmetic: a failure here leaves the sign-in alone.
       if (user['companyId'] != null) {
         try {
           final me = await _apiGet('/api/auth/me');
           final full = (me['user'] as Map).cast<String, dynamic>();
           final company = full['company'] as Map<String, dynamic>?;
           if (company != null) full['companyName'] = company['company_name'];
-          await _Session().save(r['token'] as String, full);
+          await _Session().save(token, full);
         } on _ApiError {
           // Keep the session we already have.
         }
       }
-      if (!mounted) return;
       HapticFeedback.mediumImpact();
-      navigator.pop();
-
-      // The number decides where you land. A manager signing in on their
-      // own phone has no business being dropped into a shopping
-      // catalogue, so the manager side opens instead.
-      final role = user['role'] as String? ?? 'customer';
-      if (role == 'manager') {
-        navigator.pushReplacement(PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const AlHadeedManager(),
-          transitionDuration: Duration.zero,
-        ));
-      } else if (role != 'customer') {
-        // Cashier, Accounts and Store have no screen in this app yet.
-        // Say so plainly and sign them back out, rather than leaving
-        // them on a shop they cannot use.
-        await showModalBottomSheet<void>(
-          // This sheet has already been popped, so its own context is
-          // gone; the navigator's outlives it.
-          context: navigator.context,
-          isScrollControlled: true,
-          useSafeArea: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => _WrongSideSheet(role: role),
-        );
-        await _Session().signOut();
-      }
+      navigator.pop(true);
     } on _ApiError catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.message;
         _busy = false;
+        // A number the shop has not met: ask for a name, then carry on.
+        if (e.code == 'ah_unknown_phone' && !_askName) {
+          _askName = true;
+        } else {
+          _error = e.message;
+        }
       });
     }
+  }
+
+  Widget _tab(String label, IconData icon, bool password) {
+    final on = _usePassword == password;
+    return Expanded(
+      child: _Pressable(
+        scale: 0.97,
+        onTap: _busy
+            ? null
+            : () => setState(() {
+                  _usePassword = password;
+                  _error = null;
+                }),
+        child: Container(
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: on ? _white : _white.withOpacity(0),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: on ? _cardShadow : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 17, color: on ? _brand : _mid),
+              const SizedBox(width: 7),
+              Text(label,
+                  style: _txt(13.5,
+                      weight: on ? FontWeight.w700 : FontWeight.w500,
+                      color: on ? _ink : _mid)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
+    final again = (_) => setState(() {});
+    final help = _usePassword
+        ? 'Use your email or phone number and your password. Staff sign in '
+            'here too.'
+        : _sent
+            ? 'We sent a 6-digit code to ${_phone.text.trim()}. It expires in '
+                '5 minutes.'
+            : _askName
+                ? 'That number is new here. Add your name and we will text a '
+                    'code to create your account.'
+                : 'Enter your phone number and we will text you a code.';
 
     return _Sheet(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('AL HADEED ',
-                      style: _title(17, weight: FontWeight.w800)),
-                  Text('HARDWARE',
-                      style:
-                          _title(17, weight: FontWeight.w800, color: _brand)),
-                ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Sign in', style: _title(22, weight: FontWeight.w800)),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: _bg,
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(height: 6),
-              Text(
-                _sent
-                    ? 'We sent a 6-digit code by SMS to '
-                        '${_phone.text.trim()}. It expires in 5 minutes.'
-                    : 'Enter your phone number and we will text you a '
-                        'code. Company staff use their own number, not '
-                        "the company's.",
-                style: _txt(13, color: _mid, height: 1.45),
+              child: Row(children: [
+                _tab('SMS code', Icons.sms_outlined, false),
+                _tab('Password', Icons.lock_outline_rounded, true),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            Text(help, style: _txt(13, color: _mid, height: 1.45)),
+            const SizedBox(height: 14),
+            if (_usePassword) ...[
+              _Field(
+                key: const ValueKey('who'),
+                controller: _who,
+                hint: 'Email or phone number',
+                keyboardType: TextInputType.emailAddress,
+                onChanged: again,
               ),
-              const SizedBox(height: 18),
-              if (!_sent)
-                _Field(
-                  controller: _phone,
-                  hint: '+256 770 111 001',
-                  keyboardType: TextInputType.phone,
-                  autofocus: true,
-                  validator: _validatePhone,
-                )
-              else ...[
-                _Field(
-                  controller: _code,
-                  hint: '6-digit code',
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  autofocus: true,
-                  onChanged: (_) => setState(() {}),
-                ),
-                if (_devCode != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _brandPale,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.science_outlined,
-                            size: 17, color: _brandDark),
-                        const SizedBox(width: 9),
-                        Expanded(
-                          child: Text('Test mode: your code is $_devCode',
-                              style: _txt(12.5, color: _brandDark)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 10),
+              _Field(
+                key: const ValueKey('password'),
+                controller: _password,
+                hint: 'Password',
+                obscure: _hidden,
+                onChanged: again,
+              ),
+              TextButton(
+                onPressed: () => setState(() => _hidden = !_hidden),
+                child: Text(_hidden ? 'Show password' : 'Hide password',
+                    style: _txt(12.5,
+                        weight: FontWeight.w600, color: _brandDark)),
+              ),
+            ] else if (_sent) ...[
+              _Field(
+                key: const ValueKey('code'),
+                controller: _code,
+                hint: '6-digit code',
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                autofocus: true,
+                onChanged: again,
+              ),
+              if (_devCode != null) ...[
+                const SizedBox(height: 8),
+                Text('Test mode: your code is $_devCode',
+                    style: _txt(12.5, color: _brandDark)),
               ],
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.error_outline_rounded,
-                        size: 16, color: _ember),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(_error!,
-                          style: _txt(12.5, color: _ember, height: 1.4)),
-                    ),
-                  ],
+            ] else ...[
+              _Field(
+                key: const ValueKey('phone'),
+                controller: _phone,
+                hint: '0772 123 456',
+                keyboardType: TextInputType.phone,
+                onChanged: (_) => setState(() => _askName = false),
+              ),
+              if (_askName) ...[
+                const SizedBox(height: 10),
+                _Field(
+                  key: const ValueKey('name'),
+                  controller: _name,
+                  hint: 'Your name',
+                  capitalisation: TextCapitalization.words,
+                  autofocus: true,
+                  onChanged: again,
                 ),
               ],
-              const SizedBox(height: 20),
-              _Pressable(
-                scale: 0.98,
-                onTap: _busy
-                    ? null
-                    : _sent
-                        ? (_code.text.trim().length == 6 ? _verify : null)
-                        : _request,
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(_error!, style: _txt(12.5, color: _ember, height: 1.4)),
+            ],
+            const SizedBox(height: 18),
+            _Pressable(
+              scale: 0.98,
+              onTap: _ready ? _submit : null,
+              child: Opacity(
+                opacity: _ready || _busy ? 1 : 0.45,
                 child: Container(
                   height: 52,
                   width: double.infinity,
@@ -1908,32 +1960,36 @@ class _SignInSheetState extends State<_SignInSheet> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: _white),
                         )
-                      : Text(_sent ? 'Verify & sign in' : 'Text me a code',
+                      : Text(
+                          _usePassword
+                              ? 'Sign in'
+                              : _sent
+                                  ? 'Verify & sign in'
+                                  : 'Text me a code',
                           style: _txt(15,
                               weight: FontWeight.w600, color: _white)),
                 ),
               ),
-              if (_sent) ...[
-                const SizedBox(height: 6),
-                Center(
-                  child: TextButton(
-                    onPressed: _busy
-                        ? null
-                        : () => setState(() {
-                              _sent = false;
-                              _code.clear();
-                              _devCode = null;
-                              _error = null;
-                            }),
-                    child: Text('Use a different number',
-                        style: _txt(13.5,
-                            weight: FontWeight.w600, color: _brandDark)),
-                  ),
+            ),
+            if (_sent && !_usePassword)
+              Center(
+                child: TextButton(
+                  onPressed: _busy
+                      ? null
+                      : () => setState(() {
+                            _sent = false;
+                            _askName = false;
+                            _code.clear();
+                            _devCode = null;
+                            _error = null;
+                          }),
+                  child: Text('Use a different number',
+                      style: _txt(13.5,
+                          weight: FontWeight.w600, color: _brandDark)),
                 ),
-              ],
-              SizedBox(height: mq.padding.bottom + 4),
-            ],
-          ),
+              ),
+            SizedBox(height: mq.padding.bottom + 4),
+          ],
         ),
       ),
     );
@@ -2282,79 +2338,4 @@ class _ProfileSheet extends StatelessWidget {
           ],
         ),
       );
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  SHEET — THIS NUMBER BELONGS TO ANOTHER DESK
-// ═══════════════════════════════════════════════════════════════
-
-/// Shown when a cashier, accounts clerk or store manager signs in here.
-///
-/// Their number is perfectly valid — it just belongs to a desk this app
-/// does not carry yet. Saying which desk, and where it lives instead, is
-/// more use than dropping them on a shop screen they cannot work from.
-class _WrongSideSheet extends StatelessWidget {
-  const _WrongSideSheet({required this.role});
-
-  final String role;
-
-  String get _desk => switch (role) {
-        'cashier' => 'Cashier',
-        'accounts' => 'Accounts',
-        'store' => 'Store Manager',
-        _ => role,
-      };
-
-  String get _where => switch (role) {
-        'cashier' || 'accounts' =>
-          'Your desk is on the web panel — open it on the counter computer '
-              'and sign in with the same number or your email.',
-        'store' =>
-          'The Store Manager screen is not in this app yet. Use the existing '
-              'Al Hadeed app on the shop tablet in the meantime.',
-        _ => 'That desk is not part of this app.',
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-
-    return _Sheet(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration:
-                  const BoxDecoration(color: _bluePale, shape: BoxShape.circle),
-              child: const Icon(Icons.swap_horiz_rounded,
-                  size: 26, color: _blue),
-            ),
-            const SizedBox(height: 14),
-            Text('That is the $_desk desk', style: _title(20)),
-            const SizedBox(height: 6),
-            Text(_where, style: _txt(13.5, color: _mid, height: 1.5)),
-            const SizedBox(height: 20),
-            _Pressable(
-              scale: 0.98,
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                height: 50,
-                width: double.infinity,
-                alignment: Alignment.center,
-                decoration: _liquid(tint: _navy, radius: 25),
-                child: Text('Got it',
-                    style: _txt(14.5, weight: FontWeight.w600, color: _white)),
-              ),
-            ),
-            SizedBox(height: mq.padding.bottom + 4),
-          ],
-        ),
-      ),
-    );
-  }
 }

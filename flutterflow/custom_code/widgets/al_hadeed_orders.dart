@@ -346,7 +346,9 @@ class _SkeletonState extends State<_Skeleton>
 /// or outline fighting the flat look.
 class _Field extends StatelessWidget {
   const _Field({
+    super.key,
     required this.controller,
+    this.obscure = false,
     required this.hint,
     this.validator,
     this.keyboardType,
@@ -358,6 +360,7 @@ class _Field extends StatelessWidget {
   });
 
   final TextEditingController controller;
+  final bool obscure;
   final String hint;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
@@ -371,6 +374,8 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) => TextFormField(
         controller: controller,
         validator: validator,
+        obscureText: obscure,
+        autocorrect: !obscure,
         keyboardType: keyboardType,
         maxLines: maxLines,
         maxLength: maxLength,
@@ -409,8 +414,9 @@ class _Field extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 
 class _ApiError implements Exception {
-  _ApiError(this.message, {this.unauthorised = false});
+  _ApiError(this.message, {this.unauthorised = false, this.code});
   final String message;
+  final String? code;
   final bool unauthorised;
   @override
   String toString() => message;
@@ -433,6 +439,7 @@ Map<String, dynamic> _unwrap(http.Response res) {
     throw _ApiError(
       error is String ? error : 'Something went wrong.',
       unauthorised: res.statusCode == 401,
+      code: body['code']?.toString(),
     );
   }
   return body;
@@ -547,11 +554,17 @@ class _Session extends ChangeNotifier {
       } catch (_) {
         user = null;
       }
+    } else {
+      user = null;
     }
     notifyListeners();
   }
 
   bool get signedIn => token != null && user != null;
+
+  /// 'customer', or the desk: 'store' | 'cashier' | 'accounts' | 'manager'.
+  String get role => user?['role'] as String? ?? 'customer';
+  bool get isStaff => signedIn && role != 'customer';
   String get fullName => user?['fullName'] as String? ?? '';
   String get phone => user?['phone'] as String? ?? '';
   String get accountType => user?['accountType'] as String? ?? 'individual';
@@ -572,7 +585,7 @@ class _Session extends ChangeNotifier {
   /// The line under the logo. A company's buyer can see at a glance
   /// whose account an order will land on.
   String get subtitle {
-    if (!signedIn) return 'Browse and order — no account needed';
+    if (!signedIn) return 'Browse the shop, sign in to order';
     if (!isCompany) return fullName;
     if (isCompanyOwner) return '$companyName · Owner view';
     return '$companyName · ordering as $fullName'
@@ -1133,6 +1146,7 @@ class AlHadeedOrders extends StatefulWidget {
 }
 
 class _AlHadeedOrdersState extends State<AlHadeedOrders> {
+  bool _sessionRead = false;
   List<Map<String, dynamic>> _orders = [];
   String _scope = 'mine';
   String? _error;
@@ -1146,6 +1160,9 @@ class _AlHadeedOrdersState extends State<AlHadeedOrders> {
 
   Future<void> _boot() async {
     await _Session().load();
+    if (!mounted) return;
+    setState(() => _sessionRead = true);
+    if (_Session().isStaff) return;
     await _CartStore().load();
     if (!mounted) return;
     await _load();
@@ -1200,6 +1217,12 @@ class _AlHadeedOrdersState extends State<AlHadeedOrders> {
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     _ui = (mq.size.width / 390).clamp(0.86, 1.08);
+    if (!_sessionRead) return Container(color: _bg);
+    // Staff have their own side of the app. It replaces this screen, so
+    // there is no shop underneath to go back to.
+    if (_Session().isStaff) {
+      return AlHadeedStaff(width: widget.width, height: widget.height);
+    }
 
     return MediaQuery(
       data: mq.copyWith(
@@ -1309,8 +1332,8 @@ class _AlHadeedOrdersState extends State<AlHadeedOrders> {
         icon: Icons.receipt_long_outlined,
         title: 'Your orders will appear here',
         line: 'Order from the shop and you can follow each one here, from '
-            'paying to collecting. Ordered before? Sign in from the shop with '
-            'your phone number.',
+            'paying to collecting. Ordered before? Sign in under '
+            'Account.',
         action: 'Go to the shop',
         onAction: () => Navigator.of(context).pushReplacement(
           PageRouteBuilder(

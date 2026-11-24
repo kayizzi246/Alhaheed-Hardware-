@@ -202,6 +202,16 @@ class AH_Rest {
 				'callback'            => array( __CLASS__, 'staff_login' ),
 			)
 		);
+		// The phone app's password sign-in: customers and staff both, one
+		// form, the app opening whichever side the account belongs to.
+		register_rest_route(
+			$ns, '/auth/login',
+			array(
+				'methods'             => $post,
+				'permission_callback' => array( __CLASS__, 'open' ),
+				'callback'            => array( __CLASS__, 'password_login' ),
+			)
+		);
 		register_rest_route(
 			$ns, '/auth/otp/request',
 			array(
@@ -422,6 +432,14 @@ class AH_Rest {
 	// -----------------------------------------------------------------
 
 	public static function staff_login( $req ) {
+		return self::sign_in_with_password( $req, true );
+	}
+
+	public static function password_login( $req ) {
+		return self::sign_in_with_password( $req, false );
+	}
+
+	private static function sign_in_with_password( $req, $staff_only ) {
 		$identifier = trim( (string) $req->get_param( 'identifier' ) );
 		$password   = (string) $req->get_param( 'password' );
 
@@ -450,7 +468,7 @@ class AH_Rest {
 		// The same answer whether the account does not exist or the
 		// password is wrong, so the form cannot be used to discover who
 		// works here.
-		if ( ! $user || ! wp_check_password( $password, $user->user_pass, $user->ID ) || ! AH_Roles::desk_of( $user ) ) {
+		if ( ! $user || ! wp_check_password( $password, $user->user_pass, $user->ID ) || ( $staff_only && ! AH_Roles::desk_of( $user ) ) ) {
 			return self::wrong_login( $who, $ip );
 		}
 		if ( 'suspended' === get_user_meta( $user->ID, 'ah_status', true ) ) {
@@ -505,16 +523,31 @@ class AH_Rest {
 		AH_Limits::hit( 'otp_send_ip', $ip );
 
 		$user = AH_Auth::user_by_phone( $phone );
-		if ( ! $user ) {
-			return self::err( 'ah_unknown_phone', 'That phone number is not registered', 400 );
+		$new_name = trim( sanitize_text_field( (string) $req->get_param( 'fullName' ) ) );
+		if ( ! $user && mb_strlen( $new_name ) < 2 ) {
+			return self::err( 'ah_unknown_phone', 'That number is new here. Add your name to create an account.', 400 );
 		}
-		if ( 'suspended' === get_user_meta( $user->ID, 'ah_status', true ) ) {
+		if ( ! $user && ! preg_match( '/^\+\d{10,15}$/', $phone ) ) {
+			return self::err( 'ah_bad_phone', 'Enter a full phone number, like 0772 123 456', 400 );
+		}
+		// In test mode every code is 123456. That must never open a desk
+		// on a real site: it would be a till with a published key.
+		if ( $user && AH_Roles::desk_of( $user ) && AH_Auth::dev_mode() && ! AH_Auth::is_local() ) {
+			return self::err( 'ah_use_password', 'SMS codes are not switched on for staff yet. Sign in with your password.', 403 );
+		}
+		if ( $user && 'suspended' === get_user_meta( $user->ID, 'ah_status', true ) ) {
 			return self::err( 'ah_suspended', 'This account has been suspended. Ask the manager.', 403 );
 		}
 
 		AH_Limits::hit( 'otp_send', $phone );
 		// A new code means a fresh set of guesses for it.
 		AH_Limits::clear( 'otp_guess', $phone );
+
+		// "log" sends nothing and reports success, so a customer would wait
+		// for a code that was never going to come.
+		if ( ! AH_Auth::dev_mode() && 'log' === AH_Sms::option( 'sms_provider', 'log' ) ) {
+			return self::err( 'ah_sms_off', 'SMS is not set up yet. Sign in with your password.', 503 );
+		}
 
 		$code = AH_Auth::issue_otp( $phone );
 		$sent = AH_Sms::send( $phone, AH_Sms::otp_message( $code ) );
@@ -529,7 +562,8 @@ class AH_Rest {
 			'message' => "A 6-digit code was sent to {$phone}",
 			// Which desk this number belongs to, so the app opens the
 			// right side once the code is checked.
-			'role'    => AH_Roles::desk_of( $user ) ?: 'customer',
+			'role'    => ( $user ? AH_Roles::desk_of( $user ) : null ) ?: 'customer',
+			'isNew'   => ! $user,
 		);
 		if ( AH_Auth::dev_mode() ) {
 			$out['devCode'] = $code;
@@ -563,8 +597,20 @@ class AH_Rest {
 		}
 		AH_Limits::clear( 'otp_guess', $phone );
 		$user = AH_Auth::user_by_phone( $phone );
+		// The code proved the number is theirs, so this is the moment an
+		// account may be made for it — not when the code was asked for.
 		if ( ! $user ) {
-			return self::err( 'ah_no_account', 'Account not found', 401 );
+			$name = trim( sanitize_text_field( (string) $req->get_param( 'fullName' ) ) );
+			if ( mb_strlen( $name ) < 2 ) {
+				return self::err( 'ah_no_account', 'Account not found', 401 );
+			}
+			$user = self::new_customer( $phone, $name );
+			if ( is_wp_error( $user ) ) {
+				return $user;
+			}
+		}
+		if ( AH_Roles::desk_of( $user ) && AH_Auth::dev_mode() && ! AH_Auth::is_local() ) {
+			return self::err( 'ah_use_password', 'SMS codes are not switched on for staff yet. Sign in with your password.', 403 );
 		}
 
 		return array(
@@ -759,23 +805,12 @@ class AH_Rest {
 			return self::err( 'ah_staff_number', 'That number belongs to a staff account. Use a customer number to order.', 400 );
 		}
 
+		$known = (bool) $user;
 		if ( ! $user ) {
-			$user_id = wp_insert_user(
-				array(
-					'user_login'   => 'ah' . preg_replace( '/\D/', '', $phone ),
-					'user_pass'    => wp_generate_password( 24 ),
-					'display_name' => $name,
-					'first_name'   => $name,
-					'role'         => 'customer',
-				)
-			);
-			if ( is_wp_error( $user_id ) ) {
-				return self::err( 'ah_user_failed', 'Could not create your account: ' . $user_id->get_error_message(), 400 );
+			$user = self::new_customer( $phone, $name );
+			if ( is_wp_error( $user ) ) {
+				return $user;
 			}
-			update_user_meta( $user_id, 'ah_phone', $phone );
-			update_user_meta( $user_id, 'billing_phone', $phone );
-			update_user_meta( $user_id, 'ah_account_type', 'individual' );
-			$user = get_user_by( 'id', $user_id );
 		}
 
 		$order = self::build_order( $user, $items, $phone, $name, $how, $where );
@@ -787,10 +822,37 @@ class AH_Rest {
 
 		return array(
 			'order'    => AH_Shape::order( $order, true ),
-			'token'    => AH_Auth::issue( $user->ID ),
-			'user'     => AH_Shape::user( $user ),
+			// Only for an account made just now. This used to hand out a
+			// session for ANY number typed in — so ordering with somebody
+			// else's number signed you in as them, with no code at all.
+			'token'    => $known ? null : AH_Auth::issue( $user->ID ),
+			'user'     => $known ? null : AH_Shape::user( $user ),
 			'smsSent'  => (bool) $sms['ok'],
 		);
+	}
+
+	/** A customer account for a phone number. @return WP_User|WP_Error */
+	private static function new_customer( $phone, $name ) {
+		$login = 'ah' . preg_replace( '/\D/', '', $phone );
+		if ( username_exists( $login ) ) {
+			$login .= wp_rand( 10, 99 );
+		}
+		$id = wp_insert_user(
+			array(
+				'user_login'   => $login,
+				'user_pass'    => wp_generate_password( 24 ),
+				'display_name' => $name,
+				'first_name'   => $name,
+				'role'         => 'customer',
+			)
+		);
+		if ( is_wp_error( $id ) ) {
+			return self::err( 'ah_user_failed', 'Could not create your account: ' . $id->get_error_message(), 400 );
+		}
+		update_user_meta( $id, 'ah_phone', $phone );
+		update_user_meta( $id, 'billing_phone', $phone );
+		update_user_meta( $id, 'ah_account_type', 'individual' );
+		return get_user_by( 'id', $id );
 	}
 
 	/**
@@ -842,12 +904,36 @@ class AH_Rest {
 			return self::err( 'ah_no_address', 'Tell us where to deliver, so the driver can find you', 400 );
 		}
 
+		// Somebody who signed in by email may have no number on the
+		// account, so the one typed in the cart is the order's contact. It
+		// goes on the order only: saved on the account unchecked, it would
+		// let anyone claim a number that is not theirs.
 		$phone = (string) get_user_meta( $user->ID, 'ah_phone', true );
+		if ( '' === $phone ) {
+			$phone = AH_Sms::normalise_phone( (string) $req->get_param( 'phone' ) );
+		}
+		if ( ! $phone ) {
+			return self::err( 'ah_bad_phone', 'The shop needs a number to reach you on', 400 );
+		}
 		$name  = $user->display_name ? $user->display_name : trim( (string) $req->get_param( 'fullName' ) );
 
 		$order = self::build_order( $user, $items, $phone, $name, $how, $where );
 		if ( is_wp_error( $order ) ) {
 			return $order;
+		}
+
+		// A company's buyer: over their limit the order is refused, under
+		// it the order is filed in the company's name for the owner to see.
+		$limit = get_user_meta( $user->ID, 'ah_spending_limit', true );
+		if ( '' !== $limit && (int) $limit > 0 && AH_Shape::money( $order->get_total() ) > (int) $limit ) {
+			$order->delete( true );
+			return self::err( 'ah_over_limit', sprintf( 'This is over your spending limit of UGX %s per order.', number_format( (int) $limit ) ), 403 );
+		}
+		$company = (int) get_user_meta( $user->ID, 'ah_company_id', true );
+		if ( $company ) {
+			$order->update_meta_data( '_ah_company_id', $company );
+			$order->update_meta_data( '_ah_company_name', (string) get_user_meta( $user->ID, 'ah_company_name', true ) );
+			$order->save();
 		}
 
 		$note = trim( (string) $req->get_param( 'notes' ) );

@@ -31,6 +31,7 @@ POST /api/auth/register
 ```
 
 ```http
+POST /api/auth/login         { "identifier": "email or phone", "password": "…" }   customers and staff
 POST /api/auth/otp/request   { "phone": "+256770111001" }
 → { "sent": true, "devCode": "123456" }     // devCode only when OTP_DEV_MODE=true
 

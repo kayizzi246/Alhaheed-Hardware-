@@ -218,7 +218,7 @@ class AH_Expenses {
 		);
 		$id = (int) $wpdb->insert_id;
 
-		AH_Flow::log_event( 0, $desk ? $desk : 'manager', 'expense_raised', $user->ID, $ref . ' · ' . $details . ' · ' . $amount );
+		AH_Flow::log_event( 0, $desk ? $desk : 'manager', 'expense_raised', null, null, $user->ID, $ref . ' · ' . $details . ' · ' . $amount );
 
 		// The manager is the one who has to act, so the manager is told.
 		self::tell(
@@ -283,7 +283,7 @@ class AH_Expenses {
 		);
 
 		AH_Flow::log_event(
-			0, 'manager', $approve ? 'expense_approved' : 'expense_declined', $user->ID,
+			0, 'manager', $approve ? 'expense_approved' : 'expense_declined', null, null, $user->ID,
 			$row['ref'] . ( $note ? ' · ' . $note : '' )
 		);
 
@@ -363,7 +363,7 @@ class AH_Expenses {
 			array( 'id' => $id )
 		);
 
-		AH_Flow::log_event( 0, 'cashier', 'expense_paid', $user->ID, $row['ref'] . ' · UGX ' . number_format( (int) $row['amount'] ) );
+		AH_Flow::log_event( 0, 'cashier', 'expense_paid', null, null, $user->ID, $row['ref'] . ' · UGX ' . number_format( (int) $row['amount'] ) );
 
 		self::tell_user(
 			(int) $row['raised_by'],

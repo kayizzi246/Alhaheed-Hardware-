@@ -1,6 +1,6 @@
 # FlutterFlow — Al Hadeed Hardware app
 
-The app as FlutterFlow **custom widgets**: five screens, and everything
+The app as FlutterFlow **custom widgets**: six screens, and everything
 else as a bottom sheet.
 
 Customers are app-only (the concept paper's Platform Access table, and the
@@ -55,7 +55,8 @@ where that desk lives.
 | 2 | [al_hadeed_cart.dart](custom_code/widgets/al_hadeed_cart.dart) | `AlHadeedCart` | The final page — order, name, delivery choice, location |
 | 3 | [al_hadeed_orders.dart](custom_code/widgets/al_hadeed_orders.dart) | `AlHadeedOrders` | Order history and live five-step tracking |
 | 4 | [al_hadeed_company.dart](custom_code/widgets/al_hadeed_company.dart) | `AlHadeedCompany` | Company owner: staff, limits, every company order |
-| 5 | [al_hadeed_manager.dart](custom_code/widgets/al_hadeed_manager.dart) | `AlHadeedManager` | Manager: sales, stages, refunds, low stock |
+| 5 | [al_hadeed_manager.dart](custom_code/widgets/al_hadeed_manager.dart) | `AlHadeedManager` | Manager: sales, stages, refunds, low stock. Opened by `AlHadeedStaff` |
+| 6 | [al_hadeed_staff.dart](custom_code/widgets/al_hadeed_staff.dart) | `AlHadeedStaff` | The staff side: a different bar for store, cashier, accounts and manager |
 
 Screen 4 is two screens in one, chosen by who is signed in: a **company
 owner** gets the staff register; anyone else gets their account.
@@ -68,8 +69,7 @@ sign-in, and no customer ever sees it.
 | Sheet | Lives in | Opens from |
 | --- | --- | --- |
 | Product detail + quantity | shop | tapping a product |
-| Sign in — phone, then the SMS code | shop | the avatar, for seeing past orders |
-| That is another desk | shop | a cashier/accounts/store number signing in |
+| Sign in — SMS code, or email/phone and password | shop, cart, company | the avatar, the cart, the Account tab |
 | Account & sign out | shop, company, manager | the avatar |
 | Phone number | cart | reaching the final page |
 | Order placed — SMS sent, what happens next | cart | a successful order |
@@ -153,7 +153,7 @@ screen calls `load()` in `initState`. Keys: `alhadeed.token`,
 | Screen | Calls |
 | --- | --- |
 | Shop | `GET /api/products`, `GET /api/products/categories` (both public), `POST /api/auth/otp/request`, `POST /api/auth/otp/verify` |
-| Cart | `POST /api/orders/guest` (no account) or `POST /api/orders` (signed in) |
+| Cart | `POST /api/orders` (signed in; the cart asks) |
 | Orders | `GET /api/orders/mine?scope=mine\|company`, `GET /api/orders/:id/track`, `POST /api/orders/:id/cancel` |
 | Company | `GET /api/company`, `/company/staff`, `/company/orders`; `POST`/`PATCH`/`DELETE /api/company/staff` |
 | Manager | `GET /api/manager/dashboard`, `GET /api/orders/queue/:stage`, `POST /api/manager/refunds/:id/decide` |
