@@ -3,10 +3,10 @@
 The app as FlutterFlow **custom widgets**: six screens, and everything
 else as a bottom sheet.
 
-Customers are app-only (the concept paper's Platform Access table, and the
-web panel has no customer side at all). The Cashier and Accounts desks are
-on the web panel; the Manager has a screen here too, because a manager's
-phone number signs them straight into it.
+One app for everybody. Customers shop; a Store Manager, Cashier, Accounts
+or Manager login turns the app into that desk (`AlHadeedStaff`), with a
+bar of its own and no way back to the shop except signing out. The web
+panel stays for the counter: counter sales, payment screenshots, reports.
 
 ---
 
@@ -19,8 +19,8 @@ This is the whole flow, and the screens exist to serve it:
 2. **Tap a product → a sheet** with the price, what is in stock and a
    quantity stepper. Primary button: **Proceed to order**. (Secondary:
    *Add and keep shopping*, for a builder's run of several items.)
-3. **A sheet asks for the phone number.** That is the only identification
-   there is — no code to wait for.
+3. **The cart asks them to sign in**: an SMS code (a new number gives a
+   name and the account is made), or email and password. The cart is kept.
 4. **The final page**: the order read back, the name, how the goods
    travel, and where they are going.
    - *We deliver it* — the shop's truck, free of charge. Needs an address.
@@ -41,13 +41,13 @@ A number that has ordered before is recognised and the order joins that
 history; a new number gets a customer record created for it. `0772123456`,
 `772123456` and `+256772123456` are all the same number.
 
-A **manager's** number opens the manager side instead of the shop. A
-cashier, accounts or store number is told which desk it belongs to and
-where that desk lives.
+Somebody else's number, typed in, opens nothing: the code goes to that
+
+phone.
 
 ---
 
-## The five screens
+## The six screens
 
 | # | File | Widget class | What it is |
 | --- | --- | --- | --- |
@@ -101,11 +101,13 @@ looks and reads the same way.
    ```
 
 4. Point the app's entry page at `AlHadeedShop` — the in-app bottom bar
-   moves between the first four, and sign-in routes a manager to the fifth.
+   moves between the first four, and those four hand over to
+   `AlHadeedStaff` by themselves when staff sign in. Add all six widgets
+   before saving the first, since they refer to each other.
 
 ### The one line to change when you deploy
 
-`_apiBase`, at the top of **all five** files:
+`_apiBase`, at the top of **all six** files:
 
 ```dart
 const String _apiBase = 'http://localhost:4000';
@@ -129,10 +131,10 @@ lines, so **a widget class is the only thing that crosses from one custom
 widget file to another**. A shared private helper is not visible from the
 next file and the build fails with `The function '_txt' isn't defined`.
 
-So all five files carry the same core — tokens, type scale, `_Glass`,
+So all six files carry the same core — tokens, type scale, `_Glass`,
 `_Pressable`, `_Field`, `_Sheet`, the API client, `_Session`, `_CartStore`,
 `_Header`, `_BottomBar`. [custom_code/widgets/_shared_core.dart.md](custom_code/widgets/_shared_core.dart.md)
-lists it. **When you change a token, change it in all five** — the cores
+lists it. **When you change a token, change it in all six** — the cores
 are currently byte-identical and worth keeping that way.
 
 Each file carries a few core helpers it does not use itself, so every file
@@ -212,6 +214,3 @@ every status change, and the tracking screen reads the current state when
 opened or pulled to refresh. Firebase Cloud Messaging is the step that
 turns those into alerts on the phone. The order confirmation does go out
 as an SMS.
-
-Cashier, Accounts and Store Manager have no screen in this app yet; their
-numbers are told so at sign-in. They would be built the same way.
