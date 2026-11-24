@@ -2369,6 +2369,20 @@ class _SignInSheetState extends State<_SignInSheet> {
         (!_askName || _name.text.trim().length >= 2);
   }
 
+  /// A shop whose plugin is older than this app has only the staff door.
+  Future<Map<String, dynamic>> _passwordSignIn() async {
+    final body = {
+      'identifier': _who.text.trim(),
+      'password': _password.text,
+    };
+    try {
+      return await _apiPost('/api/auth/login', body);
+    } on _ApiError catch (e) {
+      if (e.code != 'rest_no_route') rethrow;
+      return _apiPost('/api/auth/staff/login', body);
+    }
+  }
+
   Future<void> _submit() async {
     setState(() {
       _busy = true;
@@ -2392,10 +2406,7 @@ class _SignInSheetState extends State<_SignInSheet> {
       }
 
       final r = _usePassword
-          ? await _apiPost('/api/auth/login', {
-              'identifier': _who.text.trim(),
-              'password': _password.text,
-            })
+          ? await _passwordSignIn()
           : await _apiPost('/api/auth/otp/verify', {
               'phone': _phone.text.trim(),
               'code': _code.text.trim(),
