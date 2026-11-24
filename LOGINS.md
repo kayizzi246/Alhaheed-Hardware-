@@ -113,6 +113,13 @@ They cannot receive an SMS in Kampala, so they get a password.
   App access**, and say: *Account → Sign in → Password*. Never give
   Google a staff account.
 
+### Deleting an account
+
+A customer does it in the app: **Account → Delete account**. Google also
+asks for a web address that works without the app. Give it
+**https://alhaheed-hardware.vercel.app/delete-account** under
+**Play Console → App content → Data safety**.
+
 ### One app, two sides
 
 Everybody signs in from **Account → Sign in**. A customer stays in the

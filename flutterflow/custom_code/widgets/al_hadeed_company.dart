@@ -1681,6 +1681,14 @@ class _AlHadeedCompanyState extends State<AlHadeedCompany> {
                 style: _txt(14.5, weight: FontWeight.w600, color: _navy)),
           ),
         ),
+        const SizedBox(height: 8),
+        Center(
+          child: TextButton(
+            onPressed: () => _DeleteAccountSheet.open(context),
+            child: Text('Delete account',
+                style: _txt(13.5, weight: FontWeight.w600, color: _ember)),
+          ),
+        ),
       ],
     );
   }
@@ -2086,6 +2094,14 @@ class _ProfileSheet extends StatelessWidget {
                     style: _txt(15, weight: FontWeight.w600, color: _ember)),
               ),
             ),
+            const SizedBox(height: 6),
+            Center(
+              child: TextButton(
+                onPressed: () => _DeleteAccountSheet.open(context),
+                child: Text('Delete account',
+                    style: _txt(13.5, weight: FontWeight.w600, color: _mid)),
+              ),
+            ),
             SizedBox(height: mq.padding.bottom + 4),
           ],
         ),
@@ -2108,6 +2124,172 @@ class _ProfileSheet extends StatelessWidget {
           ],
         ),
       );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SHEET — DELETE ACCOUNT
+// ═══════════════════════════════════════════════════════════════
+
+/// Deleting the account, for good. The word is typed out, because this
+/// is the one thing in the app that cannot be put right afterwards.
+class _DeleteAccountSheet extends StatefulWidget {
+  const _DeleteAccountSheet();
+
+  static Future<void> open(BuildContext context) => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const _DeleteAccountSheet(),
+      );
+
+  @override
+  State<_DeleteAccountSheet> createState() => _DeleteAccountSheetState();
+}
+
+class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
+  final _word = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _word.dispose();
+    super.dispose();
+  }
+
+  bool get _ready => !_busy && _word.text.trim().toUpperCase() == 'DELETE';
+
+  Future<void> _delete() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _apiPost('/api/account/delete', {'confirm': 'DELETE'});
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+      return;
+    }
+
+    // The phone forgets them too: the session, the cart, and the name,
+    // number and address the cart keeps for next time.
+    await _Session().signOut();
+    await _CartStore().clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('alhadeed.details');
+
+    HapticFeedback.mediumImpact();
+    navigator.pushAndRemoveUntil(
+      PageRouteBuilder<void>(
+        pageBuilder: (_, __, ___) => const AlHadeedShop(),
+        transitionDuration: Duration.zero,
+      ),
+      (_) => false,
+    );
+    messenger.showSnackBar(
+      const SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text('Your account has been deleted.'),
+      ),
+    );
+  }
+
+  Widget _point(IconData icon, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: _mid),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Text(text, style: _txt(13.5, height: 1.45))),
+          ],
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final owner = _Session().isCompanyOwner;
+
+    return _Sheet(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Delete your account', style: _title(22)),
+            const SizedBox(height: 6),
+            Text('This cannot be undone.',
+                style: _txt(13.5, weight: FontWeight.w600, color: _ember)),
+            const SizedBox(height: 18),
+            _point(Icons.person_off_outlined,
+                'Your account, name, phone number, email and addresses are deleted now.'),
+            _point(Icons.receipt_long_outlined,
+                'Past orders and receipts stay in the shop\'s books, without your name on them. Payment screenshots stay with their receipts.'),
+            _point(Icons.remove_shopping_cart_outlined,
+                'Orders you have not paid for are cancelled. One you have paid for must be collected or refunded first.'),
+            if (owner)
+              _point(Icons.group_off_outlined,
+                  'The people on your company account become ordinary customers.'),
+            const SizedBox(height: 6),
+            Text('Type DELETE to confirm',
+                style: _txt(13, weight: FontWeight.w600, color: _ink)),
+            const SizedBox(height: 8),
+            _Field(
+              controller: _word,
+              hint: 'Type it here',
+              capitalisation: TextCapitalization.characters,
+              onChanged: (_) => setState(() {}),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(_error!, style: _txt(13, color: _ember, height: 1.4)),
+            ],
+            const SizedBox(height: 18),
+            _Pressable(
+              scale: 0.98,
+              onTap: _ready ? _delete : null,
+              child: Opacity(
+                opacity: _ready || _busy ? 1 : 0.45,
+                child: Container(
+                  height: 50,
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  decoration: _liquid(tint: _ember, radius: 25),
+                  child: _busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: _white))
+                      : Text('Delete my account for good',
+                          style: _txt(15,
+                              weight: FontWeight.w600, color: _white)),
+                ),
+              ),
+            ),
+            Center(
+              child: TextButton(
+                onPressed: _busy ? null : () => Navigator.of(context).pop(),
+                child: Text('Keep my account',
+                    style: _txt(14, weight: FontWeight.w600, color: _inkSoft)),
+              ),
+            ),
+            SizedBox(height: mq.padding.bottom + 4),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════

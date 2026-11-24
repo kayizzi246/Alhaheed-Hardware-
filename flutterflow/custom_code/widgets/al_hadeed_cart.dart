@@ -1152,6 +1152,9 @@ class _Details extends ChangeNotifier {
         phone = m['phone'] as String? ?? '';
         fullName = m['fullName'] as String? ?? '';
         location = m['location'] as String? ?? '';
+      } else {
+        // An account deleted on this phone took these with it.
+        phone = fullName = location = '';
       }
     } catch (_) {
       // Corrupt storage just starts blank.
