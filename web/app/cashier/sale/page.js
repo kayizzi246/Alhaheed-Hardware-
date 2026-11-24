@@ -189,7 +189,7 @@ export default function CounterSale() {
 
   return (
     <>
-      <PageHead title="New sale" sub="For somebody at the counter — no app or account needed." />
+      <PageHead title="New sale" sub="For somebody at the counter. No app or account needed." />
 
       {/* minmax(0,1fr) on a phone too: an unsized column grows to its widest
           row — a long name beside a price — and pushes past the screen. */}
@@ -202,7 +202,7 @@ export default function CounterSale() {
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Find an item — name or code"
+              placeholder="Find an item by name or code"
               aria-label="Find an item"
             />
           </div>
@@ -296,7 +296,7 @@ export default function CounterSale() {
                 </p>
               )}
               {isNew && (
-                <Field label="New customer — their name" hint="They are added to the customer list and texted a welcome.">
+                <Field label="New customer: their name" hint="They are added to the customer list and texted a welcome.">
                   <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kato Ibrahim" autoFocus />
                 </Field>
               )}

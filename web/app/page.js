@@ -212,7 +212,7 @@ export default function LoginPage() {
             {note && !error && <Alert kind="ok">{note}</Alert>}
             {forgot && mode === 'code' && !error && (
               <p className="mb-4 rounded-sm border border-line bg-surface-2 px-3.5 py-3 text-[13px] leading-relaxed text-ink-2">
-                No problem — sign in with a code sent to your phone instead. Once you are in,
+                No problem. Sign in with a code sent to your phone instead. Once you are in,
                 ask the manager to set you a new password.
               </p>
             )}
@@ -411,7 +411,7 @@ export default function LoginPage() {
 const SLIDES = [
   {
     title: 'Every order, end to end.',
-    line: 'From the customer’s phone to the cashier, to accounts, to the store — and nobody writes a slip.',
+    line: 'From the customer’s phone to the cashier, to accounts, to the store, and nobody writes a slip.',
   },
   {
     title: 'The till adds itself up.',

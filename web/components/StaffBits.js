@@ -85,7 +85,7 @@ export function SignInCard({ phone, password }) {
         {copied ? 'Copied' : 'Copy sign-in details'}
       </Button>
       <p className="text-[12.5px] leading-relaxed text-ink-muted">
-        Shown once. It is not sent by text message — an SMS sits on a phone for anyone to read.
+        Shown once. It is not sent by text message. An SMS sits on a phone for anyone to read.
         You can set a new one from their page at any time.
       </p>
     </div>

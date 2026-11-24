@@ -171,7 +171,7 @@ function sayFailure(res, data) {
     case res.status >= 500:
       return fromServer
         ? `The shop’s server had a problem: ${fromServer}`
-        : `The shop’s server had a problem (error ${res.status}). Try again — if it keeps happening, tell the manager.`;
+        : `The shop’s server had a problem (error ${res.status}). Try again. If it keeps happening, tell the manager.`;
     default:
       return fromServer || `Something went wrong (error ${res.status}). Try again.`;
   }
@@ -211,7 +211,7 @@ export async function api(path, { method = 'GET', body, raw, timeout } = {}) {
   if (!res.ok) fail(res, data);
   if (data === null) {
     throw new ApiError(
-      'The shop’s server sent back something unexpected. Try again — if it keeps happening, tell the manager.',
+      'The shop’s server sent back something unexpected. Try again. If it keeps happening, tell the manager.',
       { status: res.status, kind: 'server' }
     );
   }

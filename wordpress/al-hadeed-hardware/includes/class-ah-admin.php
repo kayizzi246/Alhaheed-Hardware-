@@ -430,7 +430,7 @@ class AH_Admin {
 		if ( is_wp_error( $result ) ) {
 			$args['ah_error'] = rawurlencode( $result->get_error_message() );
 		} else {
-			$args['ah_done'] = rawurlencode( 'Order ' . $result['order_no'] . ' — ' . $result['status_label'] );
+			$args['ah_done'] = rawurlencode( 'Order ' . $result['order_no'] . ': ' . $result['status_label'] );
 		}
 
 		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
@@ -589,10 +589,10 @@ class AH_Admin {
 						<div><dt>Reference</dt><dd>%s</dd></div>
 						<div><dt>Taken by</dt><dd>%s, %s</dd></div>
 					</dl>',
-					esc_html( $p['receipt_no'] ?? '—' ),
+					esc_html( $p['receipt_no'] ?? '' ),
 					esc_html( ucwords( str_replace( '_', ' ', $p['method'] ?? '' ) ) ),
-					$p && $p['transaction_ref'] ? '<code>' . esc_html( $p['transaction_ref'] ) . '</code>' : '—',
-					esc_html( $p['cashier_name'] ?? '—' ),
+					$p && $p['transaction_ref'] ? '<code>' . esc_html( $p['transaction_ref'] ) . '</code>' : '',
+					esc_html( $p['cashier_name'] ?? '' ),
 					esc_html( self::at( $p['created_at'] ?? '' ) )
 				);
 
@@ -607,7 +607,7 @@ class AH_Admin {
 				self::form_start( 'reject', $o['id'] );
 				echo '<div class="ah-row">';
 				echo '<input type="text" name="remarks" placeholder="Why it could not be matched" required>';
-				echo '<button class="button ah-danger">Reject — back to cashier</button>';
+				echo '<button class="button ah-danger">Reject, back to cashier</button>';
 				echo '</div></form>';
 
 				echo '</div></article>';
@@ -630,7 +630,7 @@ class AH_Admin {
 			$wpdb->prepare( "SELECT COALESCE(SUM(cash_in - cash_out),0) FROM {$table} WHERE entry_date < %s", $today )
 		);
 
-		echo '<h2 class="ah-section">Cash book — today</h2>';
+		echo '<h2 class="ah-section">Cash book today</h2>';
 		echo '<div class="ah-card ah-flush">';
 		echo '<table class="ah-table"><thead><tr>
 				<th>Details</th><th class="ah-r">Cash in</th><th class="ah-r">Cash out</th><th class="ah-r">Balance</th>

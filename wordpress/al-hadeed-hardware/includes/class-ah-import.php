@@ -210,7 +210,7 @@ class AH_Import {
 					</li>
 					<li>
 						<strong>Run the importer.</strong> It works through the file in
-						batches, so a few thousand products is fine — leave the tab open
+						batches, so a few thousand products is fine. Leave the tab open
 						until it finishes.
 					</li>
 				</ol>
@@ -223,8 +223,8 @@ class AH_Import {
 
 				<p class="ah-t" style="font-size:13px;margin-top:10px">
 					<strong>New shop?</strong> Download the sample catalogue and import it. It
-					is twenty-five things an ironmonger actually sells — cement, iron bars,
-					roofing sheets, paint, tools — each with a picture, so the app and the
+					is twenty-five things an ironmonger actually sells: cement, iron bars,
+					roofing sheets, paint, tools, each with a picture, so the app and the
 					desks have something real on them from the first minute. The prices are
 					in the right range but they are a starting point: change them before you
 					trade.

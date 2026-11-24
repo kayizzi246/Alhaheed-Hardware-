@@ -14,6 +14,8 @@ const slug = (s) => String(s || 'shop').replace(/[^\w]+/g, '-').replace(/^-|-$/g
 const day = (s) => new Date(`${s}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 const span = (from, to) => (from === to ? day(from) : `${day(from)} to ${day(to)}`);
 
+const spendRow = (e) => ({ ...e, kind: KIND[e.kind] || e.kind, status: SPEND[e.status] || e.status, method: e.method ? methodLabel(e.method) : '' });
+
 /** An order's money counts unless the order fell through. */
 const DEAD = ['cancelled', 'rejected', 'refunded'];
 
@@ -33,6 +35,7 @@ export function reportSpec(d) {
       ] },
       { title: 'Money out and result', rows: [
         ['Internal spending paid', t.expenses, 'money'],
+        ...list(d.spentBy).map((m) => [`   ${methodLabel(m.method)}`, m.total, 'money']),
         ['Sales less internal spending', t.net, 'money', true],
       ] },
       { title: 'Cash book', rows: [
@@ -85,21 +88,42 @@ export function reportSpec(d) {
         { h: 'Quantity', key: 'qty', type: 'int', width: 14, total: true },
         { h: 'Value (UGX)', key: 'revenue', type: 'money', width: 20, total: true },
       ] },
-      { name: 'Cash book', about: 'Cash in and out, with the balance after each line', rows: list(d.book), columns: [
+      { name: 'Cash book', about: 'Money in and out, with the balance after each line', rows: list(d.book).map((b) => ({ ...b, method: methodLabel(b.method) })), columns: [
         { h: 'Date', key: 'entry_date', type: 'date', width: 16, bold: true },
-        { h: 'Details', key: 'details', width: 46, wrap: true },
+        { h: 'Details', key: 'details', width: 50, wrap: true },
+        { h: 'Method', key: 'method', width: 20 },
         { h: 'Cash in (UGX)', key: 'cash_in', type: 'money', width: 18, total: true },
         { h: 'Cash out (UGX)', key: 'cash_out', type: 'money', width: 18, total: true },
         { h: 'Balance (UGX)', key: 'balance', type: 'money', width: 18 },
       ] },
-      { name: 'Internal spending', about: 'Requests raised in the period and what became of them', rows: list(d.expenses).map((e) => ({ ...e, kind: KIND[e.kind] || e.kind, status: SPEND[e.status] || e.status, method: e.method ? methodLabel(e.method) : '' })), columns: [
+      { name: 'Spending by method', about: 'How internal spending was paid', rows: list(d.spentBy).map((m) => ({ ...m, method: methodLabel(m.method), share: t.expenses ? m.total / t.expenses : 0 })), columns: [
+        { h: 'Method', key: 'method', width: 24, bold: true },
+        { h: 'Payments', key: 'payments', type: 'int', width: 14, total: true },
+        { h: 'Total (UGX)', key: 'total', type: 'money', width: 20, total: true },
+        { h: 'Share', key: 'share', type: 'pct', width: 12 },
+      ] },
+      { name: 'Internal spending', about: 'Every expense paid in the period: who was paid, how, and the transaction ID', rows: list(d.expenses).filter((e) => e.counts).map(spendRow), columns: [
+        { h: 'Ref', key: 'ref', width: 13, bold: true },
+        { h: 'Paid on', key: 'paid', type: 'datetime', width: 20 },
+        { h: 'What for', key: 'details', width: 36, wrap: true },
+        { h: 'Kind', key: 'kind', width: 24 },
+        { h: 'Paid to', key: 'payee', width: 26 },
+        { h: 'Method', key: 'method', width: 20 },
+        { h: 'Number / account', key: 'number', width: 24 },
+        { h: 'Transaction ID', key: 'pay_ref', width: 22 },
+        { h: 'Approved by', key: 'decided_by', width: 18 },
+        { h: 'Paid by', key: 'paid_by', width: 18 },
+        { h: 'Amount (UGX)', key: 'amount', type: 'money', width: 17, total: true },
+      ] },
+      { name: 'Spending not paid', about: 'Asked for but waiting, declined, or paid outside the period', rows: list(d.expenses).filter((e) => !e.counts).map(spendRow), columns: [
         { h: 'Ref', key: 'ref', width: 13, bold: true },
         { h: 'Raised', key: 'raised', type: 'datetime', width: 20 },
+        { h: 'What for', key: 'details', width: 36, wrap: true },
         { h: 'Kind', key: 'kind', width: 24 },
-        { h: 'Details', key: 'details', width: 38, wrap: true },
+        { h: 'Paid to', key: 'payee', width: 26 },
+        { h: 'Method', key: 'method', width: 20 },
+        { h: 'Raised by', key: 'raised_by', width: 20 },
         { h: 'Status', key: 'status', width: 24 },
-        { h: 'Method', key: 'method', width: 16 },
-        { h: 'Paid', key: 'paid', type: 'datetime', width: 20 },
         { h: 'Amount (UGX)', key: 'amount', type: 'money', width: 17, total: true },
       ] },
       { name: 'Stock', about: 'What left the shelf in the period and what is there now', rows: list(d.stock), columns: [

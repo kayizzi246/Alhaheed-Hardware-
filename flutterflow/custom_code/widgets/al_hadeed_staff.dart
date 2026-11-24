@@ -1422,6 +1422,10 @@ int _int(Object? v) =>
 
 String _method(Object? m) => switch (m?.toString()) {
       'mobile_money' => 'Mobile Money',
+      'mtn_momo' => 'MTN Mobile Money',
+      'airtel_money' => 'Airtel Money',
+      'bank' => 'Bank transfer',
+      'cheque' => 'Cheque',
       'cash' => 'Cash',
       'card' => 'Card',
       null || '' => '',
@@ -1693,7 +1697,7 @@ class _PlainCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Text(amount < 0 ? '−${_ugx(-amount)}' : _ugx(amount),
+            Text(amount < 0 ? '-${_ugx(-amount)}' : _ugx(amount),
                 style: _title(14.5, color: amount < 0 ? _ember : _ink)),
           ],
         ),
@@ -1942,7 +1946,7 @@ class _OrderSheetState extends State<_OrderSheet> {
         }
         return [
           _BigButton(
-            'Money is in — verify',
+            'Money is in, verify',
             _full == null
                 ? null
                 : () => _send('/api/accounts/orders/$_id/verify',
@@ -2106,6 +2110,17 @@ class _RequestCardState extends State<_RequestCard> {
     }
   }
 
+  Future<void> _pay() async {
+    final body = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PaySheet(widget.request),
+    );
+    if (body != null) await _send('pay', body);
+  }
+
   Future<void> _decline() async {
     final why = await showModalBottomSheet<String>(
       context: context,
@@ -2140,6 +2155,11 @@ class _RequestCardState extends State<_RequestCard> {
               '${e['ref']} · ${e['kind_label']} · ${e['raised_by'] ?? ''} · '
               '${_when(e['created_at']?.toString())}',
               style: _txt(12, color: _mid)),
+          if (_paymentLine(e).isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(_paymentLine(e),
+                style: _txt(12.5, weight: FontWeight.w600, color: _inkSoft)),
+          ],
           if ('${e['decision_note'] ?? ''}'.isNotEmpty)
             Text('“${e['decision_note']}”', style: _txt(12, color: _mid)),
           const SizedBox(height: 8),
@@ -2172,13 +2192,193 @@ class _RequestCardState extends State<_RequestCard> {
           ],
           if (widget.desk == 'cashier' && status == 'approved') ...[
             const SizedBox(height: 12),
-            _BigButton('Paid out in cash', () => _send('pay', {'method': 'cash'}),
-                busy: _busy),
+            _BigButton('Pay out', _pay, busy: _busy),
           ],
         ],
       ),
     );
   }
+}
+
+/// "MTN Mobile Money to Kayizzi Badru, 0772 123 456, ID 1234"
+String _paymentLine(Map<String, dynamic> e) {
+  final how = _method(e['method']);
+  final who = '${e['payee'] ?? ''}';
+  return [
+    if (how.isNotEmpty && who.isNotEmpty)
+      '$how to $who'
+    else if (how.isNotEmpty || who.isNotEmpty)
+      how.isNotEmpty ? how : 'To $who',
+    if ('${e['pay_number'] ?? ''}'.isNotEmpty) '${e['pay_number']}',
+    if ('${e['pay_ref'] ?? ''}'.isNotEmpty) 'ID ${e['pay_ref']}',
+  ].join(', ');
+}
+
+/// What the form holds about a payment, shared by adding and paying out.
+class _Payment {
+  String method = 'cash';
+  final payee = TextEditingController();
+  final number = TextEditingController();
+  final ref = TextEditingController();
+
+  bool get hasNumber =>
+      const ['mtn_momo', 'airtel_money', 'bank'].contains(method);
+  bool get hasRef => method != 'cash';
+  bool get proofMissing => hasRef && ref.text.trim().length < 3;
+
+  /// Only what the chosen method has: a number typed before switching to
+  /// cash is not sent.
+  Map<String, dynamic> get body => {
+        'method': method,
+        'payee': payee.text.trim(),
+        'payNumber': hasNumber ? number.text.trim() : '',
+        'payRef': hasRef ? ref.text.trim() : '',
+      };
+
+  void dispose() {
+    payee.dispose();
+    number.dispose();
+    ref.dispose();
+  }
+}
+
+class _PaymentFields extends StatelessWidget {
+  const _PaymentFields(this.p, {required this.paid, required this.changed});
+  final _Payment p;
+
+  /// Money has gone, so the proof is asked for as well.
+  final bool paid;
+  final VoidCallback changed;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Payment method',
+              style: _txt(13, weight: FontWeight.w600, color: _inkSoft)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final m in const [
+              'cash',
+              'mtn_momo',
+              'airtel_money',
+              'bank',
+              'cheque',
+              'card',
+            ])
+              _Pressable(
+                scale: 0.96,
+                onTap: () {
+                  p.method = m;
+                  changed();
+                },
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 40),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: p.method == m ? _brand : _tile,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: p.method == m ? _brand : _hairline),
+                  ),
+                  child: Text(_method(m),
+                      style: _txt(13,
+                          weight: FontWeight.w600,
+                          color: p.method == m ? _white : _inkSoft)),
+                ),
+              ),
+          ]),
+          const SizedBox(height: 12),
+          _Field(
+            controller: p.payee,
+            hint: 'Who is being paid? Their name',
+            capitalisation: TextCapitalization.words,
+            onChanged: (_) => changed(),
+          ),
+          if (p.hasNumber) ...[
+            const SizedBox(height: 10),
+            _Field(
+              key: ValueKey('number ${p.method}'),
+              controller: p.number,
+              hint: p.method == 'bank'
+                  ? 'Bank and account number'
+                  : 'Their ${_method(p.method)} number',
+              keyboardType: p.method == 'bank'
+                  ? TextInputType.text
+                  : TextInputType.phone,
+              onChanged: (_) => changed(),
+            ),
+          ],
+          if (paid && p.hasRef) ...[
+            const SizedBox(height: 10),
+            _Field(
+              controller: p.ref,
+              hint: p.method == 'cheque' ? 'Cheque number' : 'Transaction ID',
+              capitalisation: TextCapitalization.characters,
+              onChanged: (_) => changed(),
+            ),
+          ],
+        ],
+      );
+}
+
+/// Paying out an approved expense. Pops what to send.
+class _PaySheet extends StatefulWidget {
+  const _PaySheet(this.request);
+  final Map<String, dynamic> request;
+
+  @override
+  State<_PaySheet> createState() => _PaySheetState();
+}
+
+class _PaySheetState extends State<_PaySheet> {
+  final _p = _Payment();
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.request;
+    final m = '${e['method'] ?? ''}';
+    if (const ['mtn_momo', 'airtel_money', 'bank', 'cheque', 'card']
+        .contains(m)) {
+      _p.method = m;
+    }
+    _p.payee.text = '${e['payee'] ?? ''}';
+    _p.number.text = '${e['pay_number'] ?? ''}';
+  }
+
+  @override
+  void dispose() {
+    _p.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => _Sheet(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Pay out ${widget.request['ref']}', style: _title(20)),
+              const SizedBox(height: 4),
+              Text('${widget.request['details']}',
+                  style: _txt(13.5, color: _mid)),
+              const SizedBox(height: 16),
+              _PaymentFields(_p, paid: true, changed: () => setState(() {})),
+              const SizedBox(height: 16),
+              _BigButton(
+                'Pay ${_ugx(_int(widget.request['amount']))}',
+                _p.proofMissing
+                    ? null
+                    : () => Navigator.of(context).pop(_p.body),
+                tint: _green,
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _ReasonSheet extends StatefulWidget {
@@ -2240,11 +2440,13 @@ class _RequestSheetState extends State<_RequestSheet> {
   // The manager is the approval, so theirs is recorded as it is saved.
   final bool _boss = _Session().role == 'manager';
   bool _paid = true;
+  final _p = _Payment();
   bool _busy = false;
   String? _error;
 
   @override
   void dispose() {
+    _p.dispose();
     _details.dispose();
     _amount.dispose();
     super.dispose();
@@ -2261,8 +2463,8 @@ class _RequestSheetState extends State<_RequestSheet> {
         'kind': _kind,
         'details': _details.text.trim(),
         'amount': _int(_amount.text.replaceAll(RegExp(r'[^0-9]'), '')),
+        ..._p.body,
         if (_boss) 'settle': _paid ? 'paid' : 'approve',
-        if (_boss) 'method': 'cash',
       });
       navigator.pop(true);
     } on _ApiError catch (e) {
@@ -2277,7 +2479,8 @@ class _RequestSheetState extends State<_RequestSheet> {
   @override
   Widget build(BuildContext context) {
     final ok = _details.text.trim().length >= 3 &&
-        _int(_amount.text.replaceAll(RegExp(r'[^0-9]'), '')) > 0;
+        _int(_amount.text.replaceAll(RegExp(r'[^0-9]'), '')) > 0 &&
+        !(_boss && _paid && _p.proofMissing);
     return _Sheet(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -2325,7 +2528,7 @@ class _RequestSheetState extends State<_RequestSheet> {
               const SizedBox(height: 12),
               Wrap(spacing: 8, runSpacing: 8, children: [
                 for (final (paid, label) in const [
-                  (true, 'Already paid in cash'),
+                  (true, 'Already paid'),
                   (false, 'Cashier to pay'),
                 ])
                   _Pressable(
@@ -2337,6 +2540,9 @@ class _RequestSheetState extends State<_RequestSheet> {
                   ),
               ]),
             ],
+            const SizedBox(height: 14),
+            _PaymentFields(_p,
+                paid: _boss && _paid, changed: () => setState(() {})),
             if (_error != null) ...[
               const SizedBox(height: 10),
               Text(_error!, style: _txt(13, color: _ember)),

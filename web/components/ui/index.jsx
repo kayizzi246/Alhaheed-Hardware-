@@ -519,7 +519,7 @@ const STAT_TONES = {
   bad: 'bg-bad-bg text-bad',
 };
 
-export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, spark, className }) {
+export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, className }) {
   const big = !!(hero || lead);
   const Box = href ? Link : 'div';
   return (
@@ -607,41 +607,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
           {note && <span className="min-w-0">{note}</span>}
         </span>
       )}
-
-      {spark && <Sparkline values={spark} />}
     </Box>
-  );
-}
-
-/**
- * A run of figures drawn faintly in the hero tile's corner — not for
- * reading values from, but for seeing at a glance which way things went.
- */
-function Sparkline({ values }) {
-  const max = Math.max(...values, 1);
-  const pts = values.map((v, i) => [
-    values.length === 1 ? 50 : (i / (values.length - 1)) * 100,
-    30 - (v / max) * 24,
-  ]);
-  const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
-  const [lx, ly] = pts[pts.length - 1];
-  return (
-    <svg
-      viewBox="0 0 100 32"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      className="pointer-events-none absolute bottom-0 right-0 -z-10 h-[42%] w-[56%]"
-    >
-      <defs>
-        <linearGradient id="stat-spark" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="white" stopOpacity="0.22" />
-          <stop offset="1" stopColor="white" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={`${line} L100,32 L0,32 Z`} fill="url(#stat-spark)" />
-      <path d={line} fill="none" stroke="white" strokeOpacity="0.55" strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-      <circle cx={lx} cy={ly} r="1.6" fill="white" vectorEffect="non-scaling-stroke" />
-    </svg>
   );
 }
 
@@ -721,7 +687,7 @@ export const DialogBody = ({ className, ...props }) => (
 );
 
 export const DialogFoot = ({ className, ...props }) => (
-  <div className={cn('flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2/70 px-4 py-4 sm:px-6', className)} {...props} />
+  <div className={cn('sticky bottom-0 z-10 flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2 px-4 py-4 sm:px-6', className)} {...props} />
 );
 
 /**

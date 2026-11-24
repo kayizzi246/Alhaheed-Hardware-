@@ -169,7 +169,7 @@ export default function ManagerOrderDetail() {
       {cancelling && (
         <Modal
           title={`Cancel ${order.order_no}?`}
-          description="The customer is texted. If money has already been taken, the cashier and accounts will need to sort the refund out between them — the panel cannot move money back on its own."
+          description="The customer is texted. If money has already been taken, the cashier and accounts will need to sort the refund out between them. The panel cannot move money back on its own."
           onClose={() => setCancelling(false)}
           footer={
             <>

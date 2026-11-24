@@ -92,4 +92,4 @@ export const dayMonth = (stamp) => {
 };
 
 export const methodLabel = (m) =>
-  ({ cash: 'Cash', mobile_money: 'Mobile Money', card: 'Card' }[m] || m || '');
+  ({ cash: 'Cash', mobile_money: 'Mobile Money', mtn_momo: 'MTN Mobile Money', airtel_money: 'Airtel Money', bank: 'Bank transfer', cheque: 'Cheque', card: 'Card' }[m] || m || '');

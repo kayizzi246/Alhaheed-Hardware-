@@ -356,7 +356,7 @@ function ImportSheet({ onClose, onDone }) {
   return (
     <Modal
       title="Import from a spreadsheet"
-      description="Excel (.xlsx, .xls) or CSV. Matched on the product code — existing products are updated, new codes are added, nothing is deleted."
+      description="Excel (.xlsx, .xls) or CSV. Matched on the product code. Existing products are updated, new codes are added, nothing is deleted."
       onClose={onClose}
       footer={
         <>
@@ -392,7 +392,7 @@ function ImportSheet({ onClose, onDone }) {
           </span>
           <span className="text-[12.5px] text-ink-muted">
             {file
-              ? `${(file.size / 1024).toFixed(0)} KB — click to choose a different one`
+              ? `${(file.size / 1024).toFixed(0)} KB. Click to choose a different one`
               : 'Excel or CSV, up to 2,000 rows'}
           </span>
         </label>
@@ -409,7 +409,7 @@ function ImportSheet({ onClose, onDone }) {
             {parsed.ignored.length > 0 && (
               <p className="mt-1 text-ink-muted">
                 <span className="font-medium text-ink-2">Ignored:</span> {parsed.ignored.join(', ')}
-                {' '}— these columns have nowhere to go, and are left alone.
+                {' '}These columns have nowhere to go, and are left alone.
               </p>
             )}
           </div>

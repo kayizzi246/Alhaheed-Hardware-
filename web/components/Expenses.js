@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, getUser, peek } from '@/lib/api';
 import { usePoll } from '@/lib/live';
 import { money, shortMoney, dateTime, methodLabel, list } from '@/lib/format';
@@ -33,6 +33,101 @@ const KINDS = [
   ['advance', 'Advance to staff'],
 ];
 
+/** How money leaves the shop, what to ask about each, and what it leaves behind. */
+const PAY = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'mtn_momo', label: 'MTN Mobile Money', number: 'Phone number', ref: 'Transaction ID' },
+  { value: 'airtel_money', label: 'Airtel Money', number: 'Phone number', ref: 'Transaction ID' },
+  { value: 'bank', label: 'Bank transfer', number: 'Bank and account number', ref: 'Transaction ID' },
+  { value: 'cheque', label: 'Cheque', ref: 'Cheque number' },
+  { value: 'card', label: 'Card', ref: 'Transaction ID' },
+];
+
+/** Who is paid and how. `paid` asks for the proof as well. */
+function PaymentFields({ p, set, paid }) {
+  const how = PAY.find((m) => m.value === p.method) || PAY[0];
+  return (
+    <>
+      <Field label="Payment method">
+        <div role="radiogroup" aria-label="Payment method" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {PAY.map((m) => {
+            const on = m.value === how.value;
+            return (
+              <button
+                key={m.value}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => set({ ...p, method: m.value })}
+                className={cn(
+                  'min-h-11 rounded-sm border px-3 py-2 text-[13px] font-semibold leading-tight',
+                  'transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-[.97]',
+                  on ? 'border-fill bg-fill text-white' : 'border-line-firm/80 bg-surface text-ink-2 hover:bg-surface-2'
+                )}
+              >
+                {m.label}
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+
+      <div className={cn('grid gap-4', how.number && 'sm:grid-cols-2')}>
+        <Field label="Who is being paid?" hint={how.number ? 'The name on the account.' : undefined}>
+          <Input value={p.payee} onChange={(e) => set({ ...p, payee: e.target.value })} placeholder="Name" maxLength={191} />
+        </Field>
+        {how.number && (
+          <Field label={how.number}>
+            <Input
+              value={p.payNumber}
+              onChange={(e) => set({ ...p, payNumber: e.target.value })}
+              inputMode={how.value === 'bank' ? 'text' : 'tel'}
+              placeholder={how.value === 'bank' ? 'Stanbic 9030001234567' : how.value === 'mtn_momo' ? '0772 123 456' : '0752 123 456'}
+              maxLength={64}
+              className="tnum"
+            />
+          </Field>
+        )}
+      </div>
+
+      {paid && how.ref && (
+        <Field label={how.ref} hint="Kept on the record and shown in the reports.">
+          <Input value={p.payRef} onChange={(e) => set({ ...p, payRef: e.target.value })} maxLength={64} autoComplete="off" className="tnum font-semibold" />
+        </Field>
+      )}
+    </>
+  );
+}
+
+const noPayment = { method: 'cash', payee: '', payNumber: '', payRef: '' };
+
+/** Only what the chosen method has: a phone number typed before switching to cash is not sent. */
+function paymentBody(p) {
+  const how = PAY.find((m) => m.value === p.method) || PAY[0];
+  return {
+    method: how.value,
+    payee: p.payee.trim(),
+    payNumber: how.number ? p.payNumber.trim() : '',
+    payRef: how.ref ? p.payRef.trim() : '',
+  };
+}
+
+const proofMissing = (p) => {
+  const how = PAY.find((m) => m.value === p.method) || PAY[0];
+  return !!how.ref && p.payRef.trim().length < 3;
+};
+
+/** "MTN Mobile Money to Kayizzi Badru, 0772 123 456, ID 1234" */
+export function paymentLine(e) {
+  const out = [];
+  const label = e.method ? methodLabel(e.method) : '';
+  if (label && e.payee) out.push(`${label} to ${e.payee}`);
+  else if (label || e.payee) out.push(label || `To ${e.payee}`);
+  if (e.pay_number) out.push(e.pay_number);
+  if (e.pay_ref) out.push(`ID ${e.pay_ref}`);
+  return out.join(', ');
+}
+
 const FILTERS = [
   ['raised', 'Waiting'],
   ['approved', 'To pay'],
@@ -57,9 +152,15 @@ export default function Expenses() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
+  const wanted = useRef(status);
+  wanted.current = status;
+
   const load = useCallback(async () => {
     try {
-      setData(await api(`/api/expenses?status=${status}`));
+      const r = await api(`/api/expenses?status=${status}`);
+      // An answer for a filter that has since been changed is not shown.
+      if (wanted.current !== status) return;
+      setData(r);
       setError('');
     } catch (e) {
       // An empty shape, not null. Leaving it null kept the screen on
@@ -72,6 +173,17 @@ export default function Expenses() {
   }, [status]);
 
   const { at, failing } = usePoll(load, 20000);
+
+  // The poll alone would leave the last filter's rows under the new
+  // filter's name until its next turn.
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) { first.current = false; return; }
+    const kept = peek(`/api/expenses?status=${status}`);
+    if (kept) setData(kept);
+    else setData((d) => (d ? { ...d, expenses: null } : d));
+    load();
+  }, [status, load]);
 
   if (!data && !error) return <Loading>Loading requests…</Loading>;
 
@@ -128,7 +240,9 @@ export default function Expenses() {
           <CardTitle>{FILTERS.find(([v]) => v === status)?.[1]}</CardTitle>
         </CardHead>
 
-        {rows.length === 0 ? (
+        {data.expenses === null ? (
+          <Loading>Loading expenses…</Loading>
+        ) : rows.length === 0 ? (
           <Empty
             title="Nothing here"
             action={<Button variant="outline" onClick={() => setRaising(true)}>Add expense</Button>}
@@ -151,6 +265,7 @@ export default function Expenses() {
                 <p className="mt-1 text-[12.5px] text-ink-muted">
                   <span className="tnum">{e.ref}</span> · {e.kind_label} · {e.raised_by} · <span className="tnum">{dateTime(e.created_at)}</span>
                 </p>
+                {paymentLine(e) && <p className="mt-1 text-[13px] text-ink-2">{paymentLine(e)}</p>}
                 <div className="mt-1.5">
                   <Chip tone={TONE[e.status] || 'grey'}>{e.status_label}</Chip>
                   {e.decision_note && <span className="mt-1 block text-xs text-ink-muted">{e.decision_note}</span>}
@@ -171,7 +286,7 @@ export default function Expenses() {
             <Table>
               <thead>
                 <tr>
-                  <Th>Ref</Th><Th>What for</Th><Th>Raised by</Th>
+                  <Th>Ref</Th><Th>What for</Th><Th>Payment</Th><Th>Raised by</Th>
                   <Th num>Amount</Th><Th>Status</Th><Th>When</Th><Th />
                 </tr>
               </thead>
@@ -182,6 +297,15 @@ export default function Expenses() {
                     <Td>
                       <span className="font-medium text-ink">{e.details}</span>
                       <span className="block text-xs text-ink-muted">{e.kind_label}</span>
+                    </Td>
+                    <Td className="max-w-[220px]">
+                      <span className="block font-medium text-ink">{methodLabel(e.method)}</span>
+                      {e.payee && <span className="block text-xs text-ink-2">{e.payee}</span>}
+                      {(e.pay_number || e.pay_ref) && (
+                        <span className="block break-words text-xs text-ink-muted">
+                          {[e.pay_number, e.pay_ref && `ID ${e.pay_ref}`].filter(Boolean).join(' · ')}
+                        </span>
+                      )}
                     </Td>
                     <Td>
                       {e.raised_by}
@@ -271,7 +395,7 @@ const SETTLE = [
 
 function RaiseDialog({ who, boss, onClose, onDone }) {
   const [settle, setSettle] = useState('paid');
-  const [method, setMethod] = useState('cash');
+  const [pay, setPay] = useState(noPayment);
   const [kind, setKind] = useState('expense');
   const [details, setDetails] = useState('');
   const [amount, setAmount] = useState('');
@@ -285,7 +409,7 @@ function RaiseDialog({ who, boss, onClose, onDone }) {
     try {
       const r = await api('/api/expenses', {
         method: 'POST',
-        body: { kind, details, amount: Number(amount), ...(boss ? { settle, method } : {}) },
+        body: { kind, details, amount: Number(amount), ...paymentBody(pay), ...(boss ? { settle } : {}) },
       });
       onDone(
         r.expense.status === 'paid'
@@ -311,7 +435,7 @@ function RaiseDialog({ who, boss, onClose, onDone }) {
       footer={
         <>
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" form="raise" disabled={busy || !details.trim() || !amount}>
+          <Button type="submit" form="raise" disabled={busy || details.trim().length < 3 || !(Number(amount) > 0) || (boss && settle === 'paid' && proofMissing(pay))}>
             {busy ? 'Saving…' : boss ? 'Add expense' : 'Send to the manager'}
           </Button>
         </>
@@ -333,7 +457,7 @@ function RaiseDialog({ who, boss, onClose, onDone }) {
           <Input
             value={details}
             onChange={(e) => setDetails(e.target.value)}
-            placeholder="Transport — delivery to Ntinda"
+            placeholder="Transport, delivery to Ntinda"
             autoFocus
           />
         </Field>
@@ -360,11 +484,7 @@ function RaiseDialog({ who, boss, onClose, onDone }) {
           </Field>
         )}
 
-        {boss && settle === 'paid' && (
-          <Field label="Paid how?">
-            <Segmented label="Method" value={method} onChange={setMethod} options={METHODS} />
-          </Field>
-        )}
+        <PaymentFields p={pay} set={setPay} paid={boss && settle === 'paid'} />
 
         {who && (
           <p className="text-[12.5px] text-ink-muted">
@@ -410,7 +530,7 @@ function DecideDialog({ e, approve, onClose, onDone }) {
   return (
     <Modal
       title={approve ? `Approve ${e.ref}` : `Decline ${e.ref}`}
-      description={`${e.details} · raised by ${e.raised_by} · asked for ${money(e.amount)}`}
+      description={[e.details, paymentLine(e), `raised by ${e.raised_by}`, `asked for ${money(e.amount)}`].filter(Boolean).join(' · ')}
       onClose={onClose}
       footer={
         <>
@@ -454,7 +574,7 @@ function DecideDialog({ e, approve, onClose, onDone }) {
           label={approve ? 'Note (optional)' : 'Why is it declined?'}
           hint={
             approve
-              ? 'Anything they should know — “take the cheaper disc”.'
+              ? 'Anything they should know: “take the cheaper disc”.'
               : 'They will read this. A bare “declined” just gets raised again tomorrow.'
           }
         >
@@ -473,14 +593,13 @@ function DecideDialog({ e, approve, onClose, onDone }) {
 
 /* ── Paying ───────────────────────────────────────────────────────── */
 
-const METHODS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'mobile_money', label: 'Mobile Money' },
-  { value: 'bank', label: 'Bank' },
-];
-
 function PayDialog({ expense, onClose, onDone }) {
-  const [method, setMethod] = useState('cash');
+  const [pay, setPay] = useState({
+    ...noPayment,
+    method: PAY.some((m) => m.value === expense.method) ? expense.method : 'cash',
+    payee: expense.payee || '',
+    payNumber: expense.pay_number || '',
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -489,7 +608,7 @@ function PayDialog({ expense, onClose, onDone }) {
     setBusy(true);
     setError('');
     try {
-      await api(`/api/expenses/${expense.id}/pay`, { method: 'POST', body: { method } });
+      await api(`/api/expenses/${expense.id}/pay`, { method: 'POST', body: paymentBody(pay) });
       onDone(`${expense.ref} paid out. It is in the cash book.`);
     } catch (err) {
       setError(err.message);
@@ -505,7 +624,7 @@ function PayDialog({ expense, onClose, onDone }) {
       footer={
         <>
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" form="pay-out" disabled={busy}>
+          <Button type="submit" form="pay-out" disabled={busy || proofMissing(pay)}>
             {busy ? 'Booking…' : `Pay ${money(expense.amount)}`}
           </Button>
         </>
@@ -523,9 +642,7 @@ function PayDialog({ expense, onClose, onDone }) {
           </strong>
         </div>
 
-        <Field label="Paid how?">
-          <Segmented label="Method" value={method} onChange={setMethod} options={METHODS} />
-        </Field>
+        <PaymentFields p={pay} set={setPay} paid />
 
         <p className="text-[12.5px] leading-relaxed text-ink-muted">
           This writes a cash-out line in today&rsquo;s cash book against{' '}

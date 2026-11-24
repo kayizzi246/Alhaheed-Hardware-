@@ -1907,7 +1907,7 @@ class _StaffSheetState extends State<_StaffSheet> {
               ],
               _Field(
                 controller: _role,
-                hint: 'Role — Cashier, Buyer, Site Supervisor',
+                hint: 'Role: Cashier, Buyer, Site Supervisor',
                 capitalisation: TextCapitalization.words,
                 validator: _validateRole,
               ),

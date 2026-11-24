@@ -273,7 +273,7 @@ function TakePayment({ order, onClose, onDone, onError }) {
           body: { method, amountPaid: Number(amount), transactionRef: transactionRef || null },
         });
       }
-      onDone(`${order.order_no} paid — ${money(amount)}. It is with Accounts now.`);
+      onDone(`${order.order_no} paid. ${money(amount)}. It is with Accounts now.`);
     } catch (err) {
       setLocal(err.message);
       onError('');
@@ -287,7 +287,7 @@ function TakePayment({ order, onClose, onDone, onError }) {
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent
-        title={`Take payment — ${order.order_no}`}
+        title={`Take payment: ${order.order_no}`}
         description={`${order.ordered_by_name || 'Walk-in'} · ${order.item_count} ${order.item_count === 1 ? 'item' : 'items'} · due ${money(order.total)}`}
       >
         <form onSubmit={submit}>
@@ -349,7 +349,7 @@ function TakePayment({ order, onClose, onDone, onError }) {
                       ) : found && found.ref ? (
                         <>Read <strong className="tnum text-foreground">{found.ref}</strong>{found.network ? ` · ${found.network}` : ''}. Check it matches the picture.</>
                       ) : found ? (
-                        'Could not read an ID off this picture. Type it in below — the picture is kept as the record.'
+                        'Could not read an ID off this picture. Type it in below. The picture is kept as the record.'
                       ) : 'Attached.'}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
@@ -373,7 +373,7 @@ function TakePayment({ order, onClose, onDone, onError }) {
               label={method === 'cash' ? 'Reference (optional)' : 'Transaction ID'}
               hint={
                 dupe ? null
-                  : refFrom === 'picture' ? 'Filled in from the picture — correct it if it is wrong.'
+                  : refFrom === 'picture' ? 'Filled in from the picture. Correct it if it is wrong.'
                     : refFrom === 'pasted' ? 'Taken from the message you pasted.'
                       : method === 'mobile_money' ? 'From the MTN or Airtel message. You can paste the whole message here.'
                         : method === 'card' ? 'The RRN or reference on the card slip.' : null
@@ -391,7 +391,7 @@ function TakePayment({ order, onClose, onDone, onError }) {
               />
               {dupe && (
                 <p className="mt-1 text-[12px] font-medium text-destructive">
-                  Already used — it paid for order {dupe.orderNo} (receipt {dupe.receiptNo}).
+                  Already used. It paid for order {dupe.orderNo} (receipt {dupe.receiptNo}).
                 </p>
               )}
             </Field>

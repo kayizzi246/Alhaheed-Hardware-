@@ -50,7 +50,7 @@ export default function VerifyPayments() {
       });
       setNotice(
         approve
-          ? `${order.order_no} verified — the store can pack it now.`
+          ? `${order.order_no} verified. The store can pack it now.`
           : `${order.order_no} sent back to the cashier.`
       );
       load();
@@ -208,7 +208,7 @@ export default function VerifyPayments() {
       </Card>
 
       <Card>
-        <CardHead><CardTitle>Cash book — today</CardTitle></CardHead>
+        <CardHead><CardTitle>Cash book today</CardTitle></CardHead>
         <CashBookTable />
       </Card>
 
@@ -256,7 +256,7 @@ function RejectModal({ order, onClose, onConfirm, busy }) {
     >
       <Field
         label="Why is it going back?"
-        hint='The cashier reads this. Be specific — "no MM message found", "UGX 5,000 short".'
+        hint='The cashier reads this. Be specific: "no MM message found", "UGX 5,000 short".'
       >
         <Textarea
           rows={3}
@@ -304,7 +304,7 @@ function ProofModal({ order, onClose, onVerify, onReject }) {
       footer={
         <>
           <Button variant="danger" onClick={onReject}>Reject</Button>
-          <Button variant="good" onClick={onVerify}>It matches — verify</Button>
+          <Button variant="good" onClick={onVerify}>It matches, verify</Button>
         </>
       }
     >

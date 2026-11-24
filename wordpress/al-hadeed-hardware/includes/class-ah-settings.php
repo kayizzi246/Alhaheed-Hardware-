@@ -165,7 +165,7 @@ class AH_Settings {
 		$api_base = home_url( '/api' );
 		?>
 		<div class="wrap ah-wrap">
-			<h1>Al Hadeed Hardware — Settings</h1>
+			<h1>Al Hadeed Hardware Settings</h1>
 
 			<div class="ah-card" style="max-width:860px">
 				<h2 style="margin-top:0">Point the apps here</h2>
@@ -213,7 +213,7 @@ class AH_Settings {
 					<h2 style="margin-top:0">SMS</h2>
 					<p class="description" style="margin-bottom:12px">Login codes and the order
 					confirmation. <strong>log</strong> writes the message to the server's error
-					log and sends nothing — free, and useful while setting up.</p>
+					log and sends nothing, free, and useful while setting up.</p>
 					<table class="form-table">
 						<tr>
 							<th><label for="ah_sms_provider">Gateway</label></th>
@@ -221,10 +221,10 @@ class AH_Settings {
 								<select id="ah_sms_provider" name="<?php echo esc_attr( self::OPTION ); ?>[sms_provider]">
 									<?php
 									foreach ( array(
-										'log'            => 'log — write to the debug log, send nothing',
+										'log'            => 'log: write to the debug log, send nothing',
 										'egosms'         => 'EgoSMS',
 										'africastalking' => "Africa's Talking",
-										'generic'        => 'Generic — any JSON POST endpoint',
+										'generic'        => 'Generic: any JSON POST endpoint',
 									) as $value => $label ) {
 										printf(
 											'<option value="%s"%s>%s</option>',
@@ -273,7 +273,7 @@ class AH_Settings {
 						The cashier writes to suppliers from the Suppliers screen. Without a
 						mail service set up below, those messages are handed to the web host,
 						and most hosts either refuse them outright or deliver them into a spam
-						folder. Any mail service will do — the one that came with the shop's
+						folder. Any mail service will do, the one that came with the shop's
 						email address, or a sending service. The Suppliers screen reports
 						whether messages are actually getting out.
 					</p>
@@ -357,7 +357,7 @@ class AH_Settings {
 									<input type="checkbox" value="yes"
 										name="<?php echo esc_attr( self::OPTION ); ?>[otp_dev_mode]"
 										<?php checked( $o['otp_dev_mode'], 'yes' ); ?>>
-									Test mode — every code is <code>123456</code>
+									Test mode: every code is <code>123456</code>
 								</label>
 								<p class="description" style="color:#b32d2e">
 									<strong>Turn this off before taking real orders.</strong> Left on,
@@ -372,7 +372,7 @@ class AH_Settings {
 								value="<?php echo esc_attr( $o['cors_origins'] ); ?>">
 								<p class="description">Comma-separated, e.g.
 								<code>https://alhaheed-hardware.vercel.app</code>. <code>*</code> allows
-								any site to call the API — fine while testing, worth narrowing once the
+								any site to call the API, fine while testing, worth narrowing once the
 								panel has its address.</p></td>
 						</tr>
 					</table>

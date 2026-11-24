@@ -134,7 +134,7 @@ export default function StaffMember() {
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
       {suspended && (
-        <Alert>Suspended — they cannot sign in. Everything they did is kept.</Alert>
+        <Alert>Suspended. They cannot sign in. Everything they did is kept.</Alert>
       )}
 
       {/* The figures that matter for their desk. */}

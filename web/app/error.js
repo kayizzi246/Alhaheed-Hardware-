@@ -28,8 +28,8 @@ export default function PageError({ error, reset }) {
     <div className="mx-auto my-10 max-w-xl rounded-lg border border-line bg-surface px-7 py-8 text-center shadow-sm">
       <h2 className="text-[19px] font-bold text-ink">This screen could not be drawn</h2>
       <p className="mx-auto mb-5 mt-2 max-w-md text-sm leading-relaxed text-ink-muted">
-        Nothing has been changed and the shop&rsquo;s records are safe. Try it again —
-        it usually works the second time.
+        Nothing has been changed and the shop&rsquo;s records are safe. Try it again.
+        It usually works the second time.
       </p>
 
       <div className="flex flex-wrap justify-center gap-2">

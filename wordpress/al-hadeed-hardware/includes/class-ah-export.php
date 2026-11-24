@@ -116,7 +116,7 @@ class AH_Export {
 		global $wpdb;
 		$t    = AH_Install::table( 'cash_book' );
 		$rows = $wpdb->get_results(
-			$wpdb->prepare( "SELECT entry_date, details, cash_in, cash_out FROM {$t} WHERE entry_date BETWEEN %s AND %s ORDER BY entry_date, id", $from, $to ),
+			$wpdb->prepare( "SELECT entry_date, details, method, cash_in, cash_out FROM {$t} WHERE entry_date BETWEEN %s AND %s ORDER BY entry_date, id", $from, $to ),
 			ARRAY_A
 		);
 		foreach ( $rows as $i => $r ) {

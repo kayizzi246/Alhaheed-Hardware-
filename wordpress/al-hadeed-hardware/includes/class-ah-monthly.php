@@ -133,20 +133,48 @@ class AH_Monthly {
 		// ── What went out ──────────────────────────────────────────────
 		$expenses = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT ref, kind, details, amount, status, method, created_at, paid_at
-				   FROM {$spend} WHERE DATE(created_at) BETWEEN %s AND %s ORDER BY id",
+				"SELECT * FROM {$spend}
+				  WHERE DATE(created_at) BETWEEN %s AND %s OR DATE(paid_at) BETWEEN %s AND %s
+				  ORDER BY id",
+				$from,
+				$to,
 				$from,
 				$to
 			),
 			ARRAY_A
 		);
 
-		$spent = 0;
-		foreach ( $expenses as $e ) {
-			if ( 'paid' === $e['status'] ) {
+		// Counted on the day the money left, not the day it was asked for:
+		// raised in October and paid in November is November's spending,
+		// as it is in November's cash book.
+		$spent     = 0;
+		$spent_how = array();
+		$names     = array();
+		$name_of   = function ( $id ) use ( &$names ) {
+			$id = (int) $id;
+			if ( $id && ! isset( $names[ $id ] ) ) {
+				$u            = get_user_by( 'id', $id );
+				$names[ $id ] = $u ? $u->display_name : '';
+			}
+			return $id ? $names[ $id ] : '';
+		};
+		foreach ( $expenses as $i => $e ) {
+			$day      = substr( (string) $e['paid_at'], 0, 10 );
+			$in_range = 'paid' === $e['status'] && $day >= $from && $day <= $to;
+			$expenses[ $i ]['counts'] = $in_range;
+			if ( $in_range ) {
+				$how    = $e['method'] ?: 'cash';
 				$spent += (int) $e['amount'];
+				if ( ! isset( $spent_how[ $how ] ) ) {
+					$spent_how[ $how ] = array( 'method' => $how, 'payments' => 0, 'total' => 0 );
+				}
+				$spent_how[ $how ]['payments']++;
+				$spent_how[ $how ]['total'] += (int) $e['amount'];
 			}
 		}
+		usort( $spent_how, function ( $a, $b ) {
+			return $b['total'] <=> $a['total'];
+		} );
 
 		// ── The book ───────────────────────────────────────────────────
 		$cash = $wpdb->get_row(
@@ -284,7 +312,8 @@ class AH_Monthly {
 			'byStatus' => $by_status,
 			'orders'   => $lines,
 			'products' => array_slice( array_values( $sold ), 0, 50 ),
-			'expenses' => array_map( function ( $e ) {
+			'spentBy'  => array_values( $spent_how ),
+			'expenses' => array_map( function ( $e ) use ( $name_of ) {
 				return array(
 					'ref'     => $e['ref'],
 					'kind'    => $e['kind'],
@@ -294,6 +323,13 @@ class AH_Monthly {
 					'method'  => $e['method'],
 					'raised'  => $e['created_at'],
 					'paid'    => $e['paid_at'],
+					'payee'   => $e['payee'] ?? null,
+					'number'  => $e['pay_number'] ?? null,
+					'pay_ref' => $e['pay_ref'] ?? null,
+					'raised_by'  => $name_of( $e['raised_by'] ),
+					'decided_by' => $name_of( $e['decided_by'] ),
+					'paid_by'    => $name_of( $e['paid_by'] ),
+					'counts'  => ! empty( $e['counts'] ),
 				);
 			}, (array) $expenses ),
 			'staff'    => array_values( $people ),

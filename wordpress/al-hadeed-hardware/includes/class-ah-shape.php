@@ -195,7 +195,7 @@ class AH_Shape {
 			'delivery_address' => $order->get_shipping_address_1()
 				? trim( $order->get_shipping_address_1() . ', ' . $order->get_shipping_city(), ', ' )
 				: null,
-			'notes'            => $order->get_customer_note() ?: null,
+			'notes'            => str_replace( array( ' — ', '—' ), array( ', ', ', ' ), $order->get_customer_note() ) ?: null,
 			'cancel_reason'    => $order->get_meta( '_ah_cancel_reason' ) ?: null,
 			'ordered_by_name'  => $name,
 			'ordered_by_phone' => $order->get_billing_phone() ?: null,

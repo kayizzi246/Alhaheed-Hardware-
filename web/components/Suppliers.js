@@ -350,7 +350,7 @@ function Compose({ supplier, low, sender, onClose, onSent, onError }) {
   }, [low, supplier.name]);
 
   const [picked, setPicked] = useState(() => new Set(theirs.map((i) => i.code)));
-  const [subject, setSubject] = useState(`Restock request — ${supplier.name}`);
+  const [subject, setSubject] = useState(`Restock request: ${supplier.name}`);
   const [intro, setIntro] = useState(
     `Good morning${supplier.contact ? ' ' + supplier.contact.split(' ')[0] : ''},\n\nPlease supply the following:`
   );

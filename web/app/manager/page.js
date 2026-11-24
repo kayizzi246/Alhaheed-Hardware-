@@ -109,7 +109,6 @@ export default function ManagerConsole() {
           note={delta === null ? (d.salesToday ? 'the first sales this week' : 'nothing taken yet today') : 'vs the daily average'}
           icon={Icon.cash()}
           href="/manager/reports"
-          spark={days.map((x) => x.total)}
           className="col-span-2 sm:col-span-1"
         />
         <Stat
@@ -149,7 +148,7 @@ export default function ManagerConsole() {
         {/* Said plainly, because beside "Sales today" a chart reading
             UGX 0 for today looks like a fault: it only counts a payment
             once Accounts has checked it. */}
-        <Panel title="Checked takings — last 7 days" note="A payment counts here once Accounts has verified it">
+        <Panel title="Checked takings, last 7 days" note="A payment counts here once Accounts has verified it">
 
           <Trajectory days={days} average={average} />
         </Panel>
@@ -176,7 +175,7 @@ export default function ManagerConsole() {
 
       {low.length > 0 && (
         <Panel
-          title={`Running low — ${low.length} ${low.length === 1 ? 'product' : 'products'}`}
+          title={`Running low: ${low.length} ${low.length === 1 ? 'product' : 'products'}`}
           link={{ href: '/manager/products', label: 'Open products' }}
           flush
         >

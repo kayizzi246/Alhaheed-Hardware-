@@ -114,7 +114,7 @@ function AddEntry({ date, onClose, onDone }) {
           <Input
             value={details}
             onChange={(e) => setDetails(e.target.value)}
-            placeholder="Transport — delivery truck fuel"
+            placeholder="Transport, delivery truck fuel"
             autoFocus
             required
           />
@@ -140,8 +140,11 @@ function AddEntry({ date, onClose, onDone }) {
           <Field label="Method">
             <Select value={method} onChange={(e) => setMethod(e.target.value)}>
               <option value="cash">Cash</option>
-              <option value="mobile_money">Mobile Money</option>
-              <option value="bank">Bank</option>
+              <option value="mtn_momo">MTN Mobile Money</option>
+              <option value="airtel_money">Airtel Money</option>
+              <option value="bank">Bank transfer</option>
+              <option value="cheque">Cheque</option>
+              <option value="card">Card</option>
             </Select>
           </Field>
         </div>

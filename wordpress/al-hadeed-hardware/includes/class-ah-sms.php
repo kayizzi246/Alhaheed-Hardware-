@@ -69,7 +69,7 @@ class AH_Sms {
 		if ( 'log' === $provider ) {
 			// Deliberately loud: a silent no-op gateway is the kind of
 			// thing nobody notices until it is in production.
-			error_log( "[Al Hadeed SMS — not sent, provider is \"log\"] to {$to}: {$message}" );
+			error_log( "[Al Hadeed SMS not sent, provider is \"log\"] to {$to}: {$message}" );
 			return array( 'ok' => true, 'provider' => $provider, 'to' => $to );
 		}
 

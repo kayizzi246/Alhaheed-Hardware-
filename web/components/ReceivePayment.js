@@ -151,7 +151,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
 
   return (
     <Modal
-      title={`Receive payment — ${order.order_no}`}
+      title={`Receive payment: ${order.order_no}`}
       description={`${order.company_name || order.ordered_by_name} · ${order.item_count} ${
         order.item_count === 1 ? 'item' : 'items'
       }`}
@@ -245,7 +245,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
                       </>
                     ) : found?.failed || (found && !found.ref) ? (
                       <span className="block text-ink-muted">
-                        Could not read an ID off this picture. Type it in below — the picture is kept as the record.
+                        Could not read an ID off this picture. Type it in below. The picture is kept as the record.
                       </span>
                     ) : found?.ref ? (
                       <span className="block text-ink-muted">
@@ -282,12 +282,12 @@ export default function ReceivePayment({ order, onClose, onDone }) {
             <Field
               label="Transaction ID"
               hint={
-                refFrom === 'picture' ? 'Filled in from the picture — correct it if it is wrong.'
+                refFrom === 'picture' ? 'Filled in from the picture. Correct it if it is wrong.'
                   : refFrom === 'pasted' ? 'Taken from the message you pasted.'
                     : method === 'mobile_money' ? 'From the MTN or Airtel message. You can paste the whole message here.'
                       : 'The RRN or reference on the card slip.'
               }
-              error={dupe ? `Already used — it paid for order ${dupe.orderNo} (receipt ${dupe.receiptNo}).` : null}
+              error={dupe ? `Already used. It paid for order ${dupe.orderNo} (receipt ${dupe.receiptNo}).` : null}
             >
               <Input
                 value={ref}

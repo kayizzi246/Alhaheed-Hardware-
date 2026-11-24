@@ -73,7 +73,7 @@ export async function readSheet(file) {
 
   if (!mapping.code) {
     throw new Error(
-      'No product code column. Add a column headed "Code" or "SKU" — it is how a row ' +
+      'No product code column. Add a column headed "Code" or "SKU". It is how a row ' +
         'finds the product it belongs to.'
     );
   }

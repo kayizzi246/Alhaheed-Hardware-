@@ -1538,7 +1538,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
               const SizedBox(height: 6),
               Text(
                 _needsLocation
-                    ? 'A plot number and a landmark beat a road name — the '
+                    ? 'A plot number and a landmark beat a road name: the '
                         'driver will call you on arrival.'
                     : 'Only so the shop knows where the goods are headed.',
                 style: _txt(12, color: _light, height: 1.45),
@@ -2114,7 +2114,7 @@ class _OrderPlacedSheet extends StatelessWidget {
                     child: Text(
                       smsSent
                           ? 'We texted the order number to $phone.'
-                          : 'The text could not be sent just now — your '
+                          : 'The text could not be sent just now, but your '
                               'order is safe, and the number is above.',
                       style: _txt(12.5,
                           color: smsSent ? _green : _brandDark, height: 1.45),

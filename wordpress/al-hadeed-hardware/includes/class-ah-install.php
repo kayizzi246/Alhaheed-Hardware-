@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.3.0';
+	const DB_VERSION = '1.4.0';
 
 	public static function activate() {
 		self::tables();
@@ -108,6 +108,9 @@ class AH_Install {
 			details      TEXT            NOT NULL,
 			amount       BIGINT          NOT NULL DEFAULT 0,
 			method       VARCHAR(32)     NULL,
+			payee        VARCHAR(191)    NULL,
+			pay_number   VARCHAR(64)     NULL,
+			pay_ref      VARCHAR(64)     NULL,
 			status       VARCHAR(24)     NOT NULL DEFAULT 'raised',
 			raised_by    BIGINT UNSIGNED NOT NULL,
 			raised_desk  VARCHAR(16)     NOT NULL,

@@ -151,7 +151,7 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
             setAdding(false);
             setQ(c.phone || c.fullName);
             setFresh(c.id);
-            setNotice(`${c.fullName} is already a customer — they are shown below.`);
+            setNotice(`${c.fullName} is already a customer. They are shown below.`);
           }}
           onDone={(c, smsSent) => {
             setAdding(false);
@@ -271,7 +271,7 @@ function AddCustomer({ start, onClose, onFound, onDone }) {
         <Checkbox
           checked={form.welcome}
           onChange={(e) => setForm((f) => ({ ...f, welcome: e.target.checked }))}
-          label="Text them a welcome — it tells them they can order on the app with this number"
+          label="Text them a welcome. It tells them they can order on the app with this number"
         />
       </form>
     </Modal>

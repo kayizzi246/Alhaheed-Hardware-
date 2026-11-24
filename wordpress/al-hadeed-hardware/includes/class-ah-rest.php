@@ -500,7 +500,7 @@ class AH_Rest {
 		$left    = AH_Limits::left( 'login_account', $who );
 		$message = 'That phone number and password do not match.';
 		if ( 0 === $left ) {
-			$message .= ' That was the last try — wait 15 minutes, or sign in with an SMS code.';
+			$message .= ' That was the last try. Wait 15 minutes, or sign in with an SMS code.';
 		} elseif ( $left <= 2 ) {
 			$message .= sprintf( ' %d %s left before a 15-minute wait.', $left, 1 === $left ? 'try' : 'tries' );
 		}
@@ -1106,11 +1106,11 @@ class AH_Rest {
 		switch ( $how ) {
 			case 'own_transport':
 				return "Collected from the shop by the customer's own delivery man"
-					. ( $where ? " — going to {$where}" : '' );
+					. ( $where ? ", going to {$where}" : '' );
 			case 'pickup':
 				return 'Customer is collecting from the shop';
 			default:
-				return 'Shop delivery — free';
+				return 'Shop delivery, free';
 		}
 	}
 

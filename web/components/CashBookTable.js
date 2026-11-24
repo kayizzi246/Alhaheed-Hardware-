@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { money, time, list } from '@/lib/format';
+import { money, time, list, methodLabel } from '@/lib/format';
 import { Empty, Loading, Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
 
 /**
@@ -49,12 +49,13 @@ export default function CashBookTable({ date }) {
       <Table>
         <thead>
           <tr>
-            <Th>Details</Th><Th num>Cash in</Th><Th num>Cash out</Th><Th num>Balance</Th>
+            <Th>Details</Th><Th>Method</Th><Th num>Cash in</Th><Th num>Cash out</Th><Th num>Balance</Th>
           </tr>
         </thead>
         <tbody>
           <Tr>
             <Td className="text-ink-muted">Opening balance</Td>
+            <Td />
             <Td num /><Td num />
             <Td num className="font-semibold text-ink">{money(book.opening)}</Td>
           </Tr>
@@ -69,6 +70,7 @@ export default function CashBookTable({ date }) {
                   <span className="block text-xs text-ink-muted">{e.recorded_by_name}</span>
                 )}
               </Td>
+              <Td className="whitespace-nowrap text-ink-muted">{methodLabel(e.method)}</Td>
               <Td num className={e.cash_in ? 'font-semibold text-ok' : 'text-ink-faint'}>
                 {e.cash_in ? Number(e.cash_in).toLocaleString('en-UG') : ''}
               </Td>
@@ -82,6 +84,7 @@ export default function CashBookTable({ date }) {
         <tfoot>
           <tr className="bg-surface-2">
             <Td className="font-bold text-ink">Closing balance</Td>
+            <Td />
             <Td num className="font-bold text-ok">{totalIn.toLocaleString('en-UG')}</Td>
             <Td num className="font-bold text-bad">{totalOut.toLocaleString('en-UG')}</Td>
             <Td num className="font-display text-[15px] font-extrabold text-ink">{money(book.closing)}</Td>

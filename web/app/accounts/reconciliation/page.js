@@ -107,8 +107,8 @@ export default function ReconciliationPage() {
 
             {data.difference !== 0 && (
               <CardBody className="border-t border-line pt-4 text-[12.5px] leading-relaxed text-ink-muted">
-                A difference here usually means a manual cash book entry — an opening balance
-                or an expense — that is not tied to a customer payment. Check the cash book
+                A difference here usually means a manual cash book entry, an opening balance
+                or an expense, that is not tied to a customer payment. Check the cash book
                 for the day.
               </CardBody>
             )}

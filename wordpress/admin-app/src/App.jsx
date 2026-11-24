@@ -97,7 +97,7 @@ class Boundary extends React.Component {
         <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-6">
           <h2 className="text-base font-semibold text-destructive">This screen could not be drawn</h2>
           <p className="mt-1.5 max-w-prose text-sm text-muted-foreground">
-            The shop's data is safe — nothing has been changed. Reloading usually clears it. If it
+            The shop's data is safe. Nothing has been changed. Reloading usually clears it. If it
             keeps happening, show this line to whoever looks after the site:
           </p>
           <code className="mt-3 block overflow-x-auto rounded-md border border-border bg-card px-3 py-2 text-xs">

@@ -248,7 +248,7 @@ class AH_Staff {
 					$desks[ $desk ][1]
 				)
 				: sprintf(
-					'%s: you have been set up on the %s desk. Open the staff panel and sign in with this number — it will text you a code.',
+					'%s: you have been set up on the %s desk. Open the staff panel and sign in with this number. It will text you a code.',
 					AH_Sms::shop_name(),
 					$desks[ $desk ][1]
 				)

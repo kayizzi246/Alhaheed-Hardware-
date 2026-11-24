@@ -480,7 +480,7 @@ class AH_Suppliers {
 				'working' => false,
 				'from'    => self::from_address(),
 				'note'    => sprintf(
-					'The last %d %s failed to send. The shop needs an email service set up before this will work — telephone the supplier in the meantime.',
+					'The last %d %s failed to send. The shop needs an email service set up before this will work. Telephone the supplier in the meantime.',
 					$tried,
 					1 === $tried ? 'message' : 'messages'
 				),

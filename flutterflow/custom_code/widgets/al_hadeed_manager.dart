@@ -1339,19 +1339,6 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
                     ),
                   ),
                 ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  width: 170,
-                  height: 64,
-                  child: CustomPaint(
-                    painter: _SparkPainter(((d['last7Days'] as List?) ??
-                            const [])
-                        .map((x) =>
-                            ((x as Map)['total'] as num?)?.toDouble() ?? 0)
-                        .toList()),
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.all(18),
                   child: Column(
@@ -1696,7 +1683,7 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Sales — last 7 days', style: _title(15.5)),
+          Text('Sales, last 7 days', style: _title(15.5)),
           const SizedBox(height: 2),
           // The selected day, in words. This is the chart's label layer:
           // it is what makes the bars readable without relying on colour.
@@ -2175,55 +2162,4 @@ class _ProfileSheet extends StatelessWidget {
           ],
         ),
       );
-}
-
-
-/// The last seven days, drawn faintly in the corner of the sales card —
-/// not for reading values from, but for seeing at a glance whether
-/// today is up or down on the days before it.
-class _SparkPainter extends CustomPainter {
-  _SparkPainter(this.values);
-
-  final List<double> values;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.length < 2) return;
-    final top = values.reduce((a, b) => a > b ? a : b);
-    final max = top <= 0 ? 1.0 : top;
-    final pts = <Offset>[
-      for (var i = 0; i < values.length; i++)
-        Offset(size.width * i / (values.length - 1),
-            size.height - 4 - (values[i] / max) * (size.height - 10)),
-    ];
-    final line = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (final p in pts.skip(1)) {
-      line.lineTo(p.dx, p.dy);
-    }
-    final area = Path.from(line)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(
-      area,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [_white.withOpacity(0.24), _white.withOpacity(0)],
-        ).createShader(Offset.zero & size),
-    );
-    canvas.drawPath(
-      line,
-      Paint()
-        ..color = _white.withOpacity(0.6)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.8
-        ..strokeJoin = StrokeJoin.round,
-    );
-    canvas.drawCircle(pts.last, 3, Paint()..color = _white);
-  }
-
-  @override
-  bool shouldRepaint(_SparkPainter old) => old.values != values;
 }

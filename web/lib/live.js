@@ -73,7 +73,7 @@ export function usePoll(fetcher, every = 10000) {
 
 /** "Updated 14:31" — or the truth, when it is not. */
 export function freshness(at, failing) {
-  if (failing) return 'Not updating — check the connection';
+  if (failing) return 'Not updating. Check the connection';
   if (!at) return 'Loading…';
   return `Updated ${at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
 }

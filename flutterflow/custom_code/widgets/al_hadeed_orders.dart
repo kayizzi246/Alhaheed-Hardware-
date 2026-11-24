@@ -1522,7 +1522,7 @@ class _TrackingSheetState extends State<_TrackingSheet> {
         icon: Icons.cancel_outlined,
         title: 'Cancel this order?',
         line: 'The shop is told straight away. If you have already paid, '
-            'ask the cashier about a refund — that is the manager to '
+            'ask the cashier about a refund. That is the manager to '
             'approve, not something the app can do.',
         confirm: 'Cancel order',
       ),
@@ -1642,7 +1642,7 @@ class _TrackingSheetState extends State<_TrackingSheet> {
                   _emberPale,
                   _ember,
                   'Accounts could not match this payment. The cashier has '
-                  'it back — go to the desk with your receipt.',
+                  'it back. Go to the desk with your receipt.',
                 ),
               ],
               if (status == 'cancelled' && o['cancel_reason'] != null) ...[
@@ -1954,7 +1954,7 @@ class _ReceiptSheet extends StatelessWidget {
             _row('Method', _method),
             if ((payment['transaction_ref'] as String?)?.isNotEmpty == true)
               _row('Transaction ref', payment['transaction_ref'] as String),
-            _row('Received by', payment['cashier_name'] as String? ?? '—'),
+            _row('Received by', payment['cashier_name'] as String? ?? ''),
             _row('When', _when(payment['created_at'] as String?)),
             const SizedBox(height: 14),
             Container(

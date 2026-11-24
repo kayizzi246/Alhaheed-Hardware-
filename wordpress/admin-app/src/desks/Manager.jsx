@@ -114,7 +114,7 @@ function Trajectory({ days, ready }) {
                   </span>
                   <div className="flex w-full items-end" style={{ height: TRACK }}>
                     <div
-                      title={`${label} — ${money(r.total)} from ${r.receipts} ${r.receipts === 1 ? 'receipt' : 'receipts'}`}
+                      title={`${label}: ${money(r.total)} from ${r.receipts} ${r.receipts === 1 ? 'receipt' : 'receipts'}`}
                       className="w-full rounded-t-[3px] bg-[hsl(var(--ah-cat-a))] transition-[height,opacity] duration-200 group-hover:opacity-85"
                       // A day with nothing still gets a sliver, so the
                       // row reads as seven days rather than four.

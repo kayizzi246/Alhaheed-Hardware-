@@ -30,8 +30,8 @@ class AH_Statuses {
 	/** The statuses this plugin adds, slug => label. */
 	public static function custom() {
 		return array(
-			'wc-ah-paid'     => 'Paid — at Accounts',
-			'wc-ah-verified' => 'Verified — at Store',
+			'wc-ah-paid'     => 'Paid, at Accounts',
+			'wc-ah-verified' => 'Verified, at Store',
 			'wc-ah-rejected' => 'Payment rejected',
 		);
 	}

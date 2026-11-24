@@ -35,7 +35,7 @@ class AH_Limits {
 			// Codes asked for from one connection.
 			'otp_send_ip'   => array( 10, HOUR_IN_SECONDS, 'Too many codes asked for from this connection. Wait %s and try again.' ),
 			// Wrong codes for one number; on the last, the code stops working.
-			'otp_guess'     => array( 5, 10 * MINUTE_IN_SECONDS, 'Too many wrong codes. That code no longer works — wait %s, then ask for a new one.' ),
+			'otp_guess'     => array( 5, 10 * MINUTE_IN_SECONDS, 'Too many wrong codes. That code no longer works. Wait %s, then ask for a new one.' ),
 		);
 	}
 

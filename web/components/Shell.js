@@ -497,7 +497,7 @@ function Offline() {
       )}
     >
       {down
-        ? 'You are offline. Nothing you do now will save — it will work again once the internet is back.'
+        ? 'You are offline. Nothing you do now will save. It will work again once the internet is back.'
         : 'Back online.'}
     </div>
   );

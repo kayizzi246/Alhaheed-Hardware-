@@ -66,7 +66,7 @@ class AH_Customers {
 		if ( ! $phone || ! preg_match( '/^\+256\d{9}$/', $phone ) ) {
 			return new WP_Error(
 				'ah_bad_phone',
-				'Enter a phone number like 0772 123 456 — it is how they will be found next time',
+				'Enter a phone number like 0772 123 456. It is how they will be found next time',
 				array( 'status' => 400 )
 			);
 		}

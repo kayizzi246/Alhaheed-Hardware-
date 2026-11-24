@@ -34,7 +34,15 @@ export const dateTime = (iso) => {
 export const today = () => new Date().toISOString().slice(0, 10);
 
 export const methodLabel = (m) =>
-  ({ cash: 'Cash', mobile_money: 'Mobile Money', card: 'Card' })[m] || m;
+  ({
+    cash: 'Cash',
+    mobile_money: 'Mobile Money',
+    mtn_momo: 'MTN Mobile Money',
+    airtel_money: 'Airtel Money',
+    bank: 'Bank transfer',
+    cheque: 'Cheque',
+    card: 'Card',
+  })[m] || m || '';
 
 export const statusLabel = (s) =>
   ({

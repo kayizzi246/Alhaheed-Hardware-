@@ -145,7 +145,7 @@ function Ruling({ ruling, onClose, onDone }) {
       });
       onDone(
         approve
-          ? `${order.order_no} verified — the store can pack it now.`
+          ? `${order.order_no} verified. The store can pack it now.`
           : `${order.order_no} sent back to the cashier.`
       );
     } catch (err) {
@@ -171,7 +171,7 @@ function Ruling({ ruling, onClose, onDone }) {
             <PaymentFacts order={order} />
             <Field
               label={approve ? 'Remarks (optional)' : 'Why is it going back?'}
-              hint={approve ? 'Anything worth remembering about this payment.' : 'The cashier reads this. Be specific — "no MM message found", "UGX 5,000 short".'}
+              hint={approve ? 'Anything worth remembering about this payment.' : 'The cashier reads this. Be specific: "no MM message found", "UGX 5,000 short".'}
             >
               <Input
                 value={remarks}
@@ -293,7 +293,7 @@ function CashBook({ book, onSaved }) {
       <Card>
         <CardHeader>
           <div>
-            <CardTitle>Cash book — {book ? book.date : 'today'}</CardTitle>
+            <CardTitle>Cash book: {book ? book.date : 'today'}</CardTitle>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Opened at {money(book ? book.opening : 0)} · stands at {money(book ? book.closing : 0)}
             </p>
@@ -301,8 +301,8 @@ function CashBook({ book, onSaved }) {
         </CardHeader>
         {entries.length === 0 ? (
           <Empty icon={BookOpen} title="No entries yet">
-            Payments the cashiers take are written here automatically. Add anything else by hand —
-            float, bank deposits, transport, a supplier paid from the drawer.
+            Payments the cashiers take are written here automatically. Add anything else by hand.
+            Float, bank deposits, transport, a supplier paid from the drawer.
           </Empty>
         ) : (
           <div className="overflow-x-auto">

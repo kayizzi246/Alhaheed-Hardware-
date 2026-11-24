@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { money, methodLabel, statusLabel, list } from '@/lib/format';
+import { money, methodLabel, statusLabel, list, dateTime } from '@/lib/format';
 import {
   Alert, Button, Card, CardBody, CardHead, CardNote, CardTitle, Empty, Field,
   Loading, PageHead, Select, Stat, Stats, Table, TableWrap, Td, Th, Tr,
@@ -100,7 +100,7 @@ export default function MonthlyReport() {
   const maxDay = Math.max(1, ...byDay.map((d) => d.total));
   const orders = list(data?.orders);
   const spend = list(data?.expenses);
-  const paidSpend = spend.filter((e) => e.status === 'paid');
+  const paidSpend = spend.filter((e) => (e.counts === undefined ? e.status === 'paid' : e.counts));
   const openSpend = spend.filter((e) => e.status === 'raised' || e.status === 'approved');
 
   return (
@@ -254,7 +254,7 @@ export default function MonthlyReport() {
                 <Table>
                   <thead>
                     <tr>
-                      <Th>Ref</Th><Th>What for</Th><Th>Kind</Th>
+                      <Th>Ref</Th><Th>What for</Th><Th>Payment</Th><Th>Paid</Th>
                       <Th num>Amount</Th><Th>Status</Th>
                     </tr>
                   </thead>
@@ -262,8 +262,23 @@ export default function MonthlyReport() {
                     {spend.map((e) => (
                       <Tr key={e.ref}>
                         <Td className="tnum font-bold text-ink">{e.ref}</Td>
-                        <Td>{e.details}</Td>
-                        <Td className="text-ink-muted">{KIND_LABEL[e.kind] || e.kind}</Td>
+                        <Td>
+                          <span className="font-medium text-ink">{e.details}</span>
+                          <span className="block text-xs text-ink-muted">{KIND_LABEL[e.kind] || e.kind}</span>
+                        </Td>
+                        <Td>
+                          <span className="block font-medium text-ink">{methodLabel(e.method)}</span>
+                          {e.payee && <span className="block text-xs text-ink-2">{e.payee}</span>}
+                          {(e.number || e.pay_ref) && (
+                            <span className="block break-words text-xs text-ink-muted">
+                              {[e.number, e.pay_ref && `ID ${e.pay_ref}`].filter(Boolean).join(' · ')}
+                            </span>
+                          )}
+                        </Td>
+                        <Td className="tnum whitespace-nowrap text-ink-muted">
+                          {dateTime(e.paid)}
+                          {e.paid_by && <span className="block text-xs">{e.paid_by}</span>}
+                        </Td>
                         <Td num className="font-semibold text-ink">{money(e.amount)}</Td>
                         <Td
                           className={
@@ -280,7 +295,22 @@ export default function MonthlyReport() {
                 </Table>
               </TableWrap>
             )}
-            <CardNote>
+            {list(data.spentBy).length > 0 && (
+              <div className="border-t border-line px-4 py-4 sm:px-6">
+                <p className="text-[13px] font-semibold text-ink-2">How it was paid</p>
+                <dl className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {list(data.spentBy).map((m) => (
+                    <div key={m.method} className="flex items-baseline justify-between gap-3">
+                      <dt className="text-[13.5px] text-ink-2">
+                        {methodLabel(m.method)} <span className="text-ink-muted">({m.payments})</span>
+                      </dt>
+                      <dd className="tnum text-[14px] font-semibold text-ink">{money(m.total)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
+            <CardNote className="px-4 pb-5 sm:px-6">
               Only the {paidSpend.length} paid {paidSpend.length === 1 ? 'row counts' : 'rows count'} towards
               the month&apos;s spending. Requests waiting on approval are shown so
               nothing is forgotten, not because they have cost anything yet.

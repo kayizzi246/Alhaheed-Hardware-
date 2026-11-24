@@ -21,7 +21,7 @@ const ROLE_LABEL = {
 const REACH = [
   ['Cashier', 'The payment queue, receipts, the cash book (read-only), end of day'],
   ['Accounts', 'Verifying payments, the cash book, reconciliation, reports'],
-  ['Store Manager', 'Approved orders, the pick list, releasing goods — on the app'],
+  ['Store Manager', 'Approved orders, the pick list, releasing goods (on the app)'],
   ['Manager', 'Everything, plus products, staff, customers and the audit trail'],
 ];
 
@@ -211,7 +211,7 @@ function HireDialog({ onClose, onDone }) {
     return (
       <Modal
         title={`${hired.name} is on the ${deskName} desk`}
-        description="Give them these. They have been texted that their account is ready — not the password."
+        description="Give them these. They have been texted that their account is ready, not the password."
         onClose={finish}
         footer={
           <>
@@ -230,8 +230,8 @@ function HireDialog({ onClose, onDone }) {
         ) : (
           <p className="text-[13.5px] leading-relaxed text-ink-2">
             They sign in with <strong className="tnum">{hired.phone}</strong> and a code texted to that phone.
-            This site is on an older version of the plugin, which does not take a password from here —
-            upload the latest one to set passwords when hiring.
+            This site is on an older version of the plugin, which does not take a password from here.
+            Upload the latest one to set passwords when hiring.
           </p>
         )}
       </Modal>
@@ -281,7 +281,7 @@ function HireDialog({ onClose, onDone }) {
         <PasswordField
           value={form.password}
           onChange={(v) => setForm((f) => ({ ...f, password: v }))}
-          hint="Already made for you — change it if you like. You can set a new one later."
+          hint="Already made for you. Change it if you like. You can set a new one later."
         />
       </form>
     </Modal>
