@@ -220,6 +220,38 @@ class AH_Expenses {
 
 		AH_Flow::log_event( 0, $desk ? $desk : 'manager', 'expense_raised', null, null, $user->ID, $ref . ' · ' . $details . ' · ' . $amount );
 
+		// The manager adding one needs nobody's approval: they are the
+		// approval. Their own desk is checked here, so this cannot be used
+		// by anyone else to skip the queue. 'paid' also books it, for money
+		// that has already left the drawer; 'approve' sends it to the
+		// cashier to pay out.
+		$settle = (string) $req->get_param( 'settle' );
+		if ( 'manager' === $desk && in_array( $settle, array( 'paid', 'approve' ), true ) ) {
+			$wpdb->update(
+				AH_Install::table( 'expenses' ),
+				array(
+					'status'     => 'approved',
+					'decided_by' => $user->ID,
+					'decided_at' => current_time( 'mysql' ),
+				),
+				array( 'id' => $id )
+			);
+			AH_Flow::log_event( 0, 'manager', 'expense_approved', null, null, $user->ID, $ref );
+
+			if ( 'paid' === $settle ) {
+				self::book( self::row( $id ), $user, (string) $req->get_param( 'method' ), 'manager' );
+			} else {
+				self::tell(
+					'cashier',
+					sprintf(
+						'%s: %s approved for UGX %s — %s. Pay it out and book it.',
+						AH_Sms::shop_name(), $ref, number_format( $amount ), $details
+					)
+				);
+			}
+			return array( 'expense' => self::find( $id ) );
+		}
+
 		// The manager is the one who has to act, so the manager is told.
 		self::tell(
 			'manager',
@@ -332,8 +364,27 @@ class AH_Expenses {
 			);
 		}
 
-		$user   = AH_Auth::current();
-		$method = sanitize_text_field( (string) $req->get_param( 'method' ) ) ?: 'cash';
+		$user = AH_Auth::current();
+		self::book( $row, $user, (string) $req->get_param( 'method' ), 'cashier' );
+
+		self::tell_user(
+			(int) $row['raised_by'],
+			sprintf( '%s: %s has been paid out — UGX %s.', AH_Sms::shop_name(), $row['ref'], number_format( (int) $row['amount'] ) )
+		);
+		self::tell(
+			'manager',
+			sprintf( '%s: %s paid out by %s — UGX %s.', AH_Sms::shop_name(), $row['ref'], $user->display_name, number_format( (int) $row['amount'] ) )
+		);
+
+		return array( 'expense' => self::find( $id ) );
+	}
+
+	/** The money has left: write it in the cash book and mark it paid. */
+	private static function book( $row, $user, $method, $desk ) {
+		global $wpdb;
+		if ( ! in_array( $method, array( 'cash', 'mobile_money', 'bank', 'card' ), true ) ) {
+			$method = 'cash';
+		}
 
 		// The cash book only learns about it now, because only now did
 		// money actually leave the drawer.
@@ -360,21 +411,10 @@ class AH_Expenses {
 				'paid_at'      => current_time( 'mysql' ),
 				'cash_book_id' => $book_id,
 			),
-			array( 'id' => $id )
+			array( 'id' => (int) $row['id'] )
 		);
 
-		AH_Flow::log_event( 0, 'cashier', 'expense_paid', null, null, $user->ID, $row['ref'] . ' · UGX ' . number_format( (int) $row['amount'] ) );
-
-		self::tell_user(
-			(int) $row['raised_by'],
-			sprintf( '%s: %s has been paid out — UGX %s.', AH_Sms::shop_name(), $row['ref'], number_format( (int) $row['amount'] ) )
-		);
-		self::tell(
-			'manager',
-			sprintf( '%s: %s paid out by %s — UGX %s.', AH_Sms::shop_name(), $row['ref'], $user->display_name, number_format( (int) $row['amount'] ) )
-		);
-
-		return array( 'expense' => self::find( $id ) );
+		AH_Flow::log_event( 0, $desk, 'expense_paid', null, null, $user->ID, $row['ref'] . ' · UGX ' . number_format( (int) $row['amount'] ) );
 	}
 
 	// -----------------------------------------------------------------

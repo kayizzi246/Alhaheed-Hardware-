@@ -219,19 +219,6 @@ export async function api(path, { method = 'GET', body, raw, timeout } = {}) {
   return data;
 }
 
-/** Download a CSV export through the authenticated endpoint. */
-export async function downloadCsv(path, filename) {
-  const res = await api(path, { raw: true });
-  if (!res.ok) fail(res, await read_(res));
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export { BASE as API_BASE };
 
 /**

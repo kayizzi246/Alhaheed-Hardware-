@@ -1181,13 +1181,13 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
           row: (o, reload) => _OrderCard(o, action: action, done: reload),
         );
     _ListTab requests() => _ListTab(
-          title: desk == 'manager' ? 'Money requests' : 'Requests',
+          title: 'Expenses',
           path: '/api/expenses?status=all',
           listKey: 'expenses',
-          empty: 'No requests yet',
+          empty: 'No expenses yet',
           onExpired: out,
           row: (e, reload) => _RequestCard(e, desk: desk, done: reload),
-          add: 'New request',
+          add: 'Add expense',
           addSheet: (_) => const _RequestSheet(),
         );
 
@@ -1207,7 +1207,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
             orders('Released', '/api/orders/queue/done', 'Nothing released yet')
           ),
           (
-            'Requests',
+            'Expenses',
             Icons.playlist_add_rounded,
             Icons.playlist_add_check_rounded,
             requests()
@@ -1245,7 +1245,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
             )
           ),
           (
-            'Requests',
+            'Expenses',
             Icons.request_quote_outlined,
             Icons.request_quote_rounded,
             requests()
@@ -1287,7 +1287,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
             )
           ),
           (
-            'Requests',
+            'Expenses',
             Icons.request_quote_outlined,
             Icons.request_quote_rounded,
             requests()
@@ -1308,7 +1308,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
             orders('All orders', '/api/orders?limit=100', 'No orders yet')
           ),
           (
-            'Requests',
+            'Expenses',
             Icons.request_quote_outlined,
             Icons.request_quote_rounded,
             requests()
@@ -2237,6 +2237,9 @@ class _RequestSheetState extends State<_RequestSheet> {
   final _details = TextEditingController();
   final _amount = TextEditingController();
   late String _kind = _Session().role == 'store' ? 'stock_use' : 'expense';
+  // The manager is the approval, so theirs is recorded as it is saved.
+  final bool _boss = _Session().role == 'manager';
+  bool _paid = true;
   bool _busy = false;
   String? _error;
 
@@ -2258,6 +2261,8 @@ class _RequestSheetState extends State<_RequestSheet> {
         'kind': _kind,
         'details': _details.text.trim(),
         'amount': _int(_amount.text.replaceAll(RegExp(r'[^0-9]'), '')),
+        if (_boss) 'settle': _paid ? 'paid' : 'approve',
+        if (_boss) 'method': 'cash',
       });
       navigator.pop(true);
     } on _ApiError catch (e) {
@@ -2279,9 +2284,12 @@ class _RequestSheetState extends State<_RequestSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('New request', style: _title(20)),
+            Text('Add expense', style: _title(20)),
             const SizedBox(height: 4),
-            Text('The manager approves it before anything is paid.',
+            Text(
+                _boss
+                    ? 'It is approved as you save it.'
+                    : 'The manager approves it before anything is paid.',
                 style: _txt(13, color: _mid)),
             const SizedBox(height: 14),
             Wrap(spacing: 8, runSpacing: 8, children: [
@@ -2313,12 +2321,30 @@ class _RequestSheetState extends State<_RequestSheet> {
               keyboardType: TextInputType.number,
               onChanged: (_) => setState(() {}),
             ),
+            if (_boss) ...[
+              const SizedBox(height: 12),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                for (final (paid, label) in const [
+                  (true, 'Already paid in cash'),
+                  (false, 'Cashier to pay'),
+                ])
+                  _Pressable(
+                    scale: 0.96,
+                    onTap: () => setState(() => _paid = paid),
+                    child: _Chip(label,
+                        bg: _paid == paid ? _brand : _tile,
+                        fg: _paid == paid ? _white : _inkSoft),
+                  ),
+              ]),
+            ],
             if (_error != null) ...[
               const SizedBox(height: 10),
               Text(_error!, style: _txt(13, color: _ember)),
             ],
             const SizedBox(height: 14),
-            _BigButton('Send to the manager', ok ? _submit : null, busy: _busy),
+            _BigButton(_boss ? 'Add expense' : 'Send to the manager',
+                ok ? _submit : null,
+                busy: _busy),
           ],
         ),
       ),

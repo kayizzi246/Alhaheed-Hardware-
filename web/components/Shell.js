@@ -98,7 +98,7 @@ export default function Shell({ allow, children }) {
   const title = current?.label || DESK_LABEL[user.role];
 
   return (
-    <div className="min-h-dvh lg:pl-rail">
+    <div className="min-h-dvh lg:pl-rail print:pl-0" data-may-export={user.role === 'manager' ? 'yes' : 'no'}>
       {/* ── The rail ──────────────────────────────────────────────── */}
       {/* The rail is the shop's dark warm navy, the same slab the
           sign-in page wears, so the brand is on screen the whole shift

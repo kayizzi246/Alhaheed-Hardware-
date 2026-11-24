@@ -84,108 +84,12 @@ export default function MonthlyReport() {
    */
   async function exportWorkbook() {
     if (!data) return;
-    const t = data.totals;
-
     try {
-      const { writeWorkbook } = await import('@/lib/sheet');
-      writeWorkbook(
-        [
-          {
-            name: 'Summary',
-            cols: [34, 20],
-            rows: [
-              { Item: data.shop, Figure: '' },
-              { Item: `Full monthly report — ${data.label}`, Figure: '' },
-              { Item: `${data.from} to ${data.to}`, Figure: '' },
-              { Item: '', Figure: '' },
-              { Item: 'MONEY IN', Figure: '' },
-              { Item: 'Gross sales (verified payments)', Figure: t.gross },
-              { Item: 'Receipts issued', Figure: t.receipts },
-              { Item: 'Average receipt', Figure: t.average },
-              { Item: '', Figure: '' },
-              { Item: 'MONEY OUT', Figure: '' },
-              { Item: 'Internal spending paid', Figure: t.expenses },
-              { Item: '', Figure: '' },
-              { Item: 'RESULT', Figure: '' },
-              { Item: 'Sales less internal spending', Figure: t.net },
-              { Item: '', Figure: '' },
-              { Item: 'CASH BOOK', Figure: '' },
-              { Item: 'Opening balance (carried in)', Figure: t.opening },
-              { Item: 'Cash in', Figure: t.cash_in },
-              { Item: 'Cash out', Figure: t.cash_out },
-              { Item: 'Closing balance', Figure: t.closing },
-              { Item: '', Figure: '' },
-              { Item: 'ORDERS', Figure: '' },
-              { Item: 'Orders placed', Figure: t.orders },
-              { Item: '', Figure: '' },
-              { Item: 'All figures in UGX.', Figure: '' },
-            ],
-          },
-          {
-            name: 'Takings by day',
-            cols: [14, 12, 16],
-            rows: list(data.byDay).map((d) => ({
-              Day: d.day, Receipts: d.receipts, Total: d.total,
-            })),
-          },
-          {
-            name: 'Payments by method',
-            cols: [20, 12, 16],
-            rows: list(data.byMethod).map((m) => ({
-              Method: methodLabel(m.method), Receipts: m.receipts, Total: m.total,
-            })),
-          },
-          {
-            name: 'Orders',
-            cols: [12, 28, 20, 10, 14, 20],
-            rows: list(data.orders).map((o) => ({
-              Order: o.order_no,
-              Customer: o.customer,
-              Stage: statusLabel(o.status),
-              Items: o.items,
-              Total: o.total,
-              Placed: o.placed,
-            })),
-          },
-          {
-            name: 'Items sold',
-            cols: [34, 12, 16],
-            rows: list(data.products).map((p) => ({
-              Product: p.name, Quantity: p.qty, Revenue: p.revenue,
-            })),
-          },
-          {
-            name: 'Internal spending',
-            cols: [12, 24, 34, 14, 22, 12, 20, 20],
-            rows: list(data.expenses).map((e) => ({
-              Ref: e.ref,
-              Kind: KIND_LABEL[e.kind] || e.kind,
-              Details: e.details,
-              Amount: e.amount,
-              Status: SPEND_STATUS[e.status] || e.status,
-              Method: e.method ? methodLabel(e.method) : '',
-              Raised: e.raised,
-              Paid: e.paid || '',
-            })),
-          },
-          {
-            name: 'Staff activity',
-            cols: [24, 14, 12, 40],
-            rows: list(data.staff).map((s) => ({
-              Staff: s.name,
-              Desk: s.desk,
-              Actions: s.total,
-              Breakdown: Object.entries(s.actions || {})
-                .map(([a, n]) => `${a.replace(/_/g, ' ')}: ${n}`)
-                .join(', '),
-            })),
-          },
-        ],
-        `${data.shop.replace(/[^\w]+/g, '-')}-${data.month}-full-report.xlsx`
-      );
-      setNotice(`${data.label} exported — seven tabs, opens in Excel.`);
+      const { exportReport } = await import('@/lib/exports');
+      const name = await exportReport({ month: data.month });
+      setNotice(`${name} saved. Open it in Excel.`);
     } catch (e) {
-      setError(`The file could not be written: ${e.message}`);
+      setError(`The file could not be made: ${e.message}`);
     }
   }
 

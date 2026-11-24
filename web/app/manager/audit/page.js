@@ -16,6 +16,7 @@ const ACTION_LABEL = {
   released: 'Goods released',
   cancelled: 'Order cancelled',
   refunded: 'Refunded',
+  data_exported: 'Data exported',
 };
 
 /**

@@ -405,6 +405,7 @@ class AH_Rest {
 
 		// The whole month on one page: sales, spending, the book.
 		AH_Monthly::routes();
+		AH_Export::routes();
 
 		// The screenshot behind a mobile money reference, and the check
 		// that a reference has not already paid for another order.

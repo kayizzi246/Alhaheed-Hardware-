@@ -93,13 +93,15 @@ export default function Expenses() {
     <>
       <PageHead
         title="Expenses"
-        sub="Money out that is not a customer's order. Every one needs the manager."
+        sub={data.canApprove
+          ? "Money out that is not a customer's order."
+          : "Money out that is not a customer's order. The manager approves each one."}
       >
         <Fresh at={at} failing={failing} />
         <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-[150px]">
           {FILTERS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </Select>
-        <Button onClick={() => setRaising(true)}>Raise a request</Button>
+        <Button onClick={() => setRaising(true)}>Add expense</Button>
       </PageHead>
 
       <Alert>{error}</Alert>
@@ -127,9 +129,12 @@ export default function Expenses() {
         </CardHead>
 
         {rows.length === 0 ? (
-          <Empty title="Nothing here">
+          <Empty
+            title="Nothing here"
+            action={<Button variant="outline" onClick={() => setRaising(true)}>Add expense</Button>}
+          >
             {status === 'raised'
-              ? 'No request is waiting on anybody.'
+              ? 'No expense is waiting on anybody.'
               : 'Try a different filter.'}
           </Empty>
         ) : (
@@ -221,8 +226,15 @@ export default function Expenses() {
       {raising && (
         <RaiseDialog
           who={me}
+          boss={!!data.canApprove}
           onClose={() => setRaising(false)}
-          onDone={(msg) => { setRaising(false); setNotice(msg); load(); }}
+          onDone={(msg, landed) => {
+            setRaising(false);
+            setNotice(msg);
+            // Show the list it landed in, so it is seen to be there.
+            if (landed && landed !== status && status !== 'all') setStatus(landed);
+            else load();
+          }}
         />
       )}
 
@@ -247,7 +259,19 @@ export default function Expenses() {
 
 /* ── Raising ──────────────────────────────────────────────────────── */
 
-function RaiseDialog({ who, onClose, onDone }) {
+/**
+ * Adding one. The cashier's goes to the manager to approve. The manager
+ * is the approval, so theirs is recorded as paid there and then, or sent
+ * to the cashier to pay out.
+ */
+const SETTLE = [
+  { value: 'paid', label: 'Already paid' },
+  { value: 'approve', label: 'Cashier to pay' },
+];
+
+function RaiseDialog({ who, boss, onClose, onDone }) {
+  const [settle, setSettle] = useState('paid');
+  const [method, setMethod] = useState('cash');
   const [kind, setKind] = useState('expense');
   const [details, setDetails] = useState('');
   const [amount, setAmount] = useState('');
@@ -261,9 +285,16 @@ function RaiseDialog({ who, onClose, onDone }) {
     try {
       const r = await api('/api/expenses', {
         method: 'POST',
-        body: { kind, details, amount: Number(amount) },
+        body: { kind, details, amount: Number(amount), ...(boss ? { settle, method } : {}) },
       });
-      onDone(`${r.expense.ref} raised. The manager has been told.`);
+      onDone(
+        r.expense.status === 'paid'
+          ? `${r.expense.ref} added. It is in the cash book.`
+          : r.expense.status === 'approved'
+            ? `${r.expense.ref} added. The cashier has been told to pay it.`
+            : `${r.expense.ref} added. The manager has been told.`,
+        r.expense.status
+      );
     } catch (err) {
       setError(err.message);
       setBusy(false);
@@ -272,14 +303,16 @@ function RaiseDialog({ who, onClose, onDone }) {
 
   return (
     <Modal
-      title="Raise a request"
-      description="It goes to the manager. Nothing leaves the till until they approve it."
+      title="Add expense"
+      description={boss
+        ? 'You are the manager, so it is approved as you save it.'
+        : 'It goes to the manager. Nothing leaves the till until they approve it.'}
       onClose={onClose}
       footer={
         <>
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" form="raise" disabled={busy || !details.trim() || !amount}>
-            {busy ? 'Sending…' : 'Send to the manager'}
+            {busy ? 'Saving…' : boss ? 'Add expense' : 'Send to the manager'}
           </Button>
         </>
       }
@@ -295,7 +328,7 @@ function RaiseDialog({ who, onClose, onDone }) {
 
         <Field
           label="What is it for?"
-          hint="The manager reads this and nothing else. Be specific — “grinder disc for the workshop”, not “parts”."
+          hint="Be specific: “grinder disc for the workshop”, not “parts”."
         >
           <Input
             value={details}
@@ -316,9 +349,26 @@ function RaiseDialog({ who, onClose, onDone }) {
           />
         </Field>
 
+        {boss && (
+          <Field
+            label="Has it been paid?"
+            hint={settle === 'paid'
+              ? 'It goes in today’s cash book as money out.'
+              : 'It waits under “To pay” until the cashier pays it out.'}
+          >
+            <Segmented label="Has it been paid?" value={settle} onChange={setSettle} options={SETTLE} />
+          </Field>
+        )}
+
+        {boss && settle === 'paid' && (
+          <Field label="Paid how?">
+            <Segmented label="Method" value={method} onChange={setMethod} options={METHODS} />
+          </Field>
+        )}
+
         {who && (
           <p className="text-[12.5px] text-ink-muted">
-            Raised as <b className="font-semibold text-ink-2">{who.fullName}</b>. Your name stays
+            Added as <b className="font-semibold text-ink-2">{who.fullName}</b>. Your name stays
             on it.
           </p>
         )}

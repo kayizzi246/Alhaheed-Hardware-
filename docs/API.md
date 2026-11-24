@@ -190,7 +190,7 @@ All take `?period=daily|weekly|monthly` or explicit `?from=&to=`.
 | GET | `/orders-by-stage` | Count and value per status |
 | GET | `/stock-movement` | Received, released and adjusted per product |
 | GET | `/staff-activity` | Actions per staff member |
-| GET | `/export/:report.csv` | CSV for Excel: `sales`, `orders`, `cash-book`, `stock` |
+| POST | `/api/manager/export` | **Manager only.** `{ "report": "business" | "monthly" | "products" }` plus `month`, `period` or `from`/`to`. Written to the audit trail. The panel turns it into Excel |
 
 ---
 

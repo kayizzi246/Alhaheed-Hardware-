@@ -146,7 +146,7 @@ See [docs/ORDER_FLOW.md](docs/ORDER_FLOW.md) for the full state machine.
 - Digital receipts in the app and a printable receipt at the cashier desk
 - Automatic stock reduction on release, with low-stock alerts
 - Full audit trail — who handled each order and when
-- Reports with CSV (Excel) export and a print-to-PDF view
+- Reports as a formatted Excel workbook or PDF, for the manager only
 - Cash book with running balance, and daily reconciliation
 
 **Phase 2 (not built):** in-app mobile money / card payment via Pesapal,

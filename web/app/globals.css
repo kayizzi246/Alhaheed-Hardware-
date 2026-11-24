@@ -277,3 +277,32 @@
     font-size: 16px !important;
   }
 }
+
+/* ── Paper ─────────────────────────────────────────────────────────
+   A printout is the work without the panel around it, and a receipt is
+   only the receipt.
+
+   Printing is also how a screen becomes a PDF, so it is the manager's
+   alone, the same as exporting. The one thing other desks print is a
+   customer's receipt. Nothing can stop a photograph of a screen; this
+   stops the easy way. */
+@media print {
+  @page { margin: 14mm; }
+  body { background: #fff !important; }
+  aside, header.sticky { display: none !important; }
+  main { max-width: none !important; padding: 0 !important; }
+
+  body:has(#printable-receipt) * { visibility: hidden; }
+  body:has(#printable-receipt) #printable-receipt,
+  body:has(#printable-receipt) #printable-receipt * { visibility: visible; }
+  #printable-receipt { position: fixed; inset: 0 auto auto 0; width: 80mm; }
+
+  [data-may-export='no'] main { display: none !important; }
+  [data-may-export='no']::after {
+    content: 'Only the manager can print or save this screen.';
+    display: block;
+    padding: 20mm 0;
+    text-align: center;
+  }
+  body:has(#printable-receipt) [data-may-export='no']::after { content: none; }
+}

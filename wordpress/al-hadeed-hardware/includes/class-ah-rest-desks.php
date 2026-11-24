@@ -55,7 +55,6 @@ class AH_Rest_Desks {
 		$route( '/reports/stock-movement', $get, $books, array( __CLASS__, 'stock_movement' ) );
 		$route( '/reports/orders-by-stage', $get, $books, array( __CLASS__, 'orders_by_stage' ) );
 		$route( '/reports/staff-activity', $get, $books, array( __CLASS__, 'staff_activity' ) );
-		$route( '/reports/export/(?P<report>[a-z\-]+)\.csv', $get, $books, array( __CLASS__, 'export_csv' ) );
 
 		// ── Notifications ─────────────────────────────────────────────
 		$route( '/notifications', $get, AH_Rest::class . '::signed_in', array( __CLASS__, 'notifications' ) );
@@ -109,7 +108,7 @@ class AH_Rest_Desks {
 	// -----------------------------------------------------------------
 
 	/** `?period=daily|weekly|monthly` or `?from=&to=`, as the panel sends. */
-	private static function range( $req ) {
+	public static function range( $req ) {
 		$to   = $req->get_param( 'to' ) ? sanitize_text_field( $req->get_param( 'to' ) ) : current_time( 'Y-m-d' );
 		$from = $req->get_param( 'from' ) ? sanitize_text_field( $req->get_param( 'from' ) ) : null;
 
@@ -492,70 +491,6 @@ class AH_Rest_Desks {
 				),
 			)
 		);
-	}
-
-	/** Reports as a spreadsheet, which is how they get used. */
-	public static function export_csv( $req ) {
-		$report = sanitize_text_field( $req['report'] );
-		list( $from, $to ) = self::range( $req );
-		$rows = array();
-
-		switch ( $report ) {
-			case 'sales':
-				$data   = self::sales( $req );
-				$rows[] = array( 'Day', 'Receipts', 'Total' );
-				foreach ( $data['byDay'] as $d ) {
-					$rows[] = array( $d['day'], $d['receipts'], $d['total'] );
-				}
-				break;
-
-			case 'orders':
-				$rows[] = array( 'Order', 'Status', 'Customer', 'Items', 'Total', 'Placed' );
-				foreach ( self::orders_between( $from, $to ) as $o ) {
-					$s      = AH_Shape::order( $o );
-					$rows[] = array(
-						$s['order_no'], $s['status_label'], $s['ordered_by_name'],
-						$s['item_count'], $s['total'], $s['created_at'],
-					);
-				}
-				break;
-
-			case 'cash-book':
-				global $wpdb;
-				$cb     = AH_Install::table( 'cash_book' );
-				$rows[] = array( 'Date', 'Details', 'Cash in', 'Cash out' );
-				$res    = $wpdb->get_results(
-					$wpdb->prepare( "SELECT * FROM {$cb} WHERE entry_date BETWEEN %s AND %s ORDER BY id", $from, $to ),
-					ARRAY_A
-				);
-				foreach ( $res as $r ) {
-					$rows[] = array( $r['entry_date'], $r['details'], $r['cash_in'], $r['cash_out'] );
-				}
-				break;
-
-			case 'stock':
-				$rows[] = array( 'Code', 'Product', 'Unit', 'Released', 'In stock' );
-				foreach ( self::stock_movement( $req )['movements'] as $m ) {
-					$rows[] = array( $m['code'], $m['name'], $m['unit'], $m['released'], $m['stock_available'] );
-				}
-				break;
-
-			default:
-				return new WP_Error( 'ah_unknown_report', 'No such report', array( 'status' => 404 ) );
-		}
-
-		$out = fopen( 'php://temp', 'r+' );
-		foreach ( $rows as $row ) {
-			fputcsv( $out, $row );
-		}
-		rewind( $out );
-		$csv = stream_get_contents( $out );
-		fclose( $out );
-
-		header( 'Content-Type: text/csv; charset=utf-8' );
-		header( 'Content-Disposition: attachment; filename="' . $report . '-' . $to . '.csv"' );
-		echo $csv; // phpcs:ignore WordPress.Security.EscapeOutput
-		exit;
 	}
 
 	// -----------------------------------------------------------------

@@ -31,10 +31,8 @@ export default function ManagerProducts() {
    */
   async function exportSheet() {
     try {
-      const { writeSheet } = await import('@/lib/sheet');
-      const r = await api('/api/manager/products/export');
-      writeSheet(list(r.products), `al-hadeed-products-${today()}.xlsx`);
-      setNotice(`${list(r.products).length} products exported.`);
+      const { exportProducts } = await import('@/lib/exports');
+      setNotice(`${await exportProducts()} products exported.`);
     } catch (e) {
       setError(e.message);
     }

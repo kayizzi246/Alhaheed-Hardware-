@@ -25,7 +25,7 @@ class AH_Monthly {
 			'/reports/monthly',
 			array(
 				'methods'             => WP_REST_Server::READABLE,
-				'permission_callback' => AH_Rest::desk( array( 'manager', 'accounts' ) ),
+				'permission_callback' => AH_Rest::desk( array( 'manager' ) ),
 				'callback'            => array( __CLASS__, 'report' ),
 			)
 		);
@@ -35,7 +35,7 @@ class AH_Monthly {
 			'/reports/months',
 			array(
 				'methods'             => WP_REST_Server::READABLE,
-				'permission_callback' => AH_Rest::desk( array( 'manager', 'accounts' ) ),
+				'permission_callback' => AH_Rest::desk( array( 'manager' ) ),
 				'callback'            => array( __CLASS__, 'months' ),
 			)
 		);
@@ -72,8 +72,6 @@ class AH_Monthly {
 	}
 
 	public static function report( $req ) {
-		global $wpdb;
-
 		$month = (string) $req->get_param( 'month' );
 		if ( ! preg_match( '/^\d{4}-\d{2}$/', $month ) ) {
 			$month = current_time( 'Y-m' );
@@ -81,6 +79,19 @@ class AH_Monthly {
 
 		$from = $month . '-01';
 		$to   = gmdate( 'Y-m-t', strtotime( $from ) );
+
+		return array_merge(
+			array(
+				'month' => $month,
+				'label' => date_i18n( 'F Y', strtotime( $from ) ),
+			),
+			self::between( $from, $to )
+		);
+	}
+
+	/** Everything the shop did between two dates, both included. */
+	public static function between( $from, $to ) {
+		global $wpdb;
 
 		$pay   = AH_Install::table( 'payments' );
 		$book  = AH_Install::table( 'cash_book' );
@@ -157,6 +168,7 @@ class AH_Monthly {
 			array(
 				'limit'        => -1,
 				'date_created' => $from . '...' . $to,
+				'type'         => 'shop_order',
 				'return'       => 'ids',
 			)
 		);
@@ -176,6 +188,8 @@ class AH_Monthly {
 			$lines[] = array(
 				'order_no' => AH_Shape::order_no( $order ),
 				'customer' => trim( AH_Shape::text( $order->get_meta( '_ah_company_name' ) ?: $order->get_formatted_billing_full_name() ) ),
+				'phone'    => (string) $order->get_billing_phone(),
+				'fulfilment' => $order->has_shipping_address() ? 'Delivery' : 'Collection',
 				'status'   => $status,
 				'items'    => $order->get_item_count(),
 				'total'    => AH_Shape::money( $order->get_total() ),
@@ -238,8 +252,6 @@ class AH_Monthly {
 		$gross = (int) $takings['gross'];
 
 		return array(
-			'month'   => $month,
-			'label'   => date_i18n( 'F Y', strtotime( $from ) ),
 			'from'    => $from,
 			'to'      => $to,
 			'shop'    => AH_Sms::shop_name(),

@@ -40,11 +40,6 @@ class AH_Catalogue {
 			'callback'            => array( __CLASS__, 'import' ),
 		) );
 
-		register_rest_route( $ns, '/manager/products/export', array(
-			'methods'             => $get,
-			'permission_callback' => $manager,
-			'callback'            => array( __CLASS__, 'export' ),
-		) );
 	}
 
 	// -----------------------------------------------------------------

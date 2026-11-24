@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { api, downloadCsv, getUser } from '@/lib/api';
+import { api, getUser } from '@/lib/api';
 import { money, methodLabel, statusLabel, today, list } from '@/lib/format';
 import {
   Alert, Button, Card, CardBody, CardHead, CardTitle, Chip, Empty, Field,
@@ -14,13 +14,6 @@ const PERIODS = [
   ['weekly', 'Last 7 days'],
   ['monthly', 'Last 30 days'],
   ['custom', 'Custom range'],
-];
-
-const EXPORTS = [
-  ['sales', 'Sales'],
-  ['orders', 'Orders'],
-  ['cash-book', 'Cash book'],
-  ['stock', 'Stock'],
 ];
 
 /**
@@ -75,11 +68,21 @@ export default function ReportsView() {
 
   useEffect(() => { load(); }, [load]);
 
-  const exportCsv = (report) => {
-    downloadCsv(`/api/reports/export/${report}.csv?${query()}`, `${report}-${today()}.csv`)
-      .then(() => setNotice(`${report} exported. Open it in Excel.`))
-      .catch((e) => setError(e.message));
-  };
+  const [exporting, setExporting] = useState(false);
+
+  async function exportExcel() {
+    setExporting(true);
+    setError('');
+    try {
+      const { exportReport } = await import('@/lib/exports');
+      const name = await exportReport(Object.fromEntries(new URLSearchParams(query())));
+      setNotice(`${name} saved. Open it in Excel.`);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (!data && !error) return <Loading>Building reports…</Loading>;
 
@@ -110,12 +113,15 @@ export default function ReportsView() {
   return (
     <>
       <PageHead title="Reports" sub={`${sales.from} to ${sales.to}`}>
-        {EXPORTS.map(([key, label]) => (
-          <Button key={key} variant="outline" size="sm" onClick={() => exportCsv(key)}>
-            {label}
-          </Button>
-        ))}
-        <Button size="sm" className="print:hidden" onClick={() => window.print()}>Save as PDF</Button>
+        {/* Taking data out of the shop is the manager's alone. */}
+        {isManager && (
+          <>
+            <Button variant="outline" size="sm" className="print:hidden" disabled={exporting} onClick={exportExcel}>
+              {exporting ? 'Preparing…' : 'Export to Excel'}
+            </Button>
+            <Button size="sm" className="print:hidden" onClick={() => window.print()}>Save as PDF</Button>
+          </>
+        )}
       </PageHead>
 
       <Alert>{error}</Alert>

@@ -68,9 +68,6 @@ export default function EndOfDayPage() {
             </TableWrap>
           </Card>
 
-          <Button className="print:hidden" onClick={() => window.print()}>
-            Print hand-over sheet
-          </Button>
         </>
       )}
     </>
