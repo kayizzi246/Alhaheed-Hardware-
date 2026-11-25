@@ -1308,6 +1308,12 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
             orders('All orders', '/api/orders?limit=100', 'No orders yet')
           ),
           (
+            'Stock',
+            Icons.inventory_2_outlined,
+            Icons.inventory_2_rounded,
+            _StockTab(onExpired: out)
+          ),
+          (
             'Expenses',
             Icons.request_quote_outlined,
             Icons.request_quote_rounded,
@@ -2550,6 +2556,652 @@ class _RequestSheetState extends State<_RequestSheet> {
             const SizedBox(height: 14),
             _BigButton(_boss ? 'Add expense' : 'Send to the manager',
                 ok ? _submit : null,
+                busy: _busy),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The manager's stock: what is on the shelf, what it is worth, what
+/// needs ordering, and a sheet to receive, count or write off.
+class _StockTab extends StatefulWidget {
+  const _StockTab({required this.onExpired});
+  final Future<void> Function() onExpired;
+
+  @override
+  State<_StockTab> createState() => _StockTabState();
+}
+
+class _StockTabState extends State<_StockTab> {
+  Map<String, dynamic>? _data;
+  String? _error;
+  String _show = 'all';
+  final _search = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final r = await _apiGet('/api/manager/products');
+      if (!mounted) return;
+      setState(() {
+        _data = r;
+        _error = null;
+      });
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      if (e.unauthorised) {
+        await widget.onExpired();
+        return;
+      }
+      setState(() => _error = e.message);
+    }
+  }
+
+  Future<void> _open(Widget sheet) async {
+    final done = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => sheet,
+    );
+    if (done != null) {
+      await _load();
+      if (mounted) _toast(context, done);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final all = ((_data?['products'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .where((p) => _int(p['active']) == 1 || p['active'] == true)
+        .toList();
+    final q = _search.text.trim().toLowerCase();
+    final rows = all.where((p) {
+      final state = '${p['state']}';
+      if (_show == 'low' && state != 'low' && state != 'out') return false;
+      if (_show == 'out' && state != 'out') return false;
+      if (q.isEmpty) return true;
+      return '${p['name']} ${p['code']} ${p['category_name'] ?? ''}'
+          .toLowerCase()
+          .contains(q);
+    }).toList();
+    final s = (_data?['summary'] as Map?)?.cast<String, dynamic>();
+    final toOrder = _int(s?['low']) + _int(s?['out']);
+
+    return Column(
+      children: [
+        _Header(
+          subtitle: '${_deskName(_Session().role)} · ${_Session().fullName}',
+          trailing: _Pressable(
+            scale: 0.9,
+            onTap: () => _open(_ProductSheet(
+                suppliers: ((_data?['suppliers'] as List?) ?? const [])
+                    .map((x) => '$x')
+                    .toList())),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: _liquid(circle: true, onDark: true),
+              child: const Icon(Icons.add_rounded, size: 21, color: _white),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _data == null && _error != null
+              ? _Empty(
+                  icon: Icons.cloud_off_rounded,
+                  tone: _ember,
+                  title: 'This could not be loaded',
+                  line: _error!,
+                  action: 'Try again',
+                  onAction: _load,
+                )
+              : _data == null
+                  ? const Center(
+                      child: CircularProgressIndicator(color: _brand))
+                  : RefreshIndicator(
+                      color: _brand,
+                      onRefresh: _load,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics()),
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+                        children: [
+                          Text('Stock',
+                              style: _title(20, weight: FontWeight.w800)),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: _heroGradient,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Stock value at buy price',
+                                    style: _txt(12.5,
+                                        weight: FontWeight.w600,
+                                        color: _white.withOpacity(0.9))),
+                                const SizedBox(height: 4),
+                                Text(_ugx(_int(s?['stockValue'])),
+                                    style: _title(26,
+                                        weight: FontWeight.w800,
+                                        color: _white)),
+                                const SizedBox(height: 10),
+                                Text(
+                                    'Sells for ${_shortUgx(_int(s?['retailValue']))}'
+                                    ' · ${toOrder == 0 ? 'nothing to order' : '$toOrder to order'}',
+                                    style: _txt(12.5,
+                                        color: _white.withOpacity(0.92))),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _Field(
+                            controller: _search,
+                            hint: 'Search name or code',
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(spacing: 8, runSpacing: 8, children: [
+                            for (final (k, label) in [
+                              ('all', 'All'),
+                              ('low', 'To order ($toOrder)'),
+                              ('out', 'Out (${_int(s?['out'])})'),
+                            ])
+                              _Pressable(
+                                scale: 0.96,
+                                onTap: () => setState(() => _show = k),
+                                child: _Chip(label,
+                                    bg: _show == k ? _brand : _tile,
+                                    fg: _show == k ? _white : _inkSoft),
+                              ),
+                          ]),
+                          const SizedBox(height: 14),
+                          if (_error != null) ...[
+                            Text('Not up to date: $_error',
+                                style: _txt(12.5, color: _ember)),
+                            const SizedBox(height: 10),
+                          ],
+                          if (rows.isEmpty)
+                            const _Empty(
+                              icon: Icons.inventory_2_outlined,
+                              title: 'Nothing here',
+                              line: 'Try another search or filter.',
+                            ),
+                          for (final p in rows)
+                            _Pressable(
+                              scale: 0.98,
+                              onTap: () => _open(_MoveSheet(p,
+                                  suppliers:
+                                      ((_data?['suppliers'] as List?) ??
+                                              const [])
+                                          .map((x) => '$x')
+                                          .toList())),
+                              child: _StockRow(p),
+                            ),
+                        ],
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+}
+
+(Color, Color) _stockColours(String state) => switch (state) {
+      'out' => (_emberPale, _ember),
+      'low' => (_amberPale, _amber),
+      'ok' => (_greenPale, _green),
+      _ => (_tile, _mid),
+    };
+
+class _StockRow extends StatelessWidget {
+  const _StockRow(this.p);
+  final Map<String, dynamic> p;
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, fg) = _stockColours('${p['state']}');
+    final tracked = p['tracked'] == true;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: _cardBox(),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${p['name']}',
+                    style: _txt(14, weight: FontWeight.w700, color: _ink)),
+                const SizedBox(height: 3),
+                Text(
+                    [
+                      p['code'],
+                      _ugx(_int(p['price'])),
+                      if (_int(p['cost']) > 0) 'buy ${_ugx(_int(p['cost']))}',
+                    ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
+                    style: _txt(12, color: _mid)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                  tracked
+                      ? '${_int(p['stock_available'])} ${p['unit'] ?? ''}'
+                      : '',
+                  style: _title(15)),
+              const SizedBox(height: 4),
+              _Chip('${p['status_label']}', bg: bg, fg: fg),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One product: its figures, and stock in or out. Pops a message.
+class _MoveSheet extends StatefulWidget {
+  const _MoveSheet(this.p, {required this.suppliers});
+  final Map<String, dynamic> p;
+  final List<String> suppliers;
+
+  @override
+  State<_MoveSheet> createState() => _MoveSheetState();
+}
+
+class _MoveSheetState extends State<_MoveSheet> {
+  String _kind = 'received';
+  final _qty = TextEditingController();
+  late final _cost = TextEditingController(
+      text: _int(widget.p['cost']) > 0 ? '${_int(widget.p['cost'])}' : '');
+  final _note = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  static const _kinds = [
+    ('received', 'Received', 1),
+    ('count', 'Stock count', 0),
+    ('damaged', 'Damaged or lost', -1),
+    ('own_use', 'Used by the shop', -1),
+    ('returned', 'Customer return', 1),
+    ('correction', 'Correction', 0),
+  ];
+
+  @override
+  void dispose() {
+    _qty.dispose();
+    _cost.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  int get _now => _int(widget.p['stock_available']);
+  int get _n => int.tryParse(_qty.text.trim()) ?? 0;
+  int get _after {
+    final sign = _kinds.firstWhere((k) => k.$1 == _kind).$3;
+    if (_kind == 'count') return _n;
+    if (_kind == 'correction') return _now + _n;
+    return _now + sign * _n;
+  }
+
+  bool get _needsNote => const ['damaged', 'own_use', 'correction'].contains(_kind);
+
+  bool get _ok =>
+      !_busy &&
+      _qty.text.trim().isNotEmpty &&
+      _after >= 0 &&
+      (_kind == 'count'
+          ? _n >= 0
+          : _kind == 'correction'
+              ? _n != 0
+              : _n > 0) &&
+      (!_needsNote || _note.text.trim().length >= 3);
+
+  Future<void> _save() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final navigator = Navigator.of(context);
+    try {
+      await _apiPost('/api/manager/products/${_int(widget.p['id'])}/stock', {
+        'kind': _kind,
+        'qty': _n,
+        'note': _note.text.trim(),
+        if (_kind == 'received')
+          'unitCost': _int(_cost.text.replaceAll(RegExp(r'[^0-9]'), '')),
+      });
+      HapticFeedback.mediumImpact();
+      navigator.pop('${widget.p['name']}: $_after ${widget.p['unit']} in stock');
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.p;
+    final unit = '${p['unit'] ?? ''}';
+    final facts = [
+      ('In stock', p['tracked'] == true ? '$_now $unit' : 'Not counted'),
+      ('Sale price', _ugx(_int(p['price']))),
+      ('Buy price', _int(p['cost']) > 0 ? _ugx(_int(p['cost'])) : 'Not set'),
+      if (p['margin'] != null) ('Margin', '${p['margin']}%'),
+      if (_int(p['reorder_level']) > 0)
+        ('Reorder at', '${_int(p['reorder_level'])} $unit'),
+      if (_int(p['sold_30']) > 0) ('Sold, 30 days', '${_int(p['sold_30'])} $unit'),
+    ];
+    return _Sheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 8, 20, MediaQuery.paddingOf(context).bottom + 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Expanded(child: Text('${p['name']}', style: _title(20))),
+              TextButton(
+                onPressed: () async {
+                  final navigator = Navigator.of(context);
+                  final done = await showModalBottomSheet<String>(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) =>
+                        _ProductSheet(product: p, suppliers: widget.suppliers),
+                  );
+                  if (done != null) navigator.pop(done);
+                },
+                child: Text('Edit',
+                    style: _txt(14, weight: FontWeight.w700, color: _brandDark)),
+              ),
+            ]),
+            Text('${p['code']}', style: _txt(12.5, color: _mid)),
+            const SizedBox(height: 14),
+            Wrap(spacing: 18, runSpacing: 10, children: [
+              for (final (k, v) in facts)
+                SizedBox(
+                  width: 140,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(k, style: _txt(12, color: _mid)),
+                      Text(v, style: _txt(14, weight: FontWeight.w700, color: _ink)),
+                    ],
+                  ),
+                ),
+            ]),
+            const SizedBox(height: 18),
+            Text('What happened?',
+                style: _txt(13, weight: FontWeight.w600, color: _inkSoft)),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final (k, label, _) in _kinds)
+                _Pressable(
+                  scale: 0.96,
+                  onTap: () => setState(() {
+                    _kind = k;
+                    _error = null;
+                  }),
+                  child: _Chip(label,
+                      bg: _kind == k ? _brand : _tile,
+                      fg: _kind == k ? _white : _inkSoft),
+                ),
+            ]),
+            const SizedBox(height: 14),
+            _Field(
+              controller: _qty,
+              hint: _kind == 'count'
+                  ? 'How many $unit are on the shelf?'
+                  : _kind == 'correction'
+                      ? '$unit to add, or minus to take off'
+                      : 'How many $unit?',
+              keyboardType: const TextInputType.numberWithOptions(signed: true),
+              onChanged: (_) => setState(() {}),
+            ),
+            if (_kind == 'received') ...[
+              const SizedBox(height: 10),
+              _Field(
+                controller: _cost,
+                hint: 'Buy price for one (UGX)',
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
+            const SizedBox(height: 10),
+            _Field(
+              controller: _note,
+              hint: _needsNote ? 'What happened? (needed)' : 'Note (optional)',
+              capitalisation: TextCapitalization.sentences,
+              onChanged: (_) => setState(() {}),
+            ),
+            if (_qty.text.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: _after < 0 ? _emberPale : _tile,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(children: [
+                  Text('Stock after this', style: _txt(13, color: _mid)),
+                  const Spacer(),
+                  Text(
+                      _after < 0
+                          ? 'Cannot go below zero'
+                          : '$_now → $_after $unit',
+                      style: _title(15, color: _after < 0 ? _ember : _ink)),
+                ]),
+              ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(_error!, style: _txt(13, color: _ember, height: 1.4)),
+            ],
+            const SizedBox(height: 14),
+            _BigButton('Save to the stock book', _ok ? _save : null,
+                busy: _busy),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Adding a product, or editing one. Pops a message.
+class _ProductSheet extends StatefulWidget {
+  const _ProductSheet({this.product, required this.suppliers});
+  final Map<String, dynamic>? product;
+  final List<String> suppliers;
+
+  @override
+  State<_ProductSheet> createState() => _ProductSheetState();
+}
+
+class _ProductSheetState extends State<_ProductSheet> {
+  late final Map<String, dynamic>? _p = widget.product;
+  late final _name = TextEditingController(text: '${_p?['name'] ?? ''}');
+  late final _code = TextEditingController(text: '${_p?['code'] ?? ''}');
+  late final _unit = TextEditingController(text: '${_p?['unit'] ?? 'pc'}');
+  late final _price = TextEditingController(
+      text: _p == null ? '' : '${_int(_p!['price'])}');
+  late final _cost = TextEditingController(
+      text: _int(_p?['cost']) > 0 ? '${_int(_p!['cost'])}' : '');
+  final _stock = TextEditingController();
+  late final _reorder = TextEditingController(
+      text: _int(_p?['reorder_level']) > 0 ? '${_int(_p!['reorder_level'])}' : '');
+  late final _orderQty = TextEditingController(
+      text: _int(_p?['reorder_qty']) > 0 ? '${_int(_p!['reorder_qty'])}' : '');
+  late final _category =
+      TextEditingController(text: '${_p?['category_name'] ?? ''}');
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    for (final c in [
+      _name, _code, _unit, _price, _cost, _stock, _reorder, _orderQty, _category
+    ]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  int _num(TextEditingController c) =>
+      _int(c.text.replaceAll(RegExp(r'[^0-9]'), ''));
+
+  Future<void> _save() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final navigator = Navigator.of(context);
+    try {
+      await _apiPost(
+          _p == null
+              ? '/api/manager/products'
+              : '/api/manager/products/${_int(_p!['id'])}',
+          {
+            'name': _name.text.trim(),
+            'code': _code.text.trim(),
+            'unit': _unit.text.trim(),
+            'category': _category.text.trim(),
+            'price': _num(_price),
+            'cost': _num(_cost),
+            'reorderLevel': _num(_reorder),
+            'reorderQty': _num(_orderQty),
+            if (_p == null) 'stockAvailable': _num(_stock),
+          });
+      HapticFeedback.mediumImpact();
+      navigator.pop(_p == null
+          ? '${_name.text.trim()} added'
+          : '${_name.text.trim()} saved');
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final price = _num(_price), cost = _num(_cost);
+    final ok = !_busy && _name.text.trim().length >= 2 && price > 0;
+    Widget pair(Widget a, Widget b) => Row(children: [
+          Expanded(child: a),
+          const SizedBox(width: 10),
+          Expanded(child: b),
+        ]);
+    Widget label(String t) => Padding(
+          padding: const EdgeInsets.only(top: 14, bottom: 6),
+          child: Text(t,
+              style: _txt(12.5, weight: FontWeight.w700, color: _mid)),
+        );
+    final changed = (String _) => setState(() {});
+
+    return _Sheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 8, 20, MediaQuery.paddingOf(context).bottom + 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(_p == null ? 'Add a product' : 'Edit product',
+                style: _title(20)),
+            label('NAME'),
+            _Field(
+                controller: _name,
+                hint: 'Hima Cement 50kg',
+                capitalisation: TextCapitalization.words,
+                onChanged: changed),
+            const SizedBox(height: 10),
+            pair(
+              _Field(controller: _code, hint: 'Code (made if empty)'),
+              _Field(controller: _unit, hint: 'Sold by: bag, kg, pc'),
+            ),
+            const SizedBox(height: 10),
+            _Field(
+                controller: _category,
+                hint: 'Category',
+                capitalisation: TextCapitalization.words),
+            label('PRICES (UGX)'),
+            pair(
+              _Field(
+                  controller: _cost,
+                  hint: 'Buy price',
+                  keyboardType: TextInputType.number,
+                  onChanged: changed),
+              _Field(
+                  controller: _price,
+                  hint: 'Sale price',
+                  keyboardType: TextInputType.number,
+                  onChanged: changed),
+            ),
+            if (price > 0 && cost > 0) ...[
+              const SizedBox(height: 8),
+              Text(
+                  price >= cost
+                      ? 'Profit ${_ugx(price - cost)} each, '
+                          '${((price - cost) / price * 100).toStringAsFixed(1)}% margin'
+                      : 'Sold below cost',
+                  style: _txt(12.5,
+                      weight: FontWeight.w600,
+                      color: price >= cost ? _green : _ember)),
+            ],
+            label('STOCK'),
+            if (_p == null) ...[
+              _Field(
+                  controller: _stock,
+                  hint: 'Opening stock: how many now',
+                  keyboardType: TextInputType.number),
+              const SizedBox(height: 10),
+            ],
+            pair(
+              _Field(
+                  controller: _reorder,
+                  hint: 'Reorder level',
+                  keyboardType: TextInputType.number),
+              _Field(
+                  controller: _orderQty,
+                  hint: 'Order quantity',
+                  keyboardType: TextInputType.number),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(_error!, style: _txt(13, color: _ember, height: 1.4)),
+            ],
+            const SizedBox(height: 16),
+            _BigButton(_p == null ? 'Add product' : 'Save', ok ? _save : null,
                 busy: _busy),
           ],
         ),

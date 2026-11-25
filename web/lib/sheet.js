@@ -28,6 +28,10 @@ const COLUMNS = {
   stock: ['stock', 'quantity', 'qty', 'instock', 'stockavailable', 'onhand'],
   unit: ['unit', 'units', 'soldby', 'soldin', 'measure', 'uom'],
   reorderLevel: ['reorderlevel', 'reorder', 'reorderat', 'minimumstock', 'minstock', 'reorderpoint'],
+  reorderQty: ['reorderquantity', 'reorderqty', 'orderquantity', 'orderqty', 'ordersize'],
+  cost: ['cost', 'buyprice', 'buyingprice', 'costprice', 'purchaseprice', 'unitcost', 'buy'],
+  supplier: ['supplier', 'vendor', 'suppliername'],
+  shelf: ['shelf', 'location', 'bin', 'shelflocation'],
   category: ['category', 'categories', 'group', 'type'],
   description: ['notes', 'remarks', 'details', 'longdescription'],
 };

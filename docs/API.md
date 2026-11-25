@@ -33,6 +33,15 @@ POST /api/auth/register
 ```http
 POST /api/auth/login         { "identifier": "email or phone", "password": "…" }   customers and staff
 POST /api/account/delete     { "confirm": "DELETE" }   the signed-in customer, for good
+
+Stock (manager only; the buy price never appears on the public /products):
+GET  /api/manager/products                 every product with cost, margin, stock value, state; summary; categories; suppliers
+POST /api/manager/products                 { name, code?, category, unit, price, cost, stockAvailable, reorderLevel, reorderQty, supplier, shelf, description }
+POST /api/manager/products/:id             the same fields, any of them; { active } retires or restores
+POST /api/manager/products/:id/stock       { kind: received|count|damaged|own_use|returned|correction, qty, unitCost?, supplier?, ref?, note }
+GET  /api/manager/products/:id/moves       one product's stock book
+GET  /api/manager/stock/moves?from&to&kind the whole stock book, with units and value in and out
+Sales and cancelled orders are written to the stock book on their own when stock moves.
 POST /api/auth/otp/request   { "phone": "+256770111001" }
 → { "sent": true, "devCode": "123456" }     // devCode only when OTP_DEV_MODE=true
 

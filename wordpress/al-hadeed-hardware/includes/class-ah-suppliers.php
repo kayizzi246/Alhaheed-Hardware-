@@ -266,7 +266,7 @@ class AH_Suppliers {
 				// level with the same again as headroom, rounded up —
 				// ordering exactly the shortfall means ordering again
 				// next week.
-				'suggest'  => max( 1, ( $reorder * 2 ) - $stock ),
+				'suggest'  => (int) get_post_meta( $id, '_ah_reorder_qty', true ) ?: max( 1, ( $reorder * 2 ) - $stock ),
 				'supplier' => AH_Shape::text( $supplier ),
 			);
 		}

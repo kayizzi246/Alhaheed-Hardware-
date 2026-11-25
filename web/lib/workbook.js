@@ -285,10 +285,14 @@ export function buildCatalogue(products, shop) {
     { h: 'Code', key: 'code', width: 16, bold: true },
     { h: 'Name', key: 'name', width: 36 },
     { h: 'Category', key: 'category', width: 18 },
+    { h: 'Buy price', key: 'cost', width: 14, type: 'money' },
     { h: 'Price', key: 'price', width: 14, type: 'money' },
     { h: 'Unit', key: 'unit', width: 10 },
     { h: 'Stock', key: 'stock', width: 11, type: 'int' },
     { h: 'Reorder level', key: 'reorderLevel', width: 15, type: 'int' },
+    { h: 'Reorder quantity', key: 'reorderQty', width: 17, type: 'int' },
+    { h: 'Supplier', key: 'supplier', width: 26 },
+    { h: 'Shelf', key: 'shelf', width: 12 },
     { h: 'Notes', key: 'description', width: 44, wrap: true },
   ];
   sheet.columns = columns.map((c) => ({ width: c.width + (isNumber(c.type) ? 4 : 0) }));
@@ -299,11 +303,11 @@ export function buildCatalogue(products, shop) {
   // What needs ordering stands out, and keeps up as the file is edited.
   if (rows.length) {
     sheet.addConditionalFormatting({
-      ref: `F2:F${rows.length + 1}`,
+      ref: `G2:G${rows.length + 1}`,
       rules: [{
         type: 'expression',
         priority: 1,
-        formulae: ['AND($G2>0,$F2<=$G2)'],
+        formulae: ['AND($H2>0,$G2<=$H2)'],
         style: { font: { bold: true, color: { argb: 'FFC02B2B' } }, fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFFDECEC' } } },
       }],
     });

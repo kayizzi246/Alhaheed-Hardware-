@@ -163,11 +163,6 @@ class AH_Catalogue {
 			if ( isset( $row['price'] ) && '' !== $row['price'] ) {
 				$product->set_regular_price( (string) (int) round( (float) $row['price'] ) );
 			}
-			if ( isset( $row['stock'] ) && '' !== $row['stock'] ) {
-				$product->set_manage_stock( true );
-				$product->set_stock_quantity( (int) $row['stock'] );
-				$product->set_stock_status( (int) $row['stock'] > 0 ? 'instock' : 'outofstock' );
-			}
 			if ( isset( $row['description'] ) && '' !== $row['description'] ) {
 				$product->set_short_description( sanitize_text_field( (string) $row['description'] ) );
 			}
@@ -192,8 +187,39 @@ class AH_Catalogue {
 			if ( isset( $row['unit'] ) && '' !== $row['unit'] ) {
 				update_post_meta( $saved, '_ah_unit', sanitize_text_field( (string) $row['unit'] ) );
 			}
-			if ( isset( $row['reorderLevel'] ) && '' !== $row['reorderLevel'] ) {
-				update_post_meta( $saved, '_ah_reorder_level', (int) $row['reorderLevel'] );
+			$meta = array(
+				'reorderLevel' => '_ah_reorder_level',
+				'reorderQty'   => '_ah_reorder_qty',
+				'cost'         => '_ah_cost',
+			);
+			foreach ( $meta as $field => $key ) {
+				if ( isset( $row[ $field ] ) && '' !== $row[ $field ] ) {
+					update_post_meta( $saved, $key, max( 0, (int) round( (float) $row[ $field ] ) ) );
+				}
+			}
+			foreach ( array( 'supplier' => '_ah_supplier', 'shelf' => '_ah_shelf' ) as $field => $key ) {
+				if ( isset( $row[ $field ] ) && '' !== $row[ $field ] ) {
+					update_post_meta( $saved, $key, sanitize_text_field( (string) $row[ $field ] ) );
+				}
+			}
+
+			// A new count from a spreadsheet goes in the stock book like any
+			// other, so an import never quietly rewrites what is on the shelf.
+			if ( isset( $row['stock'] ) && '' !== $row['stock'] ) {
+				$count = max( 0, (int) $row['stock'] );
+				$fresh = wc_get_product( $saved );
+				$was   = $fresh->get_manage_stock() ? (int) $fresh->get_stock_quantity() : null;
+				if ( $was !== $count ) {
+					if ( ! $fresh->get_manage_stock() ) {
+						$fresh->set_manage_stock( true );
+						$fresh->save();
+					}
+					wc_update_product_stock( $fresh, $count, 'set' );
+					AH_Stock::record( $saved, $id ? 'count' : 'opening', $count - (int) $was, (int) $was, $count, array(
+						'unit_cost' => (int) get_post_meta( $saved, '_ah_cost', true ),
+						'note'      => 'From a spreadsheet import',
+					) );
+				}
 			}
 
 			if ( $id ) {
@@ -235,9 +261,13 @@ class AH_Catalogue {
 				'name'         => $shaped['name'],
 				'category'     => $shaped['category_name'],
 				'price'        => $shaped['price'],
+				'cost'         => (int) get_post_meta( $product->get_id(), '_ah_cost', true ),
 				'unit'         => $shaped['unit'],
 				'stock'        => $shaped['stock_available'],
 				'reorderLevel' => $shaped['reorder_level'],
+				'reorderQty'   => (int) get_post_meta( $product->get_id(), '_ah_reorder_qty', true ),
+				'supplier'     => $shaped['supplier'],
+				'shelf'        => (string) get_post_meta( $product->get_id(), '_ah_shelf', true ),
 				'description'  => $shaped['description'],
 			);
 		}

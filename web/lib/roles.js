@@ -33,7 +33,7 @@ export const NAV = {
     { href: '/manager/orders', label: 'All Orders', icon: 'queue' },
 
     { group: 'The shop' },
-    { href: '/manager/products', label: 'Products', icon: 'box' },
+    { href: '/manager/products', label: 'Products & stock', icon: 'box' },
     { href: '/manager/customers', label: 'Customers', icon: 'people' },
     { href: '/manager/staff', label: 'Staff', icon: 'user' },
     { href: '/manager/expenses', label: 'Expenses', icon: 'cash' },

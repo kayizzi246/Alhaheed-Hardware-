@@ -1,34 +1,56 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, upload } from '@/lib/api';
 import { money, list, today } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { Icon } from '@/components/icons';
 import {
-  Alert, Button, Card, Empty, Field, Input, Loading, Modal, PageHead,
-  Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
+  Alert, Button, Card, Chip, Empty, Field, Input, Loading, Modal, PageHead, Segmented, Select,
+  Stat, Table, TableWrap, Td, Textarea, Th, Tr, LoadFailed } from '@/components/ui';
 
 /**
- * The catalogue, as the manager maintains it.
+ * Products and their stock, as the manager keeps them.
  *
- * Price and stock are edited in a small dialog rather than on a form
- * page, because those are the two things that change weekly in a
- * hardware shop and nobody should navigate away to correct a bag count.
+ * Every product has a sale price and a buy price, so the margin and the
+ * value of what is on the shelf are always in view. The count is never
+ * typed over: goods received, a stock count, breakage and corrections
+ * each go in the stock book with who did it and why, and sales go in on
+ * their own when the store releases an order.
  */
+
+const STATE_TONE = { out: 'bad', low: 'pending', ok: 'good', untracked: 'grey' };
+
+/** "24 Nov, 15:06" from the server's local "2026-11-24 15:06:41". */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const stamp = (s) => (s && s.length >= 16 ? `${+s.slice(8, 10)} ${MONTHS[+s.slice(5, 7) - 1]}, ${s.slice(11, 16)}` : '');
+const signed = (n) => (n > 0 ? `+${n}` : String(n));
+const int = (v) => (v === '' || v === null || v === undefined ? 0 : Math.round(Number(v)) || 0);
+
 export default function ManagerProducts() {
-  const [products, setProducts] = useState(null);
+  const [data, setData] = useState(null);
+  const [tab, setTab] = useState('products');
   const [search, setSearch] = useState('');
-  const [adding, setAdding] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const [show, setShow] = useState('all');
+  const [category, setCategory] = useState('');
+  const [form, setForm] = useState(null); // a product, or {} for a new one
+  const [moving, setMoving] = useState(null);
+  const [history, setHistory] = useState(null);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  /**
-   * The catalogue as a spreadsheet, in the shape the importer reads
-   * back. Export, change the prices in Excel, import — that round trip
-   * is the whole point of an export for a shop this size.
-   */
+  const load = useCallback(async () => {
+    try {
+      setData(await api('/api/manager/products'));
+      setError('');
+    } catch (e) {
+      setError(e.message);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
   async function exportSheet() {
     try {
       const { exportProducts } = await import('@/lib/exports');
@@ -38,266 +60,699 @@ export default function ManagerProducts() {
     }
   }
 
-  const load = useCallback(async () => {
-    try {
-      setProducts(list((await api('/api/manager/products')).products));
-      setError('');
-    } catch (e) {
-      // On failure, keep what was on screen; the error says it is stale.
-      setError(e.message);
-    }
-  }, []);
+  const done = (msg) => {
+    setNotice(msg);
+    setForm(null);
+    setMoving(null);
+    load();
+  };
 
-  useEffect(() => { load(); }, [load]);
+  const products = list(data?.products);
+  const s = data?.summary;
 
-  async function save(id, patch, what) {
-    try {
-      await api(`/api/manager/products/${id}`, { method: 'POST', body: patch });
-      setNotice(what);
-      setEditing(null);
-      load();
-    } catch (e) {
-      setError(e.message);
-    }
-  }
-
-  const shown = (products || []).filter((p) => {
+  const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return `${p.name} ${p.code} ${p.category_name || ''}`.toLowerCase().includes(q);
-  });
+    return products.filter((p) => {
+      if (show === 'retired' ? p.active : !p.active) return false;
+      if (show === 'low' && p.state !== 'low' && p.state !== 'out') return false;
+      if (show === 'out' && p.state !== 'out') return false;
+      if (show === 'nocost' && p.cost) return false;
+      if (category && p.category_name !== category) return false;
+      if (!q) return true;
+      return `${p.name} ${p.code} ${p.category_name || ''} ${p.supplier || ''} ${p.shelf || ''}`.toLowerCase().includes(q);
+    });
+  }, [products, search, show, category]);
+
+  const counts = {
+    low: products.filter((p) => p.active && (p.state === 'low' || p.state === 'out')).length,
+    out: products.filter((p) => p.active && p.state === 'out').length,
+    retired: products.filter((p) => !p.active).length,
+    nocost: products.filter((p) => p.active && !p.cost).length,
+  };
 
   return (
     <>
-      <PageHead title="Products" sub={products ? `${shown.length} of ${products.length}` : null}>
-        <Input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search name, code or category"
-          className="w-[280px]"
-        />
+      <PageHead title="Products and stock" sub={data ? `${s.products} on sale` : null}>
         <Button variant="outline" onClick={() => setImporting(true)}>Import</Button>
-        <Button variant="outline" onClick={exportSheet} disabled={!products?.length}>
-          Export
-        </Button>
-        <Button onClick={() => setAdding(true)}>Add product</Button>
+        <Button variant="outline" onClick={exportSheet} disabled={!products.length}>Export</Button>
+        <Button onClick={() => setForm({})}>Add product</Button>
       </PageHead>
 
       <Alert>{error}</Alert>
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
-      <Card>
-        {!products ? (
-          error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading the catalogue…</Loading>
-        ) : shown.length === 0 ? (
-          <Empty
-            title="Nothing matches"
-            action={<Button variant="outline" onClick={() => setSearch('')}>Clear the search</Button>}
-          >
-            Try a different name or code.
-          </Empty>
-        ) : (
-          <TableWrap>
-            <Table>
-              <thead>
-                <tr>
-                  <Th>Product</Th><Th>Code</Th><Th>Category</Th>
-                  <Th num>Price</Th><Th num>In stock</Th><Th num>Reorder at</Th><Th />
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((p) => {
-                  const low = p.stock_available <= p.reorder_level;
-                  return (
-                    <Tr key={p.id} className={cn(!p.active && 'opacity-50')}>
-                      <Td className="font-medium text-ink">{p.name}</Td>
-                      <Td className="tnum text-ink-muted">{p.code}</Td>
-                      <Td className="text-ink-muted">{p.category_name || ''}</Td>
-                      <Td num className="font-semibold text-ink">{money(p.price)}</Td>
-                      <Td num className={low ? 'text-bad' : undefined}>
-                        <strong className={low ? 'font-bold' : 'font-semibold text-ink'}>
-                          {p.stock_available}
-                        </strong>{' '}
-                        {p.unit}
+      {s && (
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+          <Stat
+            hero
+            label="Stock value"
+            value={money(s.stockValue)}
+            note={s.noCost ? `at buy price; ${s.noCost} without one` : 'at buy price'}
+            icon={Icon.box()}
+            className="col-span-2 sm:col-span-1"
+          />
+          <Stat label="Sale value" value={money(s.retailValue)} note="if it all sold at today's prices" icon={Icon.cash()} tone="neutral" />
+          <Stat label="Profit on the shelf" value={money(s.profitInStock)} note="sale value less buy price" icon={Icon.chart()} tone="ok" />
+          <Stat
+            label="Needs ordering"
+            value={String(s.low + s.out)}
+            note={s.out ? `${s.out} out of stock` : s.low ? 'at or below the reorder level' : 'everything is stocked'}
+            icon={Icon.clock()}
+            tone={s.out ? 'bad' : s.low ? 'warn' : 'ok'}
+          />
+        </div>
+      )}
+
+      <div className="mb-4">
+        <Segmented
+          label="View"
+          value={tab}
+          onChange={setTab}
+          options={[{ value: 'products', label: 'Products' }, { value: 'book', label: 'Stock book' }]}
+        />
+      </div>
+
+      {tab === 'book' ? (
+        <StockBook kinds={data?.kinds || {}} />
+      ) : (
+        <Card>
+          <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
+            <Input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name, code, supplier or shelf"
+              className="w-full sm:w-[280px]"
+              aria-label="Search products"
+            />
+            <Select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full sm:w-[190px]" aria-label="Category">
+              <option value="">Every category</option>
+              {list(data?.categories).map((c) => <option key={c} value={c}>{c}</option>)}
+            </Select>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                ['all', 'On sale'],
+                ['low', `To order (${counts.low})`],
+                ['out', `Out (${counts.out})`],
+                ['nocost', `No buy price (${counts.nocost})`],
+                ['retired', `Retired (${counts.retired})`],
+              ].map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setShow(v)}
+                  aria-pressed={show === v}
+                  className={cn(
+                    'rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors',
+                    show === v ? 'border-brand bg-brand-soft text-brand-dark' : 'border-line text-ink-muted hover:border-line-firm hover:text-ink'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!data ? (
+            error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading the products…</Loading>
+          ) : shown.length === 0 ? (
+            <Empty
+              title="Nothing here"
+              action={(search || category || show !== 'all') && (
+                <Button variant="outline" onClick={() => { setSearch(''); setCategory(''); setShow('all'); }}>Show everything</Button>
+              )}
+            >
+              {show === 'low' ? 'Nothing is at or below its reorder level.' : 'Try a different search or filter.'}
+            </Empty>
+          ) : (
+            <TableWrap>
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>Product</Th>
+                    <Th num>Buy</Th>
+                    <Th num>Sell</Th>
+                    <Th num>Margin</Th>
+                    <Th num>In stock</Th>
+                    <Th num>Value</Th>
+                    <Th num>Sold, 30 days</Th>
+                    <Th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((p) => (
+                    <Tr key={p.id}>
+                      <Td className="min-w-[220px]">
+                        <button type="button" onClick={() => setHistory(p)} className="text-left">
+                          <span className="block font-semibold text-ink hover:text-brand-dark">{p.name}</span>
+                          <span className="tnum block text-[12px] text-ink-muted">
+                            {[p.code, p.category_name, p.shelf && `shelf ${p.shelf}`].filter(Boolean).join(' · ')}
+                          </span>
+                        </button>
                       </Td>
-                      <Td num className="text-ink-muted">{p.reorder_level}</Td>
-                      <Td className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => setEditing(p)}>Edit</Button>
+                      <Td num className={p.cost ? 'text-ink-2' : 'text-ink-faint'}>{p.cost ? money(p.cost) : 'Not set'}</Td>
+                      <Td num className="font-semibold text-ink">{money(p.price)}</Td>
+                      <Td num className={p.margin === null ? 'text-ink-faint' : p.margin < 0 ? 'font-semibold text-bad' : 'text-ink-2'}>
+                        {p.margin === null ? '' : `${p.margin}%`}
+                      </Td>
+                      <Td num>
+                        <span className="tnum font-semibold text-ink">{p.tracked ? p.stock_available : ''}</span>{' '}
+                        <span className="text-ink-muted">{p.tracked ? p.unit : ''}</span>
+                        <div className="mt-1">
+                          <Chip tone={STATE_TONE[p.state]}>{p.status_label}</Chip>
+                        </div>
+                      </Td>
+                      <Td num className="text-ink-2">{p.cost ? money(p.stock_value) : ''}</Td>
+                      <Td num className="text-ink-2">
+                        {p.sold_30 || 0}
+                        {p.days_left !== null && (
+                          <span className={cn('block text-[12px]', p.days_left <= 7 ? 'font-semibold text-bad' : 'text-ink-muted')}>
+                            about {p.days_left} {p.days_left === 1 ? 'day' : 'days'} left
+                          </span>
+                        )}
+                      </Td>
+                      <Td className="whitespace-nowrap text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" onClick={() => setMoving(p)}>Stock</Button>
+                          <Button variant="outline" size="sm" onClick={() => setForm(p)}>Edit</Button>
+                        </div>
                       </Td>
                     </Tr>
-                  );
-                })}
-              </tbody>
-            </Table>
-          </TableWrap>
-        )}
-      </Card>
+                  ))}
+                </tbody>
+              </Table>
+            </TableWrap>
+          )}
+        </Card>
+      )}
 
-      <EditProduct product={editing} onClose={() => setEditing(null)} onSave={save} />
-
+      {form && (
+        <ProductForm
+          product={form.id ? form : null}
+          categories={list(data?.categories)}
+          suppliers={list(data?.suppliers)}
+          onClose={() => setForm(null)}
+          onDone={done}
+        />
+      )}
+      {moving && (
+        <StockMove product={moving} suppliers={list(data?.suppliers)} onClose={() => setMoving(null)} onDone={done} />
+      )}
+      {history && (
+        <History
+          product={history}
+          onClose={() => setHistory(null)}
+          onStock={() => { setMoving(history); setHistory(null); }}
+          onEdit={() => { setForm(history); setHistory(null); }}
+        />
+      )}
       {importing && (
         <ImportSheet
           onClose={() => setImporting(false)}
           onDone={(msg) => { setImporting(false); setNotice(msg); load(); }}
         />
       )}
-
-      {adding && (
-        <AddProduct
-          onClose={() => setAdding(false)}
-          onDone={(msg) => { setAdding(false); setNotice(msg); load(); }}
-          onError={setError}
-        />
-      )}
     </>
   );
 }
 
-function EditProduct({ product, onClose, onSave }) {
-  const [price, setPrice] = useState('');
-  const [stock, setStock] = useState('');
-  const [reorder, setReorder] = useState('');
+/* ── Adding and editing ──────────────────────────────────────────── */
 
-  useEffect(() => {
-    if (!product) return;
-    setPrice(String(product.price));
-    setStock(String(product.stock_available));
-    setReorder(String(product.reorder_level));
-  }, [product]);
+function ProductForm({ product, categories, suppliers, onClose, onDone }) {
+  const editing = !!product;
+  const [f, setF] = useState(() => ({
+    name: product?.name || '',
+    code: product?.code || '',
+    category: product?.category_name || '',
+    unit: product?.unit || 'pc',
+    price: product ? String(product.price) : '',
+    cost: product?.cost ? String(product.cost) : '',
+    stock: '',
+    reorderLevel: product ? String(product.reorder_level || '') : '',
+    reorderQty: product?.reorder_qty ? String(product.reorder_qty) : '',
+    supplier: product?.supplier || '',
+    shelf: product?.shelf || '',
+    description: product?.description || '',
+  }));
+  const [newCategory, setNewCategory] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  if (!product) return null;
+  const price = int(f.price);
+  const cost = int(f.cost);
+  const margin = price > 0 && cost > 0 ? ((price - cost) / price) * 100 : null;
+
+  async function save(patch) {
+    setBusy(true);
+    setError('');
+    try {
+      const body = patch || {
+        name: f.name.trim(),
+        code: f.code.trim(),
+        category: f.category.trim(),
+        unit: f.unit.trim() || 'pc',
+        price,
+        cost,
+        reorderLevel: int(f.reorderLevel),
+        reorderQty: int(f.reorderQty),
+        supplier: f.supplier.trim(),
+        shelf: f.shelf.trim(),
+        description: f.description.trim(),
+        ...(editing ? {} : { stockAvailable: int(f.stock) }),
+      };
+      await api(editing ? `/api/manager/products/${product.id}` : '/api/manager/products', { method: 'POST', body });
+      onDone(
+        patch
+          ? patch.active ? `${product.name} is back on sale.` : `${product.name} retired. It no longer shows in the app.`
+          : editing ? `${f.name.trim()} saved.` : `${f.name.trim()} added.`
+      );
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  }
+
+  const ok = f.name.trim().length >= 2 && price > 0 && !busy;
 
   return (
     <Modal
-      title={product.name}
-      description={product.code}
+      wide
+      title={editing ? product.name : 'Add a product'}
+      description={editing ? `${product.code}. Change the count with Stock, so it goes in the stock book.` : 'For a long list, use Import instead.'}
       onClose={onClose}
       footer={
         <>
+          {editing && (
+            <Button variant="ghost" className="mr-auto" disabled={busy} onClick={() => save({ active: !product.active })}>
+              {product.active ? 'Retire' : 'Put back on sale'}
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button
-            variant="ghost"
-            onClick={() =>
-              onSave(
-                product.id,
-                { active: !product.active },
-                product.active ? `${product.name} retired.` : `${product.name} is back on sale.`
-              )
-            }
-          >
-            {product.active ? 'Retire' : 'Put back on sale'}
-          </Button>
-          <Button
-            onClick={() =>
-              onSave(
-                product.id,
-                { price: Number(price), stockAvailable: Number(stock), reorderLevel: Number(reorder) },
-                `${product.name} updated.`
-              )
-            }
-          >
-            Save
+          <Button disabled={!ok} onClick={() => save()}>
+            {busy ? 'Saving…' : editing ? 'Save' : 'Add product'}
           </Button>
         </>
       }
     >
-      <div className="space-y-4">
-        <ProductPicture product={product} />
+      <div className="space-y-6">
+        <Alert>{error}</Alert>
+        {editing && <ProductPicture product={product} />}
 
-        <Field label="Price (UGX)">
-          <Input
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="tnum font-semibold"
-            autoFocus
-          />
-        </Field>
-        <Field label={`In stock (${product.unit})`}>
-          <Input type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="tnum" />
-        </Field>
-        <Field
-          label="Reorder level"
-          hint="At or below this, the product shows as low stock on the dashboard."
-        >
-          <Input type="number" value={reorder} onChange={(e) => setReorder(e.target.value)} className="tnum" />
-        </Field>
+        <Section title="The product">
+          <Field label="Name">
+            <Input value={f.name} onChange={set('name')} placeholder="Hima Cement 50kg" autoFocus={!editing} />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Code (SKU)" hint={editing ? undefined : 'Left empty, one is made.'}>
+              <Input value={f.code} onChange={set('code')} placeholder="AH-CEM-001" className="tnum" />
+            </Field>
+            <Field label="Category">
+              {newCategory || !categories.length ? (
+                <Input value={f.category} onChange={set('category')} placeholder="A new category" />
+              ) : (
+                <Select
+                  value={f.category}
+                  onChange={(e) => (e.target.value === '+new' ? (setNewCategory(true), setF({ ...f, category: '' })) : set('category')(e))}
+                >
+                  <option value="">None</option>
+                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="+new">Add a new category…</option>
+                </Select>
+              )}
+            </Field>
+            <Field label="Sold by" hint="bag, kg, length, tin, pc">
+              <Input value={f.unit} onChange={set('unit')} placeholder="pc" />
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Prices">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Buy price (UGX)" hint="What the shop pays for one.">
+              <Input type="number" inputMode="numeric" min="0" value={f.cost} onChange={set('cost')} className="tnum" />
+            </Field>
+            <Field label="Sale price (UGX)" hint="What a customer pays for one.">
+              <Input type="number" inputMode="numeric" min="0" value={f.price} onChange={set('price')} className="tnum font-semibold" />
+            </Field>
+            <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
+              <p className="text-[12.5px] font-semibold text-ink-muted">Profit on each</p>
+              <p className={cn('tnum mt-1 text-lg font-bold', margin === null ? 'text-ink-faint' : margin < 0 ? 'text-bad' : 'text-ok')}>
+                {margin === null ? 'Enter both prices' : money(price - cost)}
+              </p>
+              {margin !== null && (
+                <p className={cn('text-[12.5px]', margin < 0 ? 'font-semibold text-bad' : 'text-ink-muted')}>
+                  {margin < 0 ? 'Sold below cost' : `${margin.toFixed(1)}% margin`}
+                </p>
+              )}
+            </div>
+          </div>
+        </Section>
+
+        <Section title="Stock">
+          <div className={cn('grid gap-4', editing ? 'sm:grid-cols-2' : 'sm:grid-cols-3')}>
+            {!editing && (
+              <Field label="Opening stock" hint="How many are on the shelf now.">
+                <Input type="number" inputMode="numeric" min="0" value={f.stock} onChange={set('stock')} className="tnum" />
+              </Field>
+            )}
+            <Field label="Reorder level" hint="At or below this, it shows as low.">
+              <Input type="number" inputMode="numeric" min="0" value={f.reorderLevel} onChange={set('reorderLevel')} className="tnum" />
+            </Field>
+            <Field label="Order quantity" hint="How many to ask the supplier for.">
+              <Input type="number" inputMode="numeric" min="0" value={f.reorderQty} onChange={set('reorderQty')} className="tnum" />
+            </Field>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Supplier">
+              {suppliers.length ? (
+                <Select value={f.supplier} onChange={set('supplier')}>
+                  <option value="">None</option>
+                  {[...new Set([...suppliers, f.supplier].filter(Boolean))].map((x) => <option key={x} value={x}>{x}</option>)}
+                </Select>
+              ) : (
+                <Input value={f.supplier} onChange={set('supplier')} placeholder="Who the shop buys it from" />
+              )}
+            </Field>
+            <Field label="Shelf or store location">
+              <Input value={f.shelf} onChange={set('shelf')} placeholder="B2, back store" />
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Shown in the app">
+          <Field label="Description">
+            <Textarea value={f.description} onChange={set('description')} placeholder="Size, grade, colour, what it is for" />
+          </Field>
+        </Section>
       </div>
     </Modal>
   );
 }
 
-const BLANK = { name: '', code: '', price: '', stockAvailable: '', unit: 'pc', reorderLevel: '' };
+const Section = ({ title, children }) => (
+  <section className="space-y-4">
+    <h3 className="text-[12px] font-bold uppercase tracking-[0.06em] text-ink-muted">{title}</h3>
+    {children}
+  </section>
+);
 
-function AddProduct({ onClose, onDone, onError }) {
-  const [form, setForm] = useState(BLANK);
+/* ── Moving stock ────────────────────────────────────────────────── */
+
+const MOVES = [
+  { value: 'received', label: 'Received', sign: 1, about: 'Goods in from a supplier.' },
+  { value: 'count', label: 'Stock count', sign: 0, about: 'Counted the shelf. The book is set to what is really there.' },
+  { value: 'damaged', label: 'Damaged or lost', sign: -1, about: 'Broken, spoilt, stolen or missing.' },
+  { value: 'own_use', label: 'Used by the shop', sign: -1, about: 'Taken off the shelf for the shop itself.' },
+  { value: 'returned', label: 'Customer return', sign: 1, about: 'A customer brought it back and it can be sold again.' },
+  { value: 'correction', label: 'Correction', sign: 0, about: 'A mistake put right. Use a minus for fewer.' },
+];
+
+function StockMove({ product, suppliers, onClose, onDone }) {
+  const [kind, setKind] = useState('received');
+  const [qty, setQty] = useState('');
+  const [cost, setCost] = useState(product.cost ? String(product.cost) : '');
+  const [supplier, setSupplier] = useState(product.supplier || '');
+  const [ref, setRef] = useState('');
+  const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const [error, setError] = useState('');
 
-  async function submit() {
+  const move = MOVES.find((m) => m.value === kind);
+  const now = product.stock_available ?? 0;
+  const n = int(qty);
+  const after = kind === 'count' ? n : kind === 'correction' ? now + n : now + move.sign * n;
+  const needsNote = ['damaged', 'own_use', 'correction'].includes(kind);
+  const ok = !busy && qty !== '' && after >= 0 &&
+    (kind === 'count' ? n >= 0 : kind === 'correction' ? n !== 0 : n > 0) &&
+    (!needsNote || note.trim().length >= 3);
+
+  async function save() {
     setBusy(true);
+    setError('');
     try {
-      await api('/api/manager/products', {
+      await api(`/api/manager/products/${product.id}/stock`, {
         method: 'POST',
         body: {
-          name: form.name.trim(),
-          code: form.code.trim(),
-          price: Number(form.price),
-          stockAvailable: Number(form.stockAvailable || 0),
-          reorderLevel: Number(form.reorderLevel || 0),
-          unit: form.unit.trim() || 'pc',
+          kind,
+          qty: n,
+          note: note.trim(),
+          ...(kind === 'received' ? { unitCost: int(cost), supplier: supplier.trim(), ref: ref.trim() } : {}),
         },
       });
-      onDone(`${form.name} added.`);
-      setForm(BLANK);
+      onDone(`${product.name}: ${after} ${product.unit} in stock.`);
     } catch (e) {
-      onError(e.message);
+      setError(e.message);
       setBusy(false);
     }
   }
 
   return (
     <Modal
-      title="Add a product"
-      description="For a long list, use Import on this page instead."
+      title={`Stock: ${product.name}`}
+      description={`${now} ${product.unit} in stock now.`}
       onClose={onClose}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button disabled={busy || !form.name.trim() || !form.code.trim() || !form.price} onClick={submit}>
-            {busy ? 'Adding…' : 'Add product'}
-          </Button>
+          <Button disabled={!ok} onClick={save}>{busy ? 'Saving…' : 'Save to the stock book'}</Button>
         </>
       }
     >
       <div className="space-y-4">
-        <Field label="Name">
-          <Input value={form.name} onChange={set('name')} placeholder="Hima Cement 50kg" autoFocus />
+        <Alert>{error}</Alert>
+        <div>
+          <p className="mb-2 text-[13px] font-semibold text-ink-2">What happened?</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {MOVES.map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                aria-pressed={kind === m.value}
+                onClick={() => { setKind(m.value); setError(''); }}
+                className={cn(
+                  'rounded-xl border px-3 py-2.5 text-left text-[13px] font-semibold transition-colors',
+                  kind === m.value ? 'border-brand bg-brand-soft text-brand-dark' : 'border-line text-ink-2 hover:border-line-firm'
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[12.5px] text-ink-muted">{move.about}</p>
+        </div>
+
+        <Field
+          label={kind === 'count' ? `How many ${product.unit} are on the shelf?` : kind === 'correction' ? `${product.unit} to add, or minus to take off` : `How many ${product.unit}?`}
+        >
+          <Input type="number" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum text-lg font-semibold" autoFocus />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Code (SKU)" hint="What the app and the pick list show.">
-            <Input value={form.code} onChange={set('code')} placeholder="AH-CEM-001" className="tnum" />
-          </Field>
-          <Field label="Unit" hint="A price with no unit is half a price.">
-            <Input value={form.unit} onChange={set('unit')} placeholder="bag, length, tin, pc" />
-          </Field>
-        </div>
+        {kind === 'received' && (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Buy price for one (UGX)" hint="Becomes the product's buy price.">
+                <Input type="number" inputMode="numeric" min="0" value={cost} onChange={(e) => setCost(e.target.value)} className="tnum" />
+              </Field>
+              <Field label="Invoice or delivery note no.">
+                <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Optional" />
+              </Field>
+            </div>
+            <Field label="Supplier">
+              {suppliers.length ? (
+                <Select value={supplier} onChange={(e) => setSupplier(e.target.value)}>
+                  <option value="">Not said</option>
+                  {[...new Set([...suppliers, supplier].filter(Boolean))].map((x) => <option key={x} value={x}>{x}</option>)}
+                </Select>
+              ) : (
+                <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} />
+              )}
+            </Field>
+          </>
+        )}
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Price (UGX)">
-            <Input type="number" value={form.price} onChange={set('price')} className="tnum font-semibold" />
-          </Field>
-          <Field label="Opening stock">
-            <Input type="number" value={form.stockAvailable} onChange={set('stockAvailable')} className="tnum" />
-          </Field>
-          <Field label="Reorder level">
-            <Input type="number" value={form.reorderLevel} onChange={set('reorderLevel')} className="tnum" />
-          </Field>
-        </div>
+        <Field label={needsNote ? 'What happened? (needed)' : 'Note (optional)'}>
+          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={kind === 'damaged' ? 'Three bags got wet in the rain' : ''} />
+        </Field>
+
+        {qty !== '' && (
+          <div className={cn('flex items-center justify-between rounded-xl px-4 py-3', after < 0 ? 'bg-bad-bg' : 'bg-surface-2')}>
+            <span className="text-[13px] text-ink-muted">Stock after this</span>
+            <span className={cn('tnum text-[15px] font-bold', after < 0 ? 'text-bad' : 'text-ink')}>
+              {now} → {after} {product.unit}
+              {after < 0 && <span className="ml-2 text-[12.5px] font-semibold">Cannot go below zero</span>}
+            </span>
+          </div>
+        )}
+        {kind === 'received' && n > 0 && int(cost) > 0 && (
+          <p className="text-right text-[13px] text-ink-muted">Cost of this delivery: <b className="text-ink">{money(n * int(cost))}</b></p>
+        )}
       </div>
     </Modal>
+  );
+}
+
+/* ── One product's history ───────────────────────────────────────── */
+
+function History({ product, onClose, onStock, onEdit }) {
+  const [moves, setMoves] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api(`/api/manager/products/${product.id}/moves`)
+      .then((r) => setMoves(list(r.moves)))
+      .catch((e) => setError(e.message));
+  }, [product.id]);
+
+  const facts = [
+    ['In stock', product.tracked ? `${product.stock_available} ${product.unit}` : 'Not counted'],
+    ['Buy price', product.cost ? money(product.cost) : 'Not set'],
+    ['Sale price', money(product.price)],
+    ['Margin', product.margin === null ? '' : `${product.margin}%`],
+    ['Stock value', product.cost ? money(product.stock_value) : ''],
+    ['Reorder at', product.reorder_level ? `${product.reorder_level}, order ${product.reorder_qty || 'some'}` : 'Not set'],
+    ['Supplier', product.supplier || ''],
+    ['Shelf', product.shelf || ''],
+  ].filter(([, v]) => v);
+
+  return (
+    <Modal
+      wide
+      title={product.name}
+      description={[product.code, product.category_name].filter(Boolean).join(' · ')}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="outline" onClick={onEdit}>Edit</Button>
+          <Button onClick={onStock}>Stock</Button>
+        </>
+      }
+    >
+      <dl className="mb-5 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+        {facts.map(([k, v]) => (
+          <div key={k}>
+            <dt className="text-[12px] text-ink-muted">{k}</dt>
+            <dd className="tnum text-[14px] font-semibold text-ink">{v}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <h3 className="mb-2 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-muted">Stock book</h3>
+      {error ? (
+        <Alert>{error}</Alert>
+      ) : !moves ? (
+        <Loading>Reading the stock book…</Loading>
+      ) : moves.length === 0 ? (
+        <p className="py-6 text-center text-[13.5px] text-ink-muted">Nothing recorded yet. Changes from now on show here.</p>
+      ) : (
+        <MovesTable moves={moves} />
+      )}
+    </Modal>
+  );
+}
+
+function MovesTable({ moves, withProduct }) {
+  return (
+    <TableWrap className="rounded-xl border border-line">
+      <Table className="text-[13px]">
+        <thead>
+          <tr>
+            <Th>When</Th>
+            {withProduct && <Th>Product</Th>}
+            <Th>What</Th>
+            <Th num>Change</Th>
+            <Th num>Stock</Th>
+            <Th num>Value</Th>
+            <Th>By</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {moves.map((m) => (
+            <Tr key={m.id}>
+              <Td className="whitespace-nowrap text-ink-muted">{stamp(m.created_at)}</Td>
+              {withProduct && <Td className="font-medium text-ink">{m.product_name}</Td>}
+              <Td>
+                <span className="font-semibold text-ink">{m.kind_label}</span>
+                {[m.ref, m.supplier, m.note].filter(Boolean).length > 0 && (
+                  <span className="block text-[12px] text-ink-muted">{[m.ref, m.supplier, m.note].filter(Boolean).join(' · ')}</span>
+                )}
+              </Td>
+              <Td num className={cn('font-bold', m.qty > 0 ? 'text-ok' : m.qty < 0 ? 'text-bad' : 'text-ink-muted')}>
+                {signed(m.qty)}
+              </Td>
+              <Td num className="whitespace-nowrap text-ink-muted">{m.before} → <b className="text-ink">{m.after}</b></Td>
+              <Td num className="text-ink-2">{m.value ? money(m.value) : ''}</Td>
+              <Td className="whitespace-nowrap text-ink-muted">{m.by}</Td>
+            </Tr>
+          ))}
+        </tbody>
+      </Table>
+    </TableWrap>
+  );
+}
+
+/* ── The whole stock book ────────────────────────────────────────── */
+
+function StockBook({ kinds }) {
+  const monthStart = today().slice(0, 8) + '01';
+  const [from, setFrom] = useState(monthStart);
+  const [to, setTo] = useState(today());
+  const [kind, setKind] = useState('');
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    setError('');
+    try {
+      const q = new URLSearchParams({ from, to, limit: '1000', ...(kind ? { kind } : {}) });
+      setData(await api(`/api/manager/stock/moves?${q}`));
+    } catch (e) {
+      setError(e.message);
+    }
+  }, [from, to, kind]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const s = data?.summary;
+  return (
+    <Card>
+      <div className="flex flex-wrap items-end gap-3 border-b border-line px-4 py-3 sm:px-5">
+        <Field label="From"><Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></Field>
+        <Field label="To"><Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></Field>
+        <Field label="What" className="w-full sm:w-[220px]">
+          <Select value={kind} onChange={(e) => setKind(e.target.value)}>
+            <option value="">Everything</option>
+            {Object.entries(kinds).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+          </Select>
+        </Field>
+      </div>
+      {s && (
+        <div className="grid grid-cols-2 gap-px border-b border-line bg-line sm:grid-cols-4">
+          {[
+            ['Units in', s.unitsIn, 'text-ok'],
+            ['Units out', s.unitsOut, 'text-bad'],
+            ['Value in, at buy price', money(s.valueIn), 'text-ink'],
+            ['Value out, at buy price', money(s.valueOut), 'text-ink'],
+          ].map(([k, v, c]) => (
+            <div key={k} className="bg-surface px-4 py-3 sm:px-5">
+              <p className="text-[12px] text-ink-muted">{k}</p>
+              <p className={cn('tnum text-[17px] font-bold', c)}>{v}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="p-4 sm:p-5">
+        {error ? (
+          <LoadFailed onRetry={load}>{error}</LoadFailed>
+        ) : !data ? (
+          <Loading>Reading the stock book…</Loading>
+        ) : !list(data.moves).length ? (
+          <Empty title="Nothing in these dates">Stock received, sold, counted or written off shows here.</Empty>
+        ) : (
+          <MovesTable moves={list(data.moves)} withProduct />
+        )}
+      </div>
+    </Card>
   );
 }
 

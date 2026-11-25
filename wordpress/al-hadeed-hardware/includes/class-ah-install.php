@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.4.0';
+	const DB_VERSION = '1.5.0';
 
 	public static function activate() {
 		self::tables();
@@ -183,6 +183,29 @@ class AH_Install {
 			created_at   DATETIME        NOT NULL,
 			PRIMARY KEY (id),
 			KEY order_id (order_id),
+			KEY created_at (created_at)
+		) {$charset};";
+
+		// The stock book: every change to a product's count, and why.
+		$sql[] = "CREATE TABLE {$p}ah_stock_moves (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			product_id   BIGINT UNSIGNED NOT NULL,
+			kind         VARCHAR(20)     NOT NULL,
+			qty          INT             NOT NULL DEFAULT 0,
+			stock_before INT             NOT NULL DEFAULT 0,
+			stock_after  INT             NOT NULL DEFAULT 0,
+			unit_cost    BIGINT          NOT NULL DEFAULT 0,
+			unit_price   BIGINT          NOT NULL DEFAULT 0,
+			order_id     BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			supplier     VARCHAR(191)    NULL,
+			ref          VARCHAR(64)     NULL,
+			note         TEXT            NULL,
+			user_id      BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			user_name    VARCHAR(191)    NULL,
+			created_at   DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			KEY product_id (product_id),
+			KEY kind (kind),
 			KEY created_at (created_at)
 		) {$charset};";
 

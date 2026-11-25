@@ -705,10 +705,10 @@ export const DialogFoot = ({ className, ...props }) => (
  * be dismissed — which is exactly what happened to the cancel-order
  * box.
  */
-export function Modal({ open = true, title, description, onClose, children, footer }) {
+export function Modal({ open = true, title, description, onClose, children, footer, wide }) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose?.()}>
-      <DialogContent title={title} description={description}>
+      <DialogContent title={title} description={description} className={wide ? 'w-[min(820px,calc(100vw-2rem))]' : undefined}>
         <DialogBody>{children}</DialogBody>
         {footer && <DialogFoot>{footer}</DialogFoot>}
       </DialogContent>

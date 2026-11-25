@@ -75,8 +75,7 @@ class AH_Rest_Desks {
 		$route( '/manager/staff', $get, $manager, array( __CLASS__, 'staff' ) );
 		$route( '/manager/customers', $get, $manager, array( __CLASS__, 'customers' ) );
 		$route( '/manager/audit', $get, $manager, array( __CLASS__, 'audit' ) );
-		$route( '/manager/products', array( $get, $post ), $manager, array( __CLASS__, 'products' ) );
-		$route( '/manager/products/(?P<id>\d+)', $post, $manager, array( __CLASS__, 'update_product' ) );
+		// Products and their stock: AH_Stock.
 	}
 
 	/**
@@ -751,59 +750,5 @@ class AH_Rest_Desks {
 			$rows[ $i ]['order_no'] = $order ? AH_Shape::order_no( $order ) : null;
 		}
 		return array( 'events' => $rows );
-	}
-
-	public static function products( $req ) {
-		if ( 'POST' === $req->get_method() ) {
-			$p = new WC_Product_Simple();
-			$p->set_name( sanitize_text_field( $req->get_param( 'name' ) ) );
-			$p->set_sku( sanitize_text_field( $req->get_param( 'code' ) ) );
-			$p->set_regular_price( (string) (int) $req->get_param( 'price' ) );
-			$p->set_manage_stock( true );
-			$p->set_stock_quantity( (int) $req->get_param( 'stockAvailable' ) );
-			$p->set_status( 'publish' );
-			$id = $p->save();
-
-			if ( $req->get_param( 'reorderLevel' ) !== null ) {
-				update_post_meta( $id, '_ah_reorder_level', (int) $req->get_param( 'reorderLevel' ) );
-			}
-			if ( $req->get_param( 'unit' ) ) {
-				update_post_meta( $id, '_ah_unit', sanitize_text_field( $req->get_param( 'unit' ) ) );
-			}
-			return array( 'product' => AH_Shape::product( $id ) );
-		}
-
-		return AH_Rest::products( $req );
-	}
-
-	public static function update_product( $req ) {
-		$product = wc_get_product( (int) $req['id'] );
-		if ( ! $product ) {
-			return new WP_Error( 'ah_not_found', 'Product not found', array( 'status' => 404 ) );
-		}
-
-		if ( null !== $req->get_param( 'price' ) ) {
-			$product->set_regular_price( (string) (int) $req->get_param( 'price' ) );
-		}
-		if ( null !== $req->get_param( 'stockAvailable' ) ) {
-			$product->set_manage_stock( true );
-			$product->set_stock_quantity( (int) $req->get_param( 'stockAvailable' ) );
-		}
-		if ( $req->get_param( 'name' ) ) {
-			$product->set_name( sanitize_text_field( $req->get_param( 'name' ) ) );
-		}
-		if ( null !== $req->get_param( 'active' ) ) {
-			$product->set_status( $req->get_param( 'active' ) ? 'publish' : 'draft' );
-		}
-		$product->save();
-
-		if ( null !== $req->get_param( 'reorderLevel' ) ) {
-			update_post_meta( $product->get_id(), '_ah_reorder_level', (int) $req->get_param( 'reorderLevel' ) );
-		}
-		if ( $req->get_param( 'unit' ) ) {
-			update_post_meta( $product->get_id(), '_ah_unit', sanitize_text_field( $req->get_param( 'unit' ) ) );
-		}
-
-		return array( 'product' => AH_Shape::product( $product->get_id() ) );
 	}
 }
