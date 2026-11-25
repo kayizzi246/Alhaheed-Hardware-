@@ -130,7 +130,10 @@ IDs are compared without spaces and case, so `mp261123 1401` and
 |---|---|---|
 | GET | `/customers?q=` | The list, searched by name, phone or email |
 | POST | `/customers` | Add a walk-in: fullName, phone, optional email, address, notes, welcome. 409 with `data.customer` when the number is already on the list |
+| GET | `/customers/walk-ins` | Counter sales to people who gave no name, each with `items` |
 | GET | `/customers/{id}` | One customer and everything they have bought: `orders` (each with `items`), `spent` (paid), `unpaid` (waiting for payment), `topItems` |
+
+Each customer in the list also carries `shopOrders`, `shopSpent` (bought in person at the counter) and `lastBought`. The list response has `walkIns` {sales, spent, last} for counter sales with no name.
 
 The Customers screen adds a walk-in and sells to them in one go: it adds the customer, then posts the basket to `POST /cashier/orders` with their `customerId`, then takes the payment as usual.
 

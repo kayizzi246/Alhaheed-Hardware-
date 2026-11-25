@@ -74,6 +74,7 @@ class AH_Rest_Desks {
 		);
 		$route( '/manager/staff', $get, $manager, array( __CLASS__, 'staff' ) );
 		$route( '/manager/customers', $get, $manager, array( __CLASS__, 'customers' ) );
+		$route( '/customers/walk-ins', $get, AH_Rest::desk( array( 'cashier', 'accounts', 'manager' ) ), array( __CLASS__, 'walk_in_sales' ) );
 		$route( '/manager/audit', $get, $manager, array( __CLASS__, 'audit' ) );
 		// Products and their stock: AH_Stock.
 	}
@@ -633,9 +634,13 @@ class AH_Rest_Desks {
 	 * rejected orders are left out — a customer has not spent money on
 	 * an order that never completed.
 	 */
-	private static function spend_by_customer( $ids ) {
+	private static function spend_by_customer( $ids, $with_guests = false ) {
 		global $wpdb;
 		$ids = array_filter( array_map( 'intval', (array) $ids ) );
+		if ( $with_guests ) {
+			// Customer 0: counter sales to somebody who gave no name.
+			$ids[] = 0;
+		}
 		if ( ! $ids ) {
 			return array();
 		}
@@ -645,22 +650,33 @@ class AH_Rest_Desks {
 		$hpos   = class_exists( '\Automattic\WooCommerce\Utilities\OrderUtil' )
 			&& \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
 
+		// Alongside the totals: how much of it was bought in person at
+		// the counter, and when they last bought anything.
 		if ( $hpos ) {
 			$rows = $wpdb->get_results(
-				"SELECT customer_id, COUNT(*) AS orders, COALESCE(SUM(total_amount),0) AS spent
-				   FROM {$wpdb->prefix}wc_orders
-				  WHERE customer_id IN ({$in}) AND type = 'shop_order' AND status NOT IN ({$skip})
-				  GROUP BY customer_id",
+				"SELECT o.customer_id AS customer_id, COUNT(*) AS orders,
+				        COALESCE(SUM(o.total_amount),0) AS spent,
+				        SUM(CASE WHEN src.meta_value = 'counter' THEN 1 ELSE 0 END) AS shop_orders,
+				        COALESCE(SUM(CASE WHEN src.meta_value = 'counter' THEN o.total_amount ELSE 0 END),0) AS shop_spent,
+				        MAX(o.date_created_gmt) AS last_at
+				   FROM {$wpdb->prefix}wc_orders o
+				   LEFT JOIN {$wpdb->prefix}wc_orders_meta src ON src.order_id = o.id AND src.meta_key = '_ah_source'
+				  WHERE o.customer_id IN ({$in}) AND o.type = 'shop_order' AND o.status NOT IN ({$skip})
+				  GROUP BY o.customer_id",
 				ARRAY_A
 			);
 		} else {
 			$rows = $wpdb->get_results(
 				"SELECT cust.meta_value AS customer_id,
 				        COUNT(*) AS orders,
-				        COALESCE(SUM(tot.meta_value),0) AS spent
+				        COALESCE(SUM(tot.meta_value),0) AS spent,
+				        SUM(CASE WHEN src.meta_value = 'counter' THEN 1 ELSE 0 END) AS shop_orders,
+				        COALESCE(SUM(CASE WHEN src.meta_value = 'counter' THEN tot.meta_value ELSE 0 END),0) AS shop_spent,
+				        MAX(p.post_date_gmt) AS last_at
 				   FROM {$wpdb->posts} p
 				   JOIN {$wpdb->postmeta} cust ON cust.post_id = p.ID AND cust.meta_key = '_customer_user'
 				   LEFT JOIN {$wpdb->postmeta} tot ON tot.post_id = p.ID AND tot.meta_key = '_order_total'
+				   LEFT JOIN {$wpdb->postmeta} src ON src.post_id = p.ID AND src.meta_key = '_ah_source'
 				  WHERE p.post_type = 'shop_order'
 				    AND p.post_status NOT IN ({$skip})
 				    AND cust.meta_value IN ({$in})
@@ -672,8 +688,11 @@ class AH_Rest_Desks {
 		$out = array();
 		foreach ( (array) $rows as $r ) {
 			$out[ (int) $r['customer_id'] ] = array(
-				'orders' => (int) $r['orders'],
-				'spent'  => (int) round( (float) $r['spent'] ),
+				'orders'     => (int) $r['orders'],
+				'spent'      => (int) round( (float) $r['spent'] ),
+				'shopOrders' => (int) $r['shop_orders'],
+				'shopSpent'  => (int) round( (float) $r['shop_spent'] ),
+				'lastAt'     => $r['last_at'] ? get_date_from_gmt( $r['last_at'], 'Y-m-d H:i:s' ) : null,
 			);
 		}
 		return $out;
@@ -716,24 +735,60 @@ class AH_Rest_Desks {
 				}
 			}
 		}
-		if ( ! $users ) {
-			return array( 'customers' => array() );
-		}
-
 		// One aggregate for everybody, rather than a pair of queries per
 		// customer and then a full order load for each of their orders.
 		// Two hundred customers with ten orders each used to be two
-		// thousand order loads to draw one table.
-		$totals = self::spend_by_customer( wp_list_pluck( $users, 'ID' ) );
+		// thousand order loads to draw one table. Customer 0 rides along:
+		// the counter sales to people who gave no name.
+		$totals = self::spend_by_customer( wp_list_pluck( $users, 'ID' ), true );
+		$none   = array( 'orders' => 0, 'spent' => 0, 'shopOrders' => 0, 'shopSpent' => 0, 'lastAt' => null );
 
 		$out = array();
 		foreach ( $users as $u ) {
+			$t                 = isset( $totals[ $u->ID ] ) ? $totals[ $u->ID ] : $none;
 			$row               = AH_Shape::user( $u );
-			$row['orderCount'] = isset( $totals[ $u->ID ] ) ? $totals[ $u->ID ]['orders'] : 0;
-			$row['totalSpent'] = isset( $totals[ $u->ID ] ) ? $totals[ $u->ID ]['spent'] : 0;
+			$row['orderCount'] = $t['orders'];
+			$row['totalSpent'] = $t['spent'];
+			$row['shopOrders'] = $t['shopOrders'];
+			$row['shopSpent']  = $t['shopSpent'];
+			$row['lastBought'] = $t['lastAt'];
 			$out[]             = $row;
 		}
-		return array( 'customers' => $out );
+
+		$guests = isset( $totals[0] ) ? $totals[0] : $none;
+		return array(
+			'customers' => $out,
+			// Bought at the counter without giving a name or number.
+			'walkIns'   => array(
+				'sales' => $guests['shopOrders'],
+				'spent' => $guests['shopSpent'],
+				'last'  => $guests['lastAt'],
+			),
+		);
+	}
+
+	/**
+	 * Counter sales to people who gave no name, newest first, with what
+	 * each one bought.
+	 */
+	public static function walk_in_sales( $req ) {
+		$orders = wc_get_orders(
+			array(
+				'customer_id' => 0,
+				'limit'       => min( 300, max( 1, (int) ( $req->get_param( 'limit' ) ?: 100 ) ) ),
+				'orderby'     => 'date',
+				'order'       => 'DESC',
+				'meta_key'    => '_ah_source',
+				'meta_value'  => 'counter',
+			)
+		);
+		$out = array();
+		foreach ( $orders as $o ) {
+			$row          = AH_Shape::order( $o );
+			$row['items'] = AH_Shape::items( $o );
+			$out[]        = $row;
+		}
+		return array( 'orders' => $out );
 	}
 
 	public static function audit( $req ) {

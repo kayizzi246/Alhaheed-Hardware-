@@ -43,11 +43,16 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
   const [viewing, setViewing] = useState(null); // a customer row
   const [paying, setPaying] = useState(null);   // { order, customer }
   const [fresh, setFresh] = useState(null);
+  const [where, setWhere] = useState('all');    // all | shop | app
+  const [walkIns, setWalkIns] = useState(() => peek(from)?.walkIns || null);
+  const [nameless, setNameless] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const qs = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
-      setCustomers(list((await api(`${from}${qs}`)).customers));
+      const r = await api(`${from}${qs}`);
+      setCustomers(list(r.customers));
+      setWalkIns(r.walkIns || null);
       setError('');
     } catch (e) {
       // On failure, keep what was on screen; the error says it is stale.
@@ -62,9 +67,13 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
 
   // Not named `list` — that is the imported helper, and shadowing it
   // here makes every call to it in this file throw.
-  const rows = customers || [];
-  const spent = rows.reduce((s, c) => s + (c.totalSpent || 0), 0);
-  const walkIns = rows.filter((c) => c.source === 'counter').length;
+  const all = customers || [];
+  const inShop = (c) => (c.shopOrders || 0) > 0 || c.source === 'counter';
+  const onApp = (c) => (c.orderCount || 0) > (c.shopOrders || 0) || ((c.orderCount || 0) === 0 && c.source !== 'counter');
+  const rows = where === 'shop' ? all.filter(inShop) : where === 'app' ? all.filter(onApp) : all;
+  const shopBuyers = all.filter(inShop).length;
+  const shopSpent = all.reduce((s, c) => s + (c.shopSpent || 0), 0) + (walkIns?.spent || 0);
+  const spent = all.reduce((s, c) => s + (c.totalSpent || 0), 0) + (walkIns?.spent || 0);
 
   // A number typed into the search that matches nobody is very likely
   // the person standing at the counter. Offer to add them with it.
@@ -93,18 +102,43 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
       <Alert>{error}</Alert>
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
-      <Stats className="xl:grid-cols-3">
-        <Stat label="Customers" value={rows.length} icon={Icon.people()} />
-        <Stat label="Added at the counter" value={walkIns} icon={Icon.user()} tone="neutral" />
+      <Stats>
+        <Stat label="Customers" value={all.length} icon={Icon.people()} />
+        <Stat label="Buy in the shop" value={shopBuyers} icon={Icon.user()} tone="neutral" />
+        <Stat label="Spent in the shop" value={money(shopSpent)} icon={Icon.cash()} tone="ok" />
         <Stat label="Spent with the shop" value={money(spent)} tone="ok" icon={Icon.cash()} />
       </Stats>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented
+          label="Where they buy"
+          value={where}
+          onChange={setWhere}
+          options={[
+            { value: 'all', label: 'Everyone' },
+            { value: 'shop', label: 'Buy in the shop' },
+            { value: 'app', label: 'Buy on the app' },
+          ]}
+        />
+        {walkIns && walkIns.sales > 0 && where !== 'app' && (
+          <button
+            type="button"
+            onClick={() => setNameless(true)}
+            className="inline-flex items-center gap-2 rounded-sm border border-line bg-surface px-3 py-2 text-left text-[13px] text-ink hover:bg-surface-2"
+          >
+            <span className="font-semibold">Walk-ins who gave no name</span>
+            <span className="tnum text-ink-muted">{walkIns.sales} {walkIns.sales === 1 ? 'sale' : 'sales'} · {money(walkIns.spent)}</span>
+            <span aria-hidden="true" className="text-ink-muted">›</span>
+          </button>
+        )}
+      </div>
 
       <Card>
         {!customers ? (
           error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading customers…</Loading>
         ) : rows.length === 0 ? (
           <Empty
-            title={q ? 'Nobody matches' : 'No customers yet'}
+            title={q ? 'Nobody matches' : where === 'shop' ? 'Nobody has bought in the shop yet' : where === 'app' ? 'Nobody has bought on the app yet' : 'No customers yet'}
             action={
               canAdd ? (
                 <Button onClick={() => setAdding(typedPhone ? { phone: typedPhone } : {})}>
@@ -120,8 +154,8 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
             <Table>
               <thead>
                 <tr>
-                  <Th>Name</Th><Th>Phone</Th><Th>Account</Th>
-                  <Th num>Orders</Th><Th num>Spent</Th><Th>Status</Th>
+                  <Th>Name</Th><Th>Phone</Th><Th>Buys</Th>
+                  <Th num>Orders</Th><Th num>In the shop</Th><Th num>Total spent</Th><Th>Last bought</Th><Th>Status</Th>
                 </tr>
               </thead>
               <tbody>
@@ -148,15 +182,19 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
                       </Td>
                       <Td className="tnum whitespace-nowrap">{c.phone || ''}</Td>
                       <Td className="text-ink-muted">
-                        {ACCOUNT_LABEL(c)}
-                        {c.source === 'counter' && (
-                          <span className="block text-xs">
-                            Walk-in{c.addedBy ? ` · added by ${c.addedBy}` : ''}
-                          </span>
-                        )}
+                        <span className="flex flex-wrap gap-1">
+                          {inShop(c) && <Chip tone="info">In the shop</Chip>}
+                          {(c.orderCount || 0) > (c.shopOrders || 0) && <Chip tone="grey">On the app</Chip>}
+                        </span>
+                        <span className="mt-0.5 block text-xs">
+                          {ACCOUNT_LABEL(c)}
+                          {c.source === 'counter' && c.addedBy ? ` · added by ${c.addedBy}` : ''}
+                        </span>
                       </Td>
                       <Td num>{c.orderCount}</Td>
+                      <Td num className="whitespace-nowrap">{c.shopSpent ? money(c.shopSpent) : <span className="text-ink-muted">none</span>}</Td>
                       <Td num className="whitespace-nowrap font-semibold text-ink">{money(c.totalSpent || 0)}</Td>
+                      <Td className="tnum whitespace-nowrap text-ink-muted">{c.lastBought ? dateTime(c.lastBought) : 'not yet'}</Td>
                       <Td>
                         <Chip tone={c.status === 'active' ? 'good' : 'grey'}>
                           {c.status === 'active' ? 'Active' : 'Suspended'}
@@ -189,6 +227,8 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
           }}
         />
       )}
+
+      {nameless && <NamelessSales onClose={() => setNameless(false)} />}
 
       {viewing && (
         <CustomerHistory
@@ -578,7 +618,6 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
 function CustomerHistory({ customer, canSell, onClose, onSell }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
-  const [open, setOpen] = useState(null); // order id expanded on a phone
 
   const load = useCallback(() => {
     setError('');
@@ -642,6 +681,19 @@ function CustomerHistory({ customer, canSell, onClose, onSell }) {
                 Nothing bought yet.{canSell ? ' Use New sale for them to ring up what they are taking.' : ''}
               </p>
             ) : (
+              <SaleList orders={orders} />
+            )}
+          </section>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/** Each sale with its items, newest first. */
+function SaleList({ orders }) {
+  const [open, setOpen] = useState(null);
+  return (
               <ul className="divide-y divide-line rounded-sm border border-line">
                 {orders.map((o) => {
                   const shut = open !== o.id && list(o.items).length > 3;
@@ -673,11 +725,6 @@ function CustomerHistory({ customer, canSell, onClose, onSell }) {
                   );
                 })}
               </ul>
-            )}
-          </section>
-        </div>
-      )}
-    </Modal>
   );
 }
 
@@ -687,5 +734,48 @@ function Figure({ label, value, warn }) {
       <p className="truncate text-[12px] font-semibold text-ink-muted">{label}</p>
       <p className={cn('tnum truncate text-[16px] font-extrabold', warn ? 'text-warn' : 'text-ink')}>{value}</p>
     </div>
+  );
+}
+
+/**
+ * Counter sales to people who would rather not give a name: what was
+ * bought, when, and for how much.
+ */
+function NamelessSales({ onClose }) {
+  const [orders, setOrders] = useState(null);
+  const [error, setError] = useState('');
+
+  const load = useCallback(() => {
+    setError('');
+    api('/api/customers/walk-ins')
+      .then((r) => setOrders(list(r.orders)))
+      .catch((e) => setError(e.message));
+  }, []);
+  useEffect(load, [load]);
+
+  const paid = (orders || []).filter((o) => !['pending_payment', 'cancelled', 'rejected', 'refunded'].includes(o.status));
+
+  return (
+    <Modal
+      wide
+      title="Walk-ins who gave no name"
+      description="Sold at the counter without a name or number."
+      onClose={onClose}
+      footer={<Button type="button" variant="outline" onClick={onClose}>Close</Button>}
+    >
+      {!orders ? (
+        error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading the sales…</Loading>
+      ) : orders.length === 0 ? (
+        <p className="py-8 text-center text-[13.5px] text-ink-muted">No sales without a name yet.</p>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            <Figure label="Sales" value={orders.length} />
+            <Figure label="Paid for" value={money(paid.reduce((s, o) => s + Number(o.total || 0), 0))} />
+          </div>
+          <SaleList orders={orders} />
+        </div>
+      )}
+    </Modal>
   );
 }
