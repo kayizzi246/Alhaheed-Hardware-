@@ -186,6 +186,8 @@ The accounts queue carries `payment_id` and `has_proof` on each row.
 
 ---
 
+Deleting a desk login: `DELETE /manager/staff/{id}` or `POST /manager/staff/{id}/delete`. It ends their sessions, removes the desk, scrambles the password and frees the phone and email. The record stays so receipts, expenses and the audit trail keep the name. Not allowed on yourself or the owner account.
+
 ## Workers and salaries — `/api/manager`  *(manager only)*
 
 Everyone the shop pays, with or without a desk login. Approved salaries

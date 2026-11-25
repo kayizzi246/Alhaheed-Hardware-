@@ -24,6 +24,10 @@ const ACTION_LABEL = {
   workers_deleted: 'Workers deleted',
   payroll_started: 'Payroll drafted',
   payroll_approved: 'Payroll approved',
+  staff_deleted: 'Desk login deleted',
+  staff_suspended: 'Desk login suspended',
+  staff_restored: 'Desk login let back in',
+  staff_moved: 'Moved to another desk',
 };
 
 /**

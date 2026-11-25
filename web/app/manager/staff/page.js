@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api, peek } from '@/lib/api';
+import { api, peek, getUser } from '@/lib/api';
 import { PasswordField, SignInCard, makePassword, passwordProblem } from '@/components/StaffBits';
 import { cn } from '@/lib/cn';
 import { list, dateTime } from '@/lib/format';
@@ -38,7 +38,11 @@ export default function ManagerStaff() {
   });
   const [hiring, setHiring] = useState(false);
   const [changing, setChanging] = useState(null);
+  const [removing, setRemoving] = useState(null);
+  const [me, setMe] = useState(null);
   const [error, setError] = useState('');
+
+  useEffect(() => { setMe(getUser()?.id ?? null); }, []);
   const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
@@ -118,6 +122,11 @@ export default function ManagerStaff() {
                         >
                           Open
                         </Link>
+                        {s.id !== me && (
+                          <Button variant="outline" size="sm" onClick={() => setRemoving(s)} className="text-bad hover:bg-bad-bg">
+                            Delete
+                          </Button>
+                        )}
                       </div>
                     </Td>
                   </Tr>
@@ -140,6 +149,14 @@ export default function ManagerStaff() {
           person={changing}
           onClose={() => setChanging(null)}
           onDone={(msg) => { setChanging(null); setNotice(msg); load(); }}
+        />
+      )}
+
+      {removing && (
+        <DeleteDialog
+          person={removing}
+          onClose={() => setRemoving(null)}
+          onDone={(msg) => { setRemoving(null); setNotice(msg); load(); }}
         />
       )}
 
@@ -348,9 +365,53 @@ function ChangeDialog({ person, onClose, onDone }) {
         </Field>
 
         <p className="text-[12.5px] leading-relaxed text-ink-muted">
-          Suspending keeps the account and everything it has ever done. Deleting
-          someone takes their name off the audit trail, which is the one record that
-          answers &ldquo;who did that&rdquo;.
+          Suspending stops them signing in until you let them back. For somebody who
+          has left for good, use Delete on the list instead.
+        </p>
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * Remove a desk login for good, after saying plainly what happens.
+ */
+function DeleteDialog({ person, onClose, onDone }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function go() {
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/api/manager/staff/${person.id}/delete`, { method: 'POST' });
+      onDone(`${person.fullName}'s login is deleted. Their number is free to give to somebody else.`);
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      title={`Delete ${person.fullName}?`}
+      description={`${ROLE_LABEL[person.role] || person.role}${person.phone ? ' · ' + person.phone : ''}`}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="danger" disabled={busy} onClick={go}>
+            {busy ? 'Deleting…' : 'Delete login'}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3 text-[13.5px] leading-relaxed text-ink">
+        <Alert>{error}</Alert>
+        <p>They are signed out now and can never sign in again. This cannot be undone.</p>
+        <p className="text-ink-muted">
+          Their phone number and email are freed, so you can give them to somebody new.
+          Receipts, expenses and the audit trail still show their name against what they did.
         </p>
       </div>
     </Modal>

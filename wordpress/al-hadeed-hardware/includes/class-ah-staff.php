@@ -53,6 +53,18 @@ class AH_Staff {
 				'permission_callback' => $manager,
 				'callback'            => array( __CLASS__, 'activity' ),
 			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'permission_callback' => $manager,
+				'callback'            => array( __CLASS__, 'remove' ),
+			),
+		) );
+
+		// The same, from a POST, for hosts that refuse DELETE.
+		register_rest_route( $ns, '/manager/staff/(?P<id>\d+)/delete', array(
+			'methods'             => $post,
+			'permission_callback' => $manager,
+			'callback'            => array( __CLASS__, 'remove' ),
 		) );
 
 		register_rest_route( $ns, '/manager/staff/(?P<id>\d+)/password', array(
@@ -302,6 +314,53 @@ class AH_Staff {
 		}
 
 		return array( 'staff' => AH_Shape::user( $id ) );
+	}
+
+	/**
+	 * Take somebody off the desks for good.
+	 *
+	 * Their login goes: no desk, a password nobody knows, every session
+	 * ended, and their phone number and email freed so they can be given
+	 * to somebody else. The record itself stays behind with their name,
+	 * because receipts, expenses and the audit trail all say who did
+	 * what by pointing at it. Deleting it outright would turn every one
+	 * of those into a blank.
+	 */
+	public static function remove( $req ) {
+		$id   = (int) $req['id'];
+		$user = get_user_by( 'id', $id );
+
+		if ( ! $user || ! AH_Roles::desk_of( $user ) ) {
+			return new WP_Error( 'ah_not_found', 'That is not a member of staff', array( 'status' => 404 ) );
+		}
+		if ( $id === get_current_user_id() ) {
+			return new WP_Error( 'ah_self', 'You cannot delete yourself.', array( 'status' => 400 ) );
+		}
+		if ( user_can( $user, 'manage_options' ) ) {
+			return new WP_Error( 'ah_owner', 'That is the owner\'s account. It cannot be deleted from here.', array( 'status' => 403 ) );
+		}
+
+		$name  = $user->display_name;
+		$desk  = AH_Roles::desk_of( $user );
+		$phone = (string) get_user_meta( $id, 'ah_phone', true );
+
+		AH_Auth::end_sessions( $id );
+		$user->set_role( '' );
+		wp_set_password( wp_generate_password( 40, true, true ), $id );
+		wp_update_user( array( 'ID' => $id, 'user_email' => '' ) );
+
+		update_user_meta( $id, 'ah_status', 'suspended' );
+		update_user_meta( $id, 'ah_deleted', current_time( 'mysql' ) );
+		update_user_meta( $id, 'ah_deleted_by', get_current_user_id() );
+		if ( $phone ) {
+			update_user_meta( $id, 'ah_phone_was', $phone );
+		}
+		delete_user_meta( $id, 'ah_phone' );
+		delete_user_meta( $id, 'billing_phone' );
+
+		self::audit( 'staff_deleted', $name . ( $desk ? ' · ' . ucfirst( $desk ) : '' ) );
+
+		return array( 'ok' => true, 'name' => $name );
 	}
 
 	/**
