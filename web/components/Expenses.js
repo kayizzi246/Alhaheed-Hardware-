@@ -144,8 +144,10 @@ const TONE = {
 };
 
 export default function Expenses() {
-  const [status, setStatus] = useState('raised');
-  const [data, setData] = useState(() => peek('/api/expenses?status=raised'));
+  // Everything, newest first: a new expense shows where it was added,
+  // whatever happened to it.
+  const [status, setStatus] = useState('all');
+  const [data, setData] = useState(() => peek('/api/expenses?status=all'));
   const [raising, setRaising] = useState(false);
   const [deciding, setDeciding] = useState(null);
   const [paying, setPaying] = useState(null);
@@ -355,8 +357,9 @@ export default function Expenses() {
           onDone={(msg, landed) => {
             setRaising(false);
             setNotice(msg);
-            // Show the list it landed in, so it is seen to be there.
-            if (landed && landed !== status && status !== 'all') setStatus(landed);
+            // Stay on this page and show it. A filter that would hide it
+            // opens out to Everything, rather than jumping to another list.
+            if (landed && landed !== status && status !== 'all') setStatus('all');
             else load();
           }}
         />
