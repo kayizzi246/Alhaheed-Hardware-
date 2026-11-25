@@ -75,6 +75,7 @@ class AH_Stock {
 		$route( '/manager/products/(?P<id>\d+)/stock', $post, array( __CLASS__, 'move' ) );
 		$route( '/manager/products/(?P<id>\d+)/moves', $get, array( __CLASS__, 'history' ) );
 		$route( '/manager/stock/moves', $get, array( __CLASS__, 'moves' ) );
+		$route( '/manager/products/delete', $post, array( __CLASS__, 'delete' ) );
 	}
 
 	// -----------------------------------------------------------------
@@ -391,6 +392,42 @@ class AH_Stock {
 			}
 		}
 		return 'AH-' . wp_generate_password( 6, false );
+	}
+
+	/**
+	 * Delete products: one, or every one ticked on the list.
+	 *
+	 * They go to the WordPress bin rather than vanishing, so a slip can be
+	 * undone from there for thirty days. Past orders keep the product's
+	 * name and price on their lines either way, and the stock book keeps
+	 * its history.
+	 */
+	public static function delete( $req ) {
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', (array) $req->get_param( 'ids' ) ) ) ) );
+		if ( ! $ids ) {
+			return self::err( 'ah_nothing_chosen', 'Choose the products to delete', 400 );
+		}
+		if ( count( $ids ) > 500 ) {
+			return self::err( 'ah_too_many', 'Delete at most 500 products at a time', 400 );
+		}
+		$user  = AH_Auth::current();
+		$names = array();
+		foreach ( $ids as $id ) {
+			$product = wc_get_product( $id );
+			if ( ! $product || 'trash' === $product->get_status() ) {
+				continue;
+			}
+			$names[] = $product->get_name();
+			$product->delete( false );
+		}
+		if ( ! $names ) {
+			return self::err( 'ah_not_found', 'Those products were already deleted', 404 );
+		}
+		AH_Flow::log_event(
+			0, 'manager', 'products_deleted', null, null, $user ? $user->ID : null,
+			sprintf( '%d deleted: %s', count( $names ), implode( ', ', array_slice( $names, 0, 20 ) ) . ( count( $names ) > 20 ? '…' : '' ) )
+		);
+		return array( 'deleted' => count( $names ) );
 	}
 
 	// -----------------------------------------------------------------

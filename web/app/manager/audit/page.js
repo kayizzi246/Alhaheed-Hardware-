@@ -18,6 +18,7 @@ const ACTION_LABEL = {
   refunded: 'Refunded',
   data_exported: 'Data exported',
   account_deleted: 'Customer deleted their account',
+  products_deleted: 'Products deleted',
 };
 
 /**

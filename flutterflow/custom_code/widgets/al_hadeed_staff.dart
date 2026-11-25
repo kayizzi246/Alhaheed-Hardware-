@@ -3113,6 +3113,48 @@ class _ProductSheetState extends State<_ProductSheet> {
     }
   }
 
+  /// Asked first, because it takes the product out of the app.
+  Future<void> _delete() async {
+    final navigator = Navigator.of(context);
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Delete ${_p!['name']}?', style: _title(18)),
+        content: Text(
+            'It comes off sale and out of the app. Past orders keep its name '
+            'and price. To sell it again later, retire it on the web panel instead.',
+            style: _txt(14, height: 1.45)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(c).pop(false),
+              child: Text('Keep it', style: _txt(14, weight: FontWeight.w600))),
+          TextButton(
+              onPressed: () => Navigator.of(c).pop(true),
+              child: Text('Delete',
+                  style: _txt(14, weight: FontWeight.w700, color: _ember))),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _apiPost('/api/manager/products/delete', {
+        'ids': [_int(_p!['id'])],
+      });
+      HapticFeedback.mediumImpact();
+      navigator.pop('${_p!['name']} deleted');
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final price = _num(_price), cost = _num(_cost);
@@ -3203,6 +3245,14 @@ class _ProductSheetState extends State<_ProductSheet> {
             const SizedBox(height: 16),
             _BigButton(_p == null ? 'Add product' : 'Save', ok ? _save : null,
                 busy: _busy),
+            if (_p != null)
+              Center(
+                child: TextButton(
+                  onPressed: _busy ? null : _delete,
+                  child: Text('Delete product',
+                      style: _txt(14, weight: FontWeight.w600, color: _ember)),
+                ),
+              ),
           ],
         ),
       ),

@@ -6,7 +6,7 @@ import { money, list, today } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { Icon } from '@/components/icons';
 import {
-  Alert, Button, Card, Chip, Empty, Field, Input, Loading, Modal, PageHead, Segmented, Select,
+  Alert, Button, Card, Checkbox, Chip, Empty, Field, Input, Loading, Modal, PageHead, Segmented, Select,
   Stat, Table, TableWrap, Td, Textarea, Th, Tr, LoadFailed } from '@/components/ui';
 
 /**
@@ -37,6 +37,8 @@ export default function ManagerProducts() {
   const [moving, setMoving] = useState(null);
   const [history, setHistory] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [picked, setPicked] = useState(() => new Set());
+  const [deleting, setDeleting] = useState(null); // the products about to go
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -76,6 +78,8 @@ export default function ManagerProducts() {
   }
 
   const done = (msg) => {
+    setPicked(new Set());
+    setDeleting(null);
     setNotice(msg);
     setForm(null);
     setMoving(null);
@@ -112,6 +116,17 @@ export default function ManagerProducts() {
       return `${p.name} ${p.code} ${p.category_name || ''} ${p.supplier || ''} ${p.shelf || ''}`.toLowerCase().includes(q);
     });
   }, [products, search, show, category]);
+
+  // Ticks only count for what is on screen, so a filter never hides a
+  // product that is about to be deleted.
+  const pickedShown = shown.filter((p) => picked.has(p.id));
+  const allPicked = shown.length > 0 && pickedShown.length === shown.length;
+  const pick = (id) => setPicked((old) => {
+    const next = new Set(old);
+    if (!next.delete(id)) next.add(id);
+    return next;
+  });
+  const pickAll = () => setPicked(allPicked ? new Set() : new Set(shown.map((p) => p.id)));
 
   const counts = {
     low: products.filter((p) => p.active && (p.state === 'low' || p.state === 'out')).length,
@@ -203,6 +218,18 @@ export default function ManagerProducts() {
             </div>
           </div>
 
+          {pickedShown.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 border-b border-line bg-brand-soft px-4 py-2.5 sm:px-5" role="status">
+              <span className="text-[13.5px] font-semibold text-brand-dark">
+                {pickedShown.length} {pickedShown.length === 1 ? 'product' : 'products'} selected
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => setPicked(new Set())}>Clear</Button>
+              <Button variant="danger" size="sm" className="ml-auto" onClick={() => setDeleting(pickedShown)}>
+                Delete {pickedShown.length}
+              </Button>
+            </div>
+          )}
+
           {!data ? (
             error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading the products…</Loading>
           ) : shown.length === 0 ? (
@@ -219,6 +246,13 @@ export default function ManagerProducts() {
               <Table>
                 <thead>
                   <tr>
+                    <Th className="w-10 pr-0">
+                      <Checkbox
+                        checked={allPicked}
+                        onChange={pickAll}
+                        aria-label={allPicked ? 'Clear the selection' : `Select all ${shown.length} shown`}
+                      />
+                    </Th>
                     <Th>Product</Th>
                     <Th num>Buy</Th>
                     <Th num>Sell</Th>
@@ -231,7 +265,10 @@ export default function ManagerProducts() {
                 </thead>
                 <tbody>
                   {shown.map((p) => (
-                    <Tr key={p.id}>
+                    <Tr key={p.id} className={cn(picked.has(p.id) && 'bg-brand-soft/60')}>
+                      <Td className="w-10 pr-0">
+                        <Checkbox checked={picked.has(p.id)} onChange={() => pick(p.id)} aria-label={`Select ${p.name}`} />
+                      </Td>
                       <Td className="min-w-[220px]">
                         <button type="button" onClick={() => setHistory(p)} className="text-left">
                           <span className="block font-semibold text-ink hover:text-brand-dark">{p.name}</span>
@@ -283,8 +320,10 @@ export default function ManagerProducts() {
           suppliers={list(data?.suppliers)}
           onClose={() => setForm(null)}
           onDone={done}
+          onDelete={() => { setDeleting([form]); setForm(null); }}
         />
       )}
+      {deleting && <DeleteProducts products={deleting} onClose={() => setDeleting(null)} onDone={done} />}
       {moving && (
         <StockMove product={moving} suppliers={list(data?.suppliers)} onClose={() => setMoving(null)} onDone={done} />
       )}
@@ -308,7 +347,64 @@ export default function ManagerProducts() {
 
 /* ── Adding and editing ──────────────────────────────────────────── */
 
-function ProductForm({ product, categories, suppliers, onClose, onDone }) {
+/**
+ * Deleting one product or many. Spelt out first, because it takes the
+ * product out of the app and off every list; it goes to the WordPress
+ * bin rather than vanishing, so it can still be brought back from there.
+ */
+function DeleteProducts({ products, onClose, onDone }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const n = products.length;
+  const one = n === 1;
+
+  async function go() {
+    setBusy(true);
+    setError('');
+    try {
+      const r = await api('/api/manager/products/delete', { method: 'POST', body: { ids: products.map((p) => p.id) } });
+      const d = r.deleted ?? n;
+      onDone(one ? `${products[0].name} deleted.` : `${d} products deleted.`);
+    } catch (e) {
+      setError(/no route/i.test(e.message) ? 'Deleting needs the new plugin. Upload al-hadeed-hardware.zip (1.9.0) to the website first.' : e.message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      title={one ? `Delete ${products[0].name}?` : `Delete ${n} products?`}
+      description="They come off sale, out of the app and off this list."
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>Keep {one ? 'it' : 'them'}</Button>
+          <Button variant="danger" disabled={busy} onClick={go}>
+            {busy ? 'Deleting…' : one ? 'Delete product' : `Delete ${n} products`}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4 text-[14px] text-ink-2">
+        <Alert>{error}</Alert>
+        <ul className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-line bg-surface-2 px-4 py-3">
+          {products.map((p) => (
+            <li key={p.id} className="flex justify-between gap-3">
+              <span className="font-medium text-ink">{p.name}</span>
+              <span className="tnum text-ink-muted">{p.code}</span>
+            </li>
+          ))}
+        </ul>
+        <p>
+          Past orders and receipts keep {one ? 'its' : 'their'} name and price, and the stock book keeps {one ? 'its' : 'their'} history.
+          If you may sell {one ? 'it' : 'them'} again, <b>Retire</b> instead: that takes {one ? 'it' : 'them'} off sale but keeps {one ? 'it' : 'them'} here.
+        </p>
+      </div>
+    </Modal>
+  );
+}
+
+function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete }) {
   const editing = !!product;
   const [f, setF] = useState(() => ({
     name: product?.name || '',
@@ -374,9 +470,19 @@ function ProductForm({ product, categories, suppliers, onClose, onDone }) {
       footer={
         <>
           {editing && (
-            <Button variant="ghost" className="mr-auto" disabled={busy} onClick={() => save({ active: !product.active })}>
-              {product.active ? 'Retire' : 'Put back on sale'}
-            </Button>
+            <div className="mr-auto flex flex-wrap gap-2">
+              <Button variant="ghost" className="text-bad hover:bg-bad-bg hover:text-bad" disabled={busy} onClick={onDelete}>
+                Delete
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={() => save({ active: !product.active })}
+                title={product.active ? 'Off sale and out of the app, but kept. Put it back any time.' : undefined}
+              >
+                {product.active ? 'Retire' : 'Put back on sale'}
+              </Button>
+            </div>
           )}
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button disabled={!ok} onClick={() => save()}>
