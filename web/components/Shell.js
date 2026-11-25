@@ -118,11 +118,7 @@ export default function Shell({ allow, children }) {
           <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-fill to-fill-dark text-[13px] font-extrabold text-white">
             AH
           </span>
-          <span className="font-display text-[12.5px] font-extrabold leading-[1.15] tracking-[.04em] text-white">
-            AL HADEED
-            <br />
-            <b className="text-green-300">HARDWARE</b>
-          </span>
+          <span className="font-display text-[15px] font-extrabold tracking-[.04em] text-white">AL HADEED</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
