@@ -90,20 +90,13 @@ const Cubic _ease = Cubic(0.23, 1, 0.32, 1);
 
 /// Soft depth for cards: a tight contact shadow and a wide faint one —
 /// the same layered shadow the staff panel's cards use.
-const List<BoxShadow> _cardShadow = [
-  BoxShadow(color: Color(0x0A0F1B33), blurRadius: 2, offset: Offset(0, 1)),
-  BoxShadow(
-      color: Color(0x140F1B33),
-      blurRadius: 24,
-      spreadRadius: -10,
-      offset: Offset(0, 8)),
-];
+const List<BoxShadow> _cardShadow = [];
 
 /// The brand's blue, deepening — hero cards, the header, the add button.
 const LinearGradient _heroGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFF1A9A4B), Color(0xFF166534)],
+  colors: [_brand, _brand],
 );
 
 double _ui = 1.0;
@@ -161,13 +154,13 @@ BoxDecoration _liquid({
   final List<Color> fill;
   final Color rim;
   if (tint != null) {
-    fill = [Color.lerp(tint, _white, 0.10)!, tint];
+    fill = [tint, tint];
     rim = _white.withOpacity(0.40);
   } else if (onDark) {
-    fill = [_white.withOpacity(0.30), _white.withOpacity(0.12)];
+    fill = [_white.withOpacity(0.16), _white.withOpacity(0.16)];
     rim = _white.withOpacity(0.42);
   } else {
-    fill = const [_white, Color(0xFFEFF2F5)];
+    fill = const [_white, _white];
     rim = _ink.withOpacity(0.10);
   }
   return BoxDecoration(
@@ -249,7 +242,7 @@ class _Glass extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [_white.withOpacity(0.86), _white.withOpacity(0.66)],
+                colors: [_white, _white],
               ),
               border: _GradientRim(
                 LinearGradient(
@@ -818,15 +811,6 @@ class _BottomBar extends StatelessWidget {
           color: _white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: _hairline),
-          boxShadow: const [
-            BoxShadow(
-                color: Color(0x0D0F1B33), blurRadius: 3, offset: Offset(0, 1)),
-            BoxShadow(
-                color: Color(0x1F0F1B33),
-                blurRadius: 30,
-                spreadRadius: -10,
-                offset: Offset(0, 14)),
-          ],
         ),
         child: Row(
           children: [
@@ -918,16 +902,9 @@ class _Header extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF178A45), Color(0xFF0C3E24)],
+            colors: [_brand, _brand],
           ),
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
-          boxShadow: [
-            BoxShadow(
-                color: Color(0x3315803D),
-                blurRadius: 24,
-                spreadRadius: -8,
-                offset: Offset(0, 10)),
-          ],
         ),
         child: Stack(
           children: [
@@ -942,7 +919,7 @@ class _Header extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(colors: [
-                    _white.withOpacity(0.22),
+                    _white.withOpacity(0),
                     _white.withOpacity(0),
                   ]),
                 ),
@@ -1028,15 +1005,14 @@ class _Empty extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: tone == _ember
-                        ? [_emberPale, _white]
-                        : [_brandPale, _white],
+                        ? [_emberPale, _emberPale]
+                        : [_brandPale, _brandPale],
                   ),
                   borderRadius: BorderRadius.circular(26),
                   border: Border.all(
                       color: tone == _ember
                           ? _ember.withOpacity(0.18)
                           : _brand.withOpacity(0.14)),
-                  boxShadow: _cardShadow,
                 ),
                 child: Icon(icon,
                     size: 32, color: tone == _ember ? _ember : _brand),
@@ -1314,13 +1290,6 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
             decoration: BoxDecoration(
               gradient: _heroGradient,
               borderRadius: BorderRadius.circular(22),
-              boxShadow: const [
-                BoxShadow(
-                    color: Color(0x592563EB),
-                    blurRadius: 28,
-                    spreadRadius: -10,
-                    offset: Offset(0, 12)),
-              ],
             ),
             child: Stack(
               children: [
@@ -1333,7 +1302,7 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(colors: [
-                        _white.withOpacity(0.2),
+                        _white.withOpacity(0),
                         _white.withOpacity(0),
                       ]),
                     ),
@@ -1519,7 +1488,6 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
           color: _white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _hairline.withOpacity(0.7)),
-          boxShadow: _cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1572,7 +1540,6 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
                 color: n > 0 && tappable
                     ? _brand.withOpacity(0.22)
                     : _hairline.withOpacity(0.7)),
-            boxShadow: _cardShadow,
           ),
           child: Column(
             children: [
@@ -1678,7 +1645,6 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
         color: _white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _hairline.withOpacity(0.7)),
-        boxShadow: _cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1715,8 +1681,8 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
                             height: max == 0
                                 ? 3
                                 : (3 + (days[i].$3 / max) * 82),
-                            // The chosen day in the brand's gradient with
-                            // a glow; the rest a pale wash of the same.
+                            // The chosen day in solid green;
+                            // the rest a pale wash of the same.
                             decoration: BoxDecoration(
                               gradient: i == selected
                                   ? _heroGradient
@@ -1724,22 +1690,13 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
                                       colors: [
-                                        _brand.withOpacity(0.32),
-                                        _brand.withOpacity(0.12),
+                                        _brand.withOpacity(0.22),
+                                        _brand.withOpacity(0.22),
                                       ],
                                     ),
                               borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(8),
                                   bottom: Radius.circular(3)),
-                              boxShadow: i == selected
-                                  ? const [
-                                      BoxShadow(
-                                          color: Color(0x592563EB),
-                                          blurRadius: 14,
-                                          spreadRadius: -4,
-                                          offset: Offset(0, 6)),
-                                    ]
-                                  : null,
                             ),
                           ),
                           const SizedBox(height: 6),
