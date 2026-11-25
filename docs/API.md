@@ -124,6 +124,16 @@ IDs are compared without spaces and case, so `mp261123 1401` and
 
 ---
 
+## Customers — `/api/customers`  *(cashier, accounts, manager to read; cashier, manager to add)*
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/customers?q=` | The list, searched by name, phone or email |
+| POST | `/customers` | Add a walk-in: fullName, phone, optional email, address, notes, welcome. 409 with `data.customer` when the number is already on the list |
+| GET | `/customers/{id}` | One customer and everything they have bought: `orders` (each with `items`), `spent` (paid), `unpaid` (waiting for payment), `topItems` |
+
+The Customers screen adds a walk-in and sells to them in one go: it adds the customer, then posts the basket to `POST /cashier/orders` with their `customerId`, then takes the payment as usual.
+
 ## Payments — `/api/payments`  *(cashier, accounts, manager)*
 
 | Method | Path | Purpose |

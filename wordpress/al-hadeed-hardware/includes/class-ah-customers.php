@@ -40,6 +40,79 @@ class AH_Customers {
 				),
 			)
 		);
+
+		// One customer and everything they have bought, at the counter
+		// or on the app.
+		register_rest_route(
+			$ns,
+			'/customers/(?P<id>\d+)',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'permission_callback' => AH_Rest::desk( array( 'cashier', 'accounts', 'manager' ) ),
+				'callback'            => array( __CLASS__, 'one' ),
+			)
+		);
+	}
+
+	/**
+	 * A customer's history: each order with its items, newest first,
+	 * and what they buy most.
+	 */
+	public static function one( $req ) {
+		$user = get_user_by( 'id', (int) $req['id'] );
+		if ( ! $user || AH_Roles::desk_of( $user ) ) {
+			return new WP_Error( 'ah_no_customer', 'That customer is not on the list', array( 'status' => 404 ) );
+		}
+
+		$orders = wc_get_orders(
+			array(
+				'customer_id' => $user->ID,
+				'limit'       => 200,
+				'orderby'     => 'date',
+				'order'       => 'DESC',
+			)
+		);
+
+		$skip   = array( 'cancelled', 'ah-rejected', 'refunded', 'failed' );
+		$out    = array();
+		$spent  = 0;
+		$owing  = 0;
+		$tally  = array();
+		foreach ( $orders as $o ) {
+			$row          = AH_Shape::order( $o );
+			$row['items'] = AH_Shape::items( $o );
+			$out[]        = $row;
+
+			if ( in_array( $o->get_status(), $skip, true ) ) {
+				continue;
+			}
+			if ( 'pending_payment' === $row['status'] ) {
+				$owing += (int) $row['total'];
+			} else {
+				$spent += (int) $row['total'];
+			}
+			foreach ( $row['items'] as $it ) {
+				$key = $it['product_id'] ? $it['product_id'] : $it['product_name'];
+				if ( ! isset( $tally[ $key ] ) ) {
+					$tally[ $key ] = array( 'name' => $it['product_name'], 'unit' => $it['unit'], 'quantity' => 0, 'spent' => 0 );
+				}
+				$tally[ $key ]['quantity'] += $it['quantity'];
+				$tally[ $key ]['spent']    += $it['line_total'];
+			}
+		}
+		usort( $tally, function ( $a, $b ) { return $b['spent'] <=> $a['spent']; } );
+
+		$customer          = AH_Shape::user( $user );
+		$customer['notes'] = (string) get_user_meta( $user->ID, 'ah_notes', true ) ?: null;
+		$customer['address'] = (string) get_user_meta( $user->ID, 'ah_location', true ) ?: null;
+
+		return array(
+			'customer' => $customer,
+			'orders'   => $out,
+			'spent'    => $spent,
+			'unpaid'   => $owing,
+			'topItems' => array_slice( array_values( $tally ), 0, 5 ),
+		);
 	}
 
 	/**
