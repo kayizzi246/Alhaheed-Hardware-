@@ -12,13 +12,13 @@
  */
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 
-const BLUE = 'FF2158E8';
-const NAVY = 'FF111C38';
+const BLUE = 'FF15803D'; // the shop's green
+const NAVY = 'FF0E201A';
 const INK = 'FF0F1B33';
 const MUTED = 'FF55637D';
 const LINE = 'FFE2E8F2';
 const BAND = 'FFF5F7FB';
-const PALE = 'FFEDF3FF';
+const PALE = 'FFECFDF3';
 const FONT = 'Calibri';
 
 const FORMATS = {

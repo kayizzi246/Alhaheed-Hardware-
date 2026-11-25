@@ -19,7 +19,6 @@ export const NAV = {
     { href: '/cashier/cash-book', label: 'Cash Book', icon: 'cash' },
     { href: '/cashier/end-of-day', label: 'End of Day', icon: 'clock' },
     { href: '/cashier/expenses', label: 'Expenses', icon: 'cash' },
-    { href: '/cashier/suppliers', label: 'Suppliers', icon: 'mail' },
   ],
   accounts: [
     { href: '/accounts', label: 'Verify Payments', icon: 'check' },

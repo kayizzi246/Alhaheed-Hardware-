@@ -19,20 +19,20 @@
   :root {
     /* ── Brand ─────────────────────────────────────────────────────── */
     color-scheme: light;
-    --navy:        17 28 56;   /* the slab, cool to sit with the blue */
-    --navy-deep:   10 18 38;
-    --navy-soft:   30 46 84;
-    --brand:      33 88 232;
-    --brand-dark: 27 70 194;
-    --brand-soft: 237 243 255;
-    --fill:       33 88 232;  /* a solid that carries white text */
-    --fill-dark:  25 64 182;
+    --navy:        14 32 26;   /* the slab: a deep forest slate under the green */
+    --navy-deep:   8 21 17;
+    --navy-soft:   26 52 43;
+    --brand:      21 128 61;
+    --brand-dark: 22 101 52;
+    --brand-soft: 236 253 243;
+    --fill:       21 128 61;  /* a solid that carries white text */
+    --fill-dark:  20 83 45;
 
     /* The sign-in panel. A vivid blue in daylight; in the dark theme
        a deeper one, because a bright slab beside a dark form is a
        lamp pointed at the person reading it. */
-    --panel-from:  36 92 236;
-    --panel-to:    24 45 112;
+    --panel-from:  22 138 70;
+    --panel-to:    12 62 36;
 
     /* ── Surfaces ──────────────────────────────────────────────────── */
     --bg:          245 247 251;
@@ -61,7 +61,7 @@
     /* ── Charts ────────────────────────────────────────────────────── */
     /* Checked, not guessed: two warm hues an orange apart are the same
        colour to a protan reader, so the third leaves the family. */
-    --cat-a: #2158e8;
+    --cat-a: #15803d;
     --cat-b: #e8862a;
     --cat-c: #b5179e;
 
@@ -72,12 +72,8 @@
 
     /* Two shadows layered: a tight contact shadow and a wide ambient
        one. A single shadow always reads as a sticker. */
-    --shadow-sm:
-      0 1px 2px rgba(15, 27, 51, 0.05),
-      0 1px 1px rgba(15, 27, 51, 0.04);
-    --shadow:
-      0 1px 2px rgba(15, 27, 51, 0.05),
-      0 6px 20px -6px rgba(15, 27, 51, 0.10);
+    --shadow-sm: none;
+    --shadow: none;
     --shadow-lg:
       0 1px 3px rgba(15, 27, 51, 0.07),
       0 18px 44px -12px rgba(15, 27, 51, 0.22);
@@ -89,24 +85,24 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
-      --navy:        13 21 42;
-      --navy-deep:   7 12 26;
-      --navy-soft:   27 42 78;
-      --brand:      125 170 255;
-      --brand-dark: 160 194 255;
-      --brand-soft: 25 40 76;
-    --fill:       47 104 238;  /* a solid that carries white text */
-    --fill-dark:  30 72 184;
+      --navy:        10 24 20;
+      --navy-deep:   5 15 12;
+      --navy-soft:   22 44 36;
+      --brand:      74 222 128;
+      --brand-dark: 134 239 172;
+      --brand-soft: 18 48 32;
+    --fill:       22 128 64;  /* a solid that carries white text */
+    --fill-dark:  15 88 44;
 
-      --panel-from:  33 62 148;
-      --panel-to:    12 22 54;
+      --panel-from:  20 92 52;
+      --panel-to:    8 34 21;
 
-      --bg:          10 16 30;
-      --surface:     17 25 43;
-      --surface-2:   22 32 53;
-      --surface-sunk:13 20 36;
-      --border:      35 48 75;
-      --border-firm: 54 71 104;
+      --bg:          9 15 13;
+      --surface:     16 25 22;
+      --surface-2:   21 32 28;
+      --surface-sunk:12 19 17;
+      --border:      33 48 42;
+      --border-firm: 52 72 63;
 
       --text:        234 240 250;
       --text-2:      189 201 221;
@@ -122,12 +118,12 @@
       --blue:        112 200 236;
       --blue-bg:     16 44 62;
 
-      --cat-a: #7daaff;
+      --cat-a: #4ade80;
       --cat-b: #f0952f;
       --cat-c: #e06bd0;
 
-      --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.4);
-      --shadow:      0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.55);
+      --shadow-sm:   none;
+      --shadow:      none;
       --shadow-lg:   0 2px 6px rgba(0, 0, 0, 0.45), 0 24px 56px -16px rgba(0, 0, 0, 0.7);
     }
   }
@@ -135,24 +131,24 @@
   /* And when they have. The toggle writes this attribute. */
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --navy:        13 21 42;
-    --navy-deep:   7 12 26;
-    --navy-soft:   27 42 78;
-    --brand:      125 170 255;
-    --brand-dark: 160 194 255;
-    --brand-soft: 25 40 76;
-    --fill:       47 104 238;  /* a solid that carries white text */
-    --fill-dark:  30 72 184;
+    --navy:        10 24 20;
+    --navy-deep:   5 15 12;
+    --navy-soft:   22 44 36;
+    --brand:      74 222 128;
+    --brand-dark: 134 239 172;
+    --brand-soft: 18 48 32;
+    --fill:       22 128 64;  /* a solid that carries white text */
+    --fill-dark:  15 88 44;
 
-    --panel-from:  33 62 148;
-    --panel-to:    12 22 54;
+    --panel-from:  20 92 52;
+    --panel-to:    8 34 21;
 
-    --bg:          10 16 30;
-    --surface:     17 25 43;
-    --surface-2:   22 32 53;
-    --surface-sunk:13 20 36;
-    --border:      35 48 75;
-    --border-firm: 54 71 104;
+    --bg:          9 15 13;
+    --surface:     16 25 22;
+    --surface-2:   21 32 28;
+    --surface-sunk:12 19 17;
+    --border:      33 48 42;
+    --border-firm: 52 72 63;
 
     --text:        234 240 250;
     --text-2:      189 201 221;
@@ -168,12 +164,12 @@
     --blue:        112 200 236;
     --blue-bg:     16 44 62;
 
-    --cat-a: #7daaff;
+    --cat-a: #4ade80;
     --cat-b: #f0952f;
     --cat-c: #e06bd0;
 
-    --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow:      0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.55);
+    --shadow-sm:   none;
+    --shadow:      none;
     --shadow-lg:   0 2px 6px rgba(0, 0, 0, 0.45), 0 24px 56px -16px rgba(0, 0, 0, 0.7);
   }
 

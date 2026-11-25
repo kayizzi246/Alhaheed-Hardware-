@@ -43,10 +43,10 @@ class AH_Suppliers {
 		$post   = WP_REST_Server::CREATABLE;
 		$patch  = WP_REST_Server::EDITABLE;
 
-		// The cashier does this work, so the cashier can do all of it.
-		// The store man may read the list — he is the one who knows
-		// what has run out — but ordering is not his job.
-		$ordering = AH_Rest::desk( array( 'cashier', 'manager' ) );
+		// Stock is the manager's alone: only the manager adds suppliers or
+		// sends them an order. The desks may still read the list, because the
+		// store is the one who sees what has run out.
+		$ordering = AH_Rest::desk( array( 'manager' ) );
 		$reading  = AH_Rest::desk( array( 'cashier', 'manager', 'accounts', 'store' ) );
 
 		register_rest_route( $ns, '/suppliers', array(

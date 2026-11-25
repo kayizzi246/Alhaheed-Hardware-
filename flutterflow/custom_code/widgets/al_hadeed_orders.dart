@@ -72,11 +72,11 @@ const Color _mid = Color(0xFF55637D);
 const Color _light = Color(0xFF626F88);
 const Color _hairline = Color(0xFFE2E8F2);
 const Color _tile = Color(0xFFF9FAFD);
-const Color _navy = Color(0xFF111C38);
-const Color _navyDark = Color(0xFF0A1226);
-const Color _brand = Color(0xFF2158E8);
-const Color _brandDark = Color(0xFF1B46C2);
-const Color _brandPale = Color(0xFFEDF3FF);
+const Color _navy = Color(0xFF0E201A);
+const Color _navyDark = Color(0xFF081511);
+const Color _brand = Color(0xFF15803D);
+const Color _brandDark = Color(0xFF166534);
+const Color _brandPale = Color(0xFFECFDF3);
 const Color _green = Color(0xFF0E7444);
 const Color _greenPale = Color(0xFFE6F6ED);
 const Color _blue = Color(0xFF0B658D);
@@ -103,7 +103,7 @@ const List<BoxShadow> _cardShadow = [
 const LinearGradient _heroGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFF2E67EE), Color(0xFF1B46C2)],
+  colors: [Color(0xFF1A9A4B), Color(0xFF166534)],
 );
 
 double _ui = 1.0;
@@ -918,12 +918,12 @@ class _Header extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF245CEC), Color(0xFF182D70)],
+            colors: [Color(0xFF178A45), Color(0xFF0C3E24)],
           ),
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
           boxShadow: [
             BoxShadow(
-                color: Color(0x332158E8),
+                color: Color(0x3315803D),
                 blurRadius: 24,
                 spreadRadius: -8,
                 offset: Offset(0, 10)),

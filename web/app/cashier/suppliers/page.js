@@ -1,7 +1,6 @@
-'use client';
-import Suppliers from '@/components/Suppliers';
+import { redirect } from 'next/navigation';
 
-/** The same screen for both desks — the cashier does the ordering, the manager watches it. */
+/** Suppliers and stock are the manager's alone now. An old bookmark lands back on the desk. */
 export default function Page() {
-  return <Suppliers />;
+  redirect('/cashier');
 }

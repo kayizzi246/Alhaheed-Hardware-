@@ -18,9 +18,9 @@
 .ah-wrap {
   --navy:      #111c38;
   --navy-deep: #0a1226;
-  --brand:     #2158e8;
-  --brand-dk:  #1b46c2;
-  --brand-sf:  #edf3ff;
+  --brand:     #15803d;
+  --brand-dk:  #166534;
+  --brand-sf:  #ecfdf3;
   --ink:       #0f1b33;
   --ink-2:     #394862;
   --mid:       #55637d;
@@ -42,7 +42,7 @@
   /* Categorical, for the payment mix. Checked rather than guessed:
      the warm hue sits between the two cool ones so no adjacent pair
      collapses for a colour-blind reader. */
-  --cat-a: #2158e8;
+  --cat-a: #15803d;
   --cat-b: #c2410c;
   --cat-c: #9a4fc2;
 
@@ -424,7 +424,7 @@
 .ah-wrap input:focus,
 .ah-wrap select:focus {
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(33,88,232,.18);
+  box-shadow: 0 0 0 3px rgba(21,128,61,.18);
   outline: none;
 }
 
@@ -548,7 +548,7 @@
 
 .ah-hero-main {
   background:
-    radial-gradient(500px 190px at 0% 0%, rgba(33,88,232,.07), transparent 70%),
+    radial-gradient(500px 190px at 0% 0%, rgba(21,128,61,.07), transparent 70%),
     var(--surface);
 }
 
@@ -626,7 +626,7 @@
   transition: transform 180ms var(--ease), box-shadow 180ms var(--ease), border-color 180ms var(--ease);
 }
 
-.ah-pipe:focus { box-shadow: 0 0 0 3px rgba(33,88,232,.25); }
+.ah-pipe:focus { box-shadow: 0 0 0 3px rgba(21,128,61,.25); }
 
 .ah-pipe-step {
   position: absolute;
@@ -655,8 +655,8 @@
 
 /* A desk with work on it earns the orange; an empty one stays quiet. */
 .ah-pipe-busy {
-  border-color: rgba(33,88,232,.45);
-  background: linear-gradient(180deg, rgba(33,88,232,.05), transparent 60%), var(--surface);
+  border-color: rgba(21,128,61,.45);
+  background: linear-gradient(180deg, rgba(21,128,61,.05), transparent 60%), var(--surface);
 }
 
 .ah-pipe-busy strong { color: var(--brand-dk); }

@@ -41,17 +41,16 @@ const buttonVariants = cva(
         // button reads as something to press, not a painted rectangle.
         primary:
           'bg-[linear-gradient(180deg,rgb(var(--fill)/0.94),rgb(var(--fill)))] text-white ' +
-          'shadow-[inset_0_1px_0_rgb(255_255_255/0.22),0_1px_2px_rgb(15_27_51/0.14),0_6px_16px_-8px_rgb(var(--fill)/0.50)] ' +
-          'hover:brightness-[1.07] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.24),0_2px_4px_rgb(15_27_51/0.14),0_10px_22px_-10px_rgb(var(--fill)/0.60)]',
+          'hover:brightness-[1.07]',
         outline:
-          'border border-line bg-surface text-ink-2 shadow-[0_1px_2px_rgb(15_27_51/0.05)] hover:border-line-firm hover:bg-surface-2 hover:text-ink',
+          'border border-line bg-surface text-ink-2 hover:border-line-firm hover:bg-surface-2 hover:text-ink',
         ghost:
           'text-ink-muted hover:bg-surface-2 hover:text-ink',
         danger:
           'border border-bad/25 bg-bad-bg text-bad hover:border-bad/40',
         good:
           'bg-[linear-gradient(180deg,rgb(18_126_76),rgb(14_116_68))] text-white ' +
-          'shadow-[inset_0_1px_0_rgb(255_255_255/0.2),0_1px_2px_rgb(15_27_51/0.14),0_6px_16px_-8px_rgb(var(--green)/0.7)] hover:brightness-110',
+          'hover:brightness-110',
       },
       size: {
         sm: 'h-8 px-3 text-[13px]',
@@ -100,7 +99,7 @@ IconButton.displayName = 'IconButton';
 export const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgb(15_27_51/0.04),0_6px_20px_-12px_rgb(15_27_51/0.12)]', className)}
+    className={cn('overflow-hidden rounded-xl border border-line bg-surface', className)}
     {...props}
   />
 ));
@@ -109,7 +108,7 @@ Card.displayName = 'Card';
 export const CardHead = ({ className, children, ...props }) => (
   <div
     className={cn(
-      'flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-6',
+      'flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3 sm:px-5',
       className
     )}
     {...props}
@@ -127,7 +126,7 @@ export const CardNote = ({ className, ...props }) => (
 );
 
 export const CardBody = ({ className, ...props }) => (
-  <div className={cn('p-4 sm:p-6', className)} {...props} />
+  <div className={cn('p-4 sm:p-5', className)} {...props} />
 );
 
 /* ── Chip ────────────────────────────────────────────────────────── */
@@ -229,7 +228,7 @@ export const Select = React.forwardRef(
           aria-label={rest['aria-label']}
           className={cn(
             fieldBase,
-            'group inline-flex h-11 items-center justify-between gap-2 text-left shadow-[0_1px_2px_rgb(15_27_51/0.04)]',
+            'group inline-flex h-11 items-center justify-between gap-2 text-left',
             'hover:border-line-firm data-[state=open]:border-brand data-[state=open]:ring-[3px] data-[state=open]:ring-brand/20',
             'data-[placeholder]:text-ink-faint [&>span]:min-w-0 [&>span]:truncate',
             className
@@ -356,7 +355,7 @@ export function Segmented({ value, onChange, options, label }) {
             onClick={() => onChange(o.value)}
             className={cn(
               'rounded-[7px] px-3.5 py-2 text-[13px] font-semibold transition-colors duration-150 ease-out',
-              on ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+              on ? 'bg-surface text-ink ring-1 ring-line' : 'text-ink-muted hover:text-ink'
             )}
           >
             {o.label}
@@ -486,7 +485,7 @@ export const Spinner = ({ className }) => (
 /* ── Page furniture ──────────────────────────────────────────────── */
 
 export const PageHead = ({ title, sub, children }) => (
-  <header className="mb-6 flex flex-wrap items-end justify-between gap-4 lg:mb-8">
+  <header className="mb-5 flex flex-wrap items-end justify-between gap-4 lg:mb-6">
     <div className="min-w-0">
       <h1 className="text-[26px] leading-tight text-ink">{title}</h1>
       {sub && <p className="mt-1 text-sm text-ink-muted">{sub}</p>}
@@ -526,14 +525,14 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
     <Box
       {...(href ? { href } : {})}
       className={cn(
-        'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl p-4 [container-type:inline-size] sm:p-6',
-        'transition-[transform,box-shadow,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+        'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-xl p-4 [container-type:inline-size] sm:p-5',
+        'transition-[transform,border-color,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
         big
-          ? 'bg-[linear-gradient(135deg,rgb(var(--fill))_0%,rgb(var(--fill-dark))_100%)] text-white shadow-[0_12px_32px_-12px_rgb(var(--fill)/0.40)]'
-          : 'border border-line bg-surface shadow-[0_1px_2px_rgb(15_27_51/0.04),0_6px_20px_-12px_rgb(15_27_51/0.12)]',
+          ? 'bg-[linear-gradient(135deg,rgb(var(--fill))_0%,rgb(var(--fill-dark))_100%)] text-white'
+          : 'border border-line bg-surface',
         href && (big
-          ? 'hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_rgb(var(--fill)/0.50)] active:scale-[0.985]'
-          : 'hover:-translate-y-0.5 hover:border-line-firm hover:shadow-[0_2px_4px_rgb(15_27_51/0.05),0_14px_32px_-14px_rgb(15_27_51/0.22)] active:scale-[0.985]'),
+          ? 'hover:brightness-[1.06] active:scale-[0.985]'
+          : 'hover:border-line-firm hover:bg-surface-2 active:scale-[0.985]'),
         'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand/30',
         className
       )}
@@ -614,7 +613,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
 // Two across even on a phone. One per row filled the whole first screen
 // with figures and pushed the actual work — the queue — out of sight.
 export const Stats = ({ children, className }) => (
-  <div className={cn('mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:mb-8 lg:gap-5 xl:grid-cols-4', className)}>{children}</div>
+  <div className={cn('mb-5 grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-4', className)}>{children}</div>
 );
 
 /** When the screen last checked. It polls; it does not pretend to push. */
@@ -728,7 +727,7 @@ export const TabsTrigger = ({ className, ...props }) => (
   <TabsPrimitive.Trigger
     className={cn(
       'rounded-[7px] px-3.5 py-1.5 text-[13px] font-semibold text-ink-muted transition-colors duration-150',
-      'data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:shadow-sm',
+      'data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:ring-1 data-[state=active]:ring-line',
       className
     )}
     {...props}

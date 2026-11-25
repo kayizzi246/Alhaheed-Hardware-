@@ -115,13 +115,13 @@ export default function Shell({ allow, children }) {
         )}
       >
         <div className="flex items-center h-16 shrink-0 gap-3 border-b border-white/10 px-5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-fill to-fill-dark text-[13px] font-extrabold text-white shadow-sm">
+          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-fill to-fill-dark text-[13px] font-extrabold text-white">
             AH
           </span>
           <span className="font-display text-[12.5px] font-extrabold leading-[1.15] tracking-[.04em] text-white">
             AL HADEED
             <br />
-            <b className="text-blue-300">HARDWARE</b>
+            <b className="text-green-300">HARDWARE</b>
           </span>
         </div>
 
@@ -143,14 +143,14 @@ export default function Shell({ allow, children }) {
                   'relative mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5',
                   'font-display text-[14.5px] font-medium transition-colors duration-150 ease-out',
                   item === current
-                    ? 'bg-[linear-gradient(90deg,rgb(var(--brand)/0.30),rgb(var(--brand)/0.06))] font-semibold text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.07)]'
+                    ? 'bg-[linear-gradient(90deg,rgb(var(--brand)/0.30),rgb(var(--brand)/0.06))] font-semibold text-white'
                     : 'text-white/75 hover:bg-white/[.06] hover:text-white'
                 )}
               >
                 {/* A bar as well as a tint, so the current row is still
                     obvious to anyone who cannot pick the tint out. */}
                 {item === current && (
-                  <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-brand shadow-[0_0_12px_rgb(var(--brand))]" />
+                  <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-brand" />
                 )}
                 <span className={cn('shrink-0 transition-colors duration-150', item === current ? 'text-white' : 'text-white/65')}>
                   {Icon[item.icon]?.()}
@@ -229,7 +229,7 @@ export default function Shell({ allow, children }) {
       </header>
 
       <Offline />
-      <main className="mx-auto max-w-[1800px] px-4 pb-16 pt-6 lg:px-8 lg:pt-8">{children}</main>
+      <main className="mx-auto max-w-[1800px] px-4 pb-12 pt-5 lg:px-6 lg:pt-6">{children}</main>
 
       {/* The veil only exists on a phone, where the rail slides over. */}
       {menuOpen && (

@@ -80,7 +80,7 @@ export default function ManagerConsole() {
 
   return (
     <>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-[26px] leading-tight text-ink">The shop today</h1>
           <p className="mt-1 text-sm text-ink-muted">
@@ -100,7 +100,7 @@ export default function ManagerConsole() {
       {/* ── The row of figures ─────────────────────────────────────── */}
       {/* Two across on a phone, the day's sales across the top. One per
           row put five tiles between the manager and everything else. */}
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-5">
         <Stat
           hero
           label="Sales today"
@@ -298,7 +298,7 @@ function Trajectory({ days, average }) {
                 className={cn(
                   'w-full rounded-b-[3px] rounded-t-lg transition-[height,box-shadow,opacity] duration-200 ease-out',
                   i === active
-                    ? 'bg-[linear-gradient(180deg,rgb(var(--brand)),rgb(var(--brand-dark)))] shadow-[0_8px_18px_-8px_rgb(var(--brand)/0.7)]'
+                    ? 'bg-[linear-gradient(180deg,rgb(var(--brand)),rgb(var(--brand-dark)))]'
                     : 'bg-[linear-gradient(180deg,rgb(var(--brand)/0.34),rgb(var(--brand)/0.14))]'
                 )}
                 style={{ height: Math.max(4, Math.round((d.total / max) * TRACK)) }}
@@ -461,8 +461,8 @@ function Latest({ rows }) {
 function ConsoleSkeleton() {
   return (
     <>
-      <h1 className="mb-6 text-[26px] text-ink">The shop today</h1>
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
+      <h1 className="mb-5 text-[26px] text-ink">The shop today</h1>
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className={i === 0 ? 'col-span-2 h-[150px] rounded-2xl sm:col-span-1' : 'h-[150px] rounded-2xl'} />)}
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
