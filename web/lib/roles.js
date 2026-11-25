@@ -34,7 +34,8 @@ export const NAV = {
     { group: 'The shop' },
     { href: '/manager/products', label: 'Products & stock', icon: 'box' },
     { href: '/manager/customers', label: 'Customers', icon: 'people' },
-    { href: '/manager/staff', label: 'Staff', icon: 'user' },
+    { href: '/manager/workers', label: 'Workers & salaries', icon: 'people' },
+    { href: '/manager/staff', label: 'Desk logins', icon: 'user' },
     { href: '/manager/expenses', label: 'Expenses', icon: 'cash' },
     { href: '/manager/suppliers', label: 'Suppliers', icon: 'mail' },
 

@@ -176,6 +176,26 @@ The accounts queue carries `payment_id` and `has_proof` on each row.
 
 ---
 
+## Workers and salaries — `/api/manager`  *(manager only)*
+
+Everyone the shop pays, with or without a desk login. Approved salaries
+and advances are expenses (`kind` `salary` / `advance`), so they reach
+the cash book and the monthly report.
+
+| Method | Path | Body / query | Notes |
+|---|---|---|---|
+| GET | `/manager/workers` | | `{workers, summary{active,left,wageBill,advancesOwed}, desks, basis, methods}` |
+| POST | `/manager/workers` | `fullName, job, phone, idNumber, startedOn, address, payBasis (monthly\|daily), basePay, allowance, payMethod, payNumber, bankName, kinName, kinPhone, notes, userId` | Add a worker |
+| GET | `/manager/workers/:id` | | `{worker, payslips, payments}` |
+| POST | `/manager/workers/:id` | same as add, plus `status (active\|left), leftOn` | Change a worker |
+| POST | `/manager/workers/delete` | `{ids}` | Paid slips and advances stay in the books |
+| POST | `/manager/workers/:id/advance` | `amount, details, method, payRef, settle (paid\|approve)` | Recovered from later payslips |
+| GET | `/manager/payroll` | `?period=YYYY-MM` | `{slips, missing, totals, months}` |
+| POST | `/manager/payroll/start` | `{period}` | Drafts a slip for each active worker without one |
+| POST | `/manager/payroll/slips/:id` | `daysWorked, rate, basePay, allowance, overtime, bonus, deductions, deductionNote, advanceRecovered, note` | Drafts only |
+| POST | `/manager/payroll/slips/:id/delete` | | Drafts only |
+| POST | `/manager/payroll/approve` | `{period, ids?, settle (approve\|cash)}` | Each slip becomes a Salary expense; paying it marks the slip paid |
+
 ## Company — `/api/company`  *(customer accounts)*
 
 | Method | Path | Who | Purpose |

@@ -1296,7 +1296,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
         ],
       _ => [
           (
-            'Dashboard',
+            'Home',
             Icons.dashboard_outlined,
             Icons.dashboard_rounded,
             const AlHadeedManager()
@@ -1312,6 +1312,12 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
             Icons.inventory_2_outlined,
             Icons.inventory_2_rounded,
             _StockTab(onExpired: out)
+          ),
+          (
+            'Workers',
+            Icons.badge_outlined,
+            Icons.badge_rounded,
+            _WorkersTab(onExpired: out)
           ),
           (
             'Expenses',
@@ -3253,6 +3259,1097 @@ class _ProductSheetState extends State<_ProductSheet> {
                       style: _txt(14, weight: FontWeight.w600, color: _ember)),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MANAGER — WORKERS AND SALARIES
+//
+//  Everyone the shop pays, their advances, and the month's payroll.
+//  Approved salaries become expenses for the cashier to pay out, so
+//  they land in the cash book like any other money going out.
+// ═══════════════════════════════════════════════════════════════
+
+const _payMethods = [
+  ('cash', 'Cash'),
+  ('mtn_momo', 'MTN'),
+  ('airtel_money', 'Airtel'),
+  ('bank', 'Bank'),
+];
+
+String _monthName(String period) {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June', 'July',
+    'August', 'September', 'October', 'November', 'December',
+  ];
+  final p = period.split('-');
+  if (p.length != 2) return period;
+  final m = int.tryParse(p[1]) ?? 1;
+  return '${months[(m - 1).clamp(0, 11)]} ${p[0]}';
+}
+
+String _shiftMonth(String period, int by) {
+  final p = period.split('-');
+  var y = int.tryParse(p[0]) ?? DateTime.now().year;
+  var m = (int.tryParse(p.length > 1 ? p[1] : '') ?? 1) + by;
+  while (m < 1) {
+    m += 12;
+    y--;
+  }
+  while (m > 12) {
+    m -= 12;
+    y++;
+  }
+  return '$y-${m.toString().padLeft(2, '0')}';
+}
+
+String _thisMonth() {
+  final n = DateTime.now();
+  return '${n.year}-${n.month.toString().padLeft(2, '0')}';
+}
+
+/// A row of chips where exactly one is chosen.
+Widget _pickOne(List<(String, String)> options, String value,
+        ValueChanged<String> onPick) =>
+    Wrap(spacing: 8, runSpacing: 8, children: [
+      for (final (k, label) in options)
+        _Pressable(
+          scale: 0.96,
+          onTap: () => onPick(k),
+          child: _Chip(label,
+              bg: value == k ? _brand : _tile,
+              fg: value == k ? _white : _inkSoft),
+        ),
+    ]);
+
+Widget _sheetLabel(String t) => Padding(
+      padding: const EdgeInsets.only(top: 14, bottom: 6),
+      child: Text(t, style: _txt(12.5, weight: FontWeight.w700, color: _mid)),
+    );
+
+Widget _pair(Widget a, Widget b) => Row(children: [
+      Expanded(child: a),
+      const SizedBox(width: 10),
+      Expanded(child: b),
+    ]);
+
+int _digits(TextEditingController c) =>
+    _int(c.text.replaceAll(RegExp(r'[^0-9]'), ''));
+
+class _WorkersTab extends StatefulWidget {
+  const _WorkersTab({required this.onExpired});
+  final Future<void> Function() onExpired;
+
+  @override
+  State<_WorkersTab> createState() => _WorkersTabState();
+}
+
+class _WorkersTabState extends State<_WorkersTab> {
+  Map<String, dynamic>? _data;
+  Map<String, dynamic>? _pay;
+  String? _error;
+  String _view = 'workers';
+  String _period = _thisMonth();
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final r = await _apiGet('/api/manager/workers');
+      final p = await _apiGet('/api/manager/payroll?period=$_period');
+      if (!mounted) return;
+      setState(() {
+        _data = r;
+        _pay = p;
+        _error = null;
+      });
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      if (e.unauthorised) {
+        await widget.onExpired();
+        return;
+      }
+      setState(() => _error = e.code == 'rest_no_route'
+          ? 'Workers need the new plugin on the website (1.10.0).'
+          : e.message);
+    }
+  }
+
+  Future<void> _month(int by) async {
+    setState(() {
+      _period = _shiftMonth(_period, by);
+      _pay = null;
+    });
+    await _load();
+  }
+
+  Future<void> _open(Widget sheet) async {
+    final done = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => sheet,
+    );
+    if (done == null) return;
+    // The worker sheet hands over to the advance sheet this way, so
+    // the two never sit stacked on top of each other.
+    if (done.startsWith('advance:')) {
+      final id = _int(done.substring(8));
+      final w = _workers.where((x) => _int(x['id']) == id).firstOrNull;
+      if (w != null) await _open(_AdvanceSheet(w));
+      return;
+    }
+    await _load();
+    if (mounted) _toast(context, done);
+  }
+
+  List<Map<String, dynamic>> get _workers =>
+      ((_data?['workers'] as List?) ?? const [])
+          .map((x) => (x as Map).cast<String, dynamic>())
+          .toList();
+
+  Future<void> _draft() async {
+    setState(() => _busy = true);
+    try {
+      final r = await _apiPost('/api/manager/payroll/start', {'period': _period});
+      if (!mounted) return;
+      setState(() {
+        _pay = r;
+        _busy = false;
+      });
+      _toast(context, '${_int(r['made'])} payslips drafted. Check them, then approve.');
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _toast(context, e.message, bad: true);
+    }
+  }
+
+  Future<void> _approve(int count, int total) async {
+    final how = await showDialog<String>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Approve ${_monthName(_period)}?', style: _title(18)),
+        content: Text(
+            '$count payslips, ${_ugx(total)} in all. Approved payslips can '
+            'no longer be changed.\n\nThe cashier can pay them out from '
+            'Expenses, or record that you paid them all in cash.',
+            style: _txt(14, height: 1.45)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(c).pop(),
+              child: Text('Not yet', style: _txt(14, weight: FontWeight.w600))),
+          TextButton(
+              onPressed: () => Navigator.of(c).pop('cash'),
+              child: Text('I paid in cash',
+                  style: _txt(14, weight: FontWeight.w600, color: _brandDark))),
+          TextButton(
+              onPressed: () => Navigator.of(c).pop('approve'),
+              child: Text('Cashier pays',
+                  style: _txt(14, weight: FontWeight.w700, color: _brand))),
+        ],
+      ),
+    );
+    if (how == null || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final r = await _apiPost('/api/manager/payroll/approve',
+          {'period': _period, 'settle': how});
+      if (!mounted) return;
+      setState(() {
+        _pay = r;
+        _busy = false;
+      });
+      await _load();
+      if (!mounted) return;
+      _toast(
+          context,
+          how == 'cash'
+              ? 'Salaries booked as paid in cash.'
+              : 'Salaries approved. They are in Expenses for the cashier.');
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _toast(context, e.message, bad: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = (_data?['summary'] as Map?)?.cast<String, dynamic>();
+    final desks = ((_data?['desks'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .toList();
+
+    return Column(
+      children: [
+        _Header(
+          subtitle: '${_deskName(_Session().role)} · ${_Session().fullName}',
+          trailing: _Pressable(
+            scale: 0.9,
+            onTap: () => _open(_WorkerSheet(desks: desks)),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: _liquid(circle: true, onDark: true),
+              child: const Icon(Icons.person_add_alt_rounded,
+                  size: 19, color: _white),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _data == null && _error != null
+              ? _Empty(
+                  icon: Icons.cloud_off_rounded,
+                  tone: _ember,
+                  title: 'This could not be loaded',
+                  line: _error!,
+                  action: 'Try again',
+                  onAction: _load,
+                )
+              : _data == null
+                  ? const Center(
+                      child: CircularProgressIndicator(color: _brand))
+                  : RefreshIndicator(
+                      color: _brand,
+                      onRefresh: _load,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics()),
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+                        children: [
+                          Text('Workers & salaries',
+                              style: _title(20, weight: FontWeight.w800)),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: _heroGradient,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Monthly wage bill',
+                                    style: _txt(12.5,
+                                        weight: FontWeight.w600,
+                                        color: _white.withOpacity(0.9))),
+                                const SizedBox(height: 4),
+                                Text(_ugx(_int(s?['wageBill'])),
+                                    style: _title(26,
+                                        weight: FontWeight.w800,
+                                        color: _white)),
+                                const SizedBox(height: 10),
+                                Text(
+                                    '${_int(s?['active'])} working'
+                                    ' · ${_int(s?['advancesOwed']) == 0 ? 'no advances owed' : '${_shortUgx(_int(s?['advancesOwed']))} in advances owed'}',
+                                    style: _txt(12.5,
+                                        color: _white.withOpacity(0.92))),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _pickOne(
+                            const [
+                              ('workers', 'Workers'),
+                              ('payroll', 'Payroll'),
+                            ],
+                            _view,
+                            (v) => setState(() => _view = v),
+                          ),
+                          const SizedBox(height: 14),
+                          if (_error != null) ...[
+                            Text('Not up to date: $_error',
+                                style: _txt(12.5, color: _ember)),
+                            const SizedBox(height: 10),
+                          ],
+                          if (_view == 'workers')
+                            ..._workerList(desks)
+                          else
+                            ..._payroll(),
+                        ],
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _workerList(List<Map<String, dynamic>> desks) {
+    final all = _workers;
+    if (all.isEmpty) {
+      return [
+        _Empty(
+          icon: Icons.badge_outlined,
+          title: 'Nobody on the payroll yet',
+          line: 'Add everyone the shop pays: desk staff, loaders, the '
+              'driver, the guard.',
+          action: 'Add a worker',
+          onAction: () => _open(_WorkerSheet(desks: desks)),
+        ),
+      ];
+    }
+    return [
+      for (final w in all)
+        _Pressable(
+          scale: 0.98,
+          onTap: () => _open(_WorkerSheet(worker: w, desks: desks)),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: _cardBox(),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${w['fullName']}',
+                          style:
+                              _txt(14, weight: FontWeight.w700, color: _ink)),
+                      const SizedBox(height: 3),
+                      Text(
+                          [
+                            w['job'] ?? 'Worker',
+                            '${_ugx(_int(w['basePay']))} ${w['payBasis'] == 'daily' ? 'a day' : 'a month'}',
+                            _method(w['payMethod']),
+                          ].join(' · '),
+                          style: _txt(12.5, color: _mid)),
+                      if (_int(w['advanceOwed']) > 0) ...[
+                        const SizedBox(height: 4),
+                        Text('Owes ${_ugx(_int(w['advanceOwed']))} in advances',
+                            style: _txt(12.5,
+                                weight: FontWeight.w600, color: _amber)),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                w['status'] == 'active'
+                    ? const _Chip('Working', bg: _greenPale, fg: _green)
+                    : const _Chip('Left', bg: _tile, fg: _mid),
+              ],
+            ),
+          ),
+        ),
+    ];
+  }
+
+  List<Widget> _payroll() {
+    final slips = ((_pay?['slips'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .toList();
+    final missing = ((_pay?['missing'] as List?) ?? const []).length;
+    final t = (_pay?['totals'] as Map?)?.cast<String, dynamic>();
+    final drafts = slips.where((x) => x['status'] == 'draft').toList();
+    final draftTotal = drafts.fold<int>(0, (n, x) => n + _int(x['net']));
+
+    return [
+      Row(
+        children: [
+          IconButton(
+            onPressed: _busy ? null : () => _month(-1),
+            icon: const Icon(Icons.chevron_left_rounded, color: _ink),
+            tooltip: 'Month before',
+          ),
+          Expanded(
+            child: Text(_monthName(_period),
+                textAlign: TextAlign.center,
+                style: _title(16, weight: FontWeight.w700)),
+          ),
+          IconButton(
+            onPressed: _busy ? null : () => _month(1),
+            icon: const Icon(Icons.chevron_right_rounded, color: _ink),
+            tooltip: 'Month after',
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      if (_pay == null)
+        const Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(child: CircularProgressIndicator(color: _brand)),
+        )
+      else ...[
+        if (slips.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: _cardBox(),
+            child: Row(
+              children: [
+                for (final (label, v) in [
+                  ('Gross', _int(t?['gross'])),
+                  ('Taken off', _int(t?['deductions']) + _int(t?['advances'])),
+                  ('Net pay', _int(t?['net'])),
+                ])
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(label, style: _txt(12, color: _mid)),
+                        const SizedBox(height: 2),
+                        Text(_shortUgx(v),
+                            style: _title(15,
+                                weight: FontWeight.w800,
+                                color: label == 'Net pay' ? _brandDark : _ink)),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 12),
+        if (missing > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _BigButton(
+                slips.isEmpty
+                    ? 'Draft $missing payslips'
+                    : 'Add $missing missing payslips',
+                _draft,
+                busy: _busy),
+          ),
+        if (drafts.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _BigButton('Approve ${drafts.length} · ${_shortUgx(draftTotal)}',
+                () => _approve(drafts.length, draftTotal),
+                busy: _busy),
+          ),
+        if (slips.isEmpty && missing == 0)
+          const _Empty(
+            icon: Icons.payments_outlined,
+            title: 'Nobody to pay',
+            line: 'Add workers first. The payroll is drafted from them.',
+          ),
+        for (final x in slips)
+          _Pressable(
+            scale: 0.98,
+            onTap: x['status'] == 'draft'
+                ? () => _open(_SlipSheet(x,
+                    owed: _int(_workers
+                        .where((w) => _int(w['id']) == _int(x['workerId']))
+                        .firstOrNull?['advanceOwed'])))
+                : null,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: _cardBox(),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${x['workerName']}',
+                            style: _txt(14,
+                                weight: FontWeight.w700, color: _ink)),
+                        const SizedBox(height: 3),
+                        Text(
+                            [
+                              if (x['payBasis'] == 'daily')
+                                '${_int(x['daysWorked'])} days',
+                              'gross ${_shortUgx(_int(x['gross']))}',
+                              if (_int(x['deductions']) +
+                                      _int(x['advanceRecovered']) >
+                                  0)
+                                'less ${_shortUgx(_int(x['deductions']) + _int(x['advanceRecovered']))}',
+                            ].join(' · '),
+                            style: _txt(12.5, color: _mid)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(_ugx(_int(x['net'])),
+                          style: _txt(14, weight: FontWeight.w800, color: _ink)),
+                      const SizedBox(height: 4),
+                      switch ('${x['status']}') {
+                        'paid' => const _Chip('Paid', bg: _greenPale, fg: _green),
+                        'approved' =>
+                          const _Chip('With cashier', bg: _bluePale, fg: _blue),
+                        _ => const _Chip('Draft', bg: _amberPale, fg: _amber),
+                      },
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    ];
+  }
+}
+
+class _WorkerSheet extends StatefulWidget {
+  const _WorkerSheet({this.worker, required this.desks});
+  final Map<String, dynamic>? worker;
+  final List<Map<String, dynamic>> desks;
+
+  @override
+  State<_WorkerSheet> createState() => _WorkerSheetState();
+}
+
+class _WorkerSheetState extends State<_WorkerSheet> {
+  late final Map<String, dynamic>? _w = widget.worker;
+  late final _name = TextEditingController(text: '${_w?['fullName'] ?? ''}');
+  late final _job = TextEditingController(text: '${_w?['job'] ?? ''}');
+  late final _phone = TextEditingController(text: '${_w?['phone'] ?? ''}');
+  late final _idNo = TextEditingController(text: '${_w?['idNumber'] ?? ''}');
+  late final _pay = TextEditingController(
+      text: _int(_w?['basePay']) > 0 ? '${_int(_w!['basePay'])}' : '');
+  late final _allow = TextEditingController(
+      text: _int(_w?['allowance']) > 0 ? '${_int(_w!['allowance'])}' : '');
+  late final _number = TextEditingController(text: '${_w?['payNumber'] ?? ''}');
+  late final _kin = TextEditingController(text: '${_w?['kinName'] ?? ''}');
+  late final _kinPhone =
+      TextEditingController(text: '${_w?['kinPhone'] ?? ''}');
+  late String _basis = '${_w?['payBasis'] ?? 'monthly'}';
+  late String _method = '${_w?['payMethod'] ?? 'cash'}';
+  late String _status = '${_w?['status'] ?? 'active'}';
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    for (final c in [
+      _name, _job, _phone, _idNo, _pay, _allow, _number, _kin, _kinPhone
+    ]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final navigator = Navigator.of(context);
+    try {
+      await _apiPost(
+          _w == null
+              ? '/api/manager/workers'
+              : '/api/manager/workers/${_int(_w!['id'])}',
+          {
+            'fullName': _name.text.trim(),
+            'job': _job.text.trim(),
+            'phone': _phone.text.trim(),
+            'idNumber': _idNo.text.trim(),
+            'payBasis': _basis,
+            'basePay': _digits(_pay),
+            'allowance': _digits(_allow),
+            'payMethod': _method,
+            'payNumber': _method == 'cash' ? '' : _number.text.trim(),
+            'kinName': _kin.text.trim(),
+            'kinPhone': _kinPhone.text.trim(),
+            'status': _status,
+          });
+      HapticFeedback.mediumImpact();
+      navigator.pop(_w == null
+          ? '${_name.text.trim()} added to the payroll'
+          : '${_name.text.trim()} saved');
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  Future<void> _delete() async {
+    final navigator = Navigator.of(context);
+    final owes = _int(_w!['advanceOwed']);
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Delete ${_w!['fullName']}?', style: _title(18)),
+        content: Text(
+            'They come off the payroll. Salaries and advances already paid '
+            'stay in the books under their name.'
+            '${owes > 0 ? '\n\nThey still owe ${_ugx(owes)}. Deleting writes it off.' : ''}'
+            '\n\nIf they have simply left, mark them as Left instead.',
+            style: _txt(14, height: 1.45)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(c).pop(false),
+              child: Text('Keep them', style: _txt(14, weight: FontWeight.w600))),
+          TextButton(
+              onPressed: () => Navigator.of(c).pop(true),
+              child: Text('Delete',
+                  style: _txt(14, weight: FontWeight.w700, color: _ember))),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _apiPost('/api/manager/workers/delete', {
+        'ids': [_int(_w!['id'])],
+      });
+      HapticFeedback.mediumImpact();
+      navigator.pop('${_w!['fullName']} deleted');
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final daily = _basis == 'daily';
+    final pay = _digits(_pay);
+    final monthly = (daily ? pay * 26 : pay) + _digits(_allow);
+    final ok = !_busy && _name.text.trim().length >= 2 && pay > 0;
+    final changed = (String _) => setState(() {});
+
+    return _Sheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 8, 20, MediaQuery.paddingOf(context).bottom + 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(_w == null ? 'Add a worker' : '${_w!['fullName']}',
+                style: _title(20)),
+            if (_w != null && _int(_w!['advanceOwed']) > 0) ...[
+              const SizedBox(height: 4),
+              Text('Owes ${_ugx(_int(_w!['advanceOwed']))} in advances',
+                  style: _txt(13, weight: FontWeight.w600, color: _amber)),
+            ],
+            _sheetLabel('THE PERSON'),
+            _Field(
+                controller: _name,
+                hint: 'Full name',
+                capitalisation: TextCapitalization.words,
+                onChanged: changed),
+            const SizedBox(height: 10),
+            _pair(
+              _Field(
+                  controller: _job,
+                  hint: 'Job: loader, driver',
+                  capitalisation: TextCapitalization.sentences),
+              _Field(
+                  controller: _phone,
+                  hint: 'Phone',
+                  keyboardType: TextInputType.phone),
+            ),
+            const SizedBox(height: 10),
+            _Field(controller: _idNo, hint: 'National ID number'),
+            _sheetLabel('PAY'),
+            _pickOne(const [('monthly', 'Monthly salary'), ('daily', 'By the day')],
+                _basis, (v) => setState(() => _basis = v)),
+            const SizedBox(height: 10),
+            _pair(
+              _Field(
+                  controller: _pay,
+                  hint: daily ? 'Pay a day' : 'Monthly salary',
+                  keyboardType: TextInputType.number,
+                  onChanged: changed),
+              _Field(
+                  controller: _allow,
+                  hint: 'Allowance a month',
+                  keyboardType: TextInputType.number,
+                  onChanged: changed),
+            ),
+            if (pay > 0) ...[
+              const SizedBox(height: 8),
+              Text(
+                  'About ${_ugx(monthly)} a month${daily ? ' at 26 days' : ''}',
+                  style: _txt(12.5, weight: FontWeight.w600, color: _green)),
+            ],
+            _sheetLabel('PAID BY'),
+            _pickOne(_payMethods, _method, (v) => setState(() => _method = v)),
+            if (_method != 'cash') ...[
+              const SizedBox(height: 10),
+              _Field(
+                  controller: _number,
+                  hint: _method == 'bank' ? 'Account number' : 'Mobile money number',
+                  keyboardType: _method == 'bank'
+                      ? TextInputType.text
+                      : TextInputType.phone),
+            ],
+            _sheetLabel('NEXT OF KIN'),
+            _pair(
+              _Field(
+                  controller: _kin,
+                  hint: 'Name',
+                  capitalisation: TextCapitalization.words),
+              _Field(
+                  controller: _kinPhone,
+                  hint: 'Phone',
+                  keyboardType: TextInputType.phone),
+            ),
+            if (_w != null) ...[
+              _sheetLabel('STATUS'),
+              _pickOne(const [('active', 'Working'), ('left', 'Has left')],
+                  _status, (v) => setState(() => _status = v)),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(_error!, style: _txt(13, color: _ember, height: 1.4)),
+            ],
+            const SizedBox(height: 16),
+            _BigButton(_w == null ? 'Add worker' : 'Save', ok ? _save : null,
+                busy: _busy),
+            if (_w != null && _w!['status'] == 'active') ...[
+              const SizedBox(height: 10),
+              _Pressable(
+                scale: 0.98,
+                onTap: _busy
+                    ? null
+                    : () => Navigator.of(context)
+                        .pop('advance:${_int(_w!['id'])}'),
+                child: Container(
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _tile,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: _hairline),
+                  ),
+                  child: Text('Give an advance',
+                      style: _txt(14.5,
+                          weight: FontWeight.w600, color: _inkSoft)),
+                ),
+              ),
+            ],
+            if (_w != null)
+              Center(
+                child: TextButton(
+                  onPressed: _busy ? null : _delete,
+                  child: Text('Delete worker',
+                      style: _txt(14, weight: FontWeight.w600, color: _ember)),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdvanceSheet extends StatefulWidget {
+  const _AdvanceSheet(this.worker);
+  final Map<String, dynamic> worker;
+
+  @override
+  State<_AdvanceSheet> createState() => _AdvanceSheetState();
+}
+
+class _AdvanceSheetState extends State<_AdvanceSheet> {
+  final _amount = TextEditingController();
+  final _why = TextEditingController();
+  final _ref = TextEditingController();
+  late String _method = '${widget.worker['payMethod'] ?? 'cash'}';
+  String _settle = 'paid';
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    for (final c in [_amount, _why, _ref]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _go() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final navigator = Navigator.of(context);
+    try {
+      await _apiPost('/api/manager/workers/${_int(widget.worker['id'])}/advance', {
+        'amount': _digits(_amount),
+        'details': _why.text.trim(),
+        'method': _method,
+        'payRef': _ref.text.trim(),
+        'settle': _settle,
+      });
+      HapticFeedback.mediumImpact();
+      navigator.pop(_settle == 'paid'
+          ? 'Advance booked. It comes off the next payslip.'
+          : 'Advance sent to the cashier to pay out.');
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final needRef = _settle == 'paid' && _method != 'cash';
+    final ok = !_busy &&
+        _digits(_amount) > 0 &&
+        (!needRef || _ref.text.trim().length >= 3);
+    final changed = (String _) => setState(() {});
+    final owes = _int(widget.worker['advanceOwed']);
+
+    return _Sheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 8, 20, MediaQuery.paddingOf(context).bottom + 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Advance to ${widget.worker['fullName']}', style: _title(20)),
+            const SizedBox(height: 4),
+            Text(
+                owes > 0
+                    ? 'Already owes ${_ugx(owes)}. This is added to it.'
+                    : 'Taken back from the next payslips.',
+                style: _txt(13, color: owes > 0 ? _amber : _mid)),
+            _sheetLabel('HOW MUCH'),
+            _pair(
+              _Field(
+                  controller: _amount,
+                  hint: 'Amount (UGX)',
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  onChanged: changed),
+              _Field(controller: _why, hint: 'What for'),
+            ),
+            _sheetLabel('THE MONEY'),
+            _pickOne(const [('paid', 'I have given it'), ('approve', 'Cashier pays it')],
+                _settle, (v) => setState(() => _settle = v)),
+            const SizedBox(height: 10),
+            _pickOne(_payMethods, _method, (v) => setState(() => _method = v)),
+            if (needRef) ...[
+              const SizedBox(height: 10),
+              _Field(
+                  controller: _ref,
+                  hint: 'Transaction ID',
+                  onChanged: changed),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(_error!, style: _txt(13, color: _ember, height: 1.4)),
+            ],
+            const SizedBox(height: 16),
+            _BigButton(
+                _settle == 'paid' ? 'Book the advance' : 'Send to the cashier',
+                ok ? _go : null,
+                busy: _busy),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SlipSheet extends StatefulWidget {
+  const _SlipSheet(this.slip, {required this.owed});
+  final Map<String, dynamic> slip;
+  final int owed;
+
+  @override
+  State<_SlipSheet> createState() => _SlipSheetState();
+}
+
+class _SlipSheetState extends State<_SlipSheet> {
+  late final Map<String, dynamic> _s = widget.slip;
+  late final bool _daily = _s['payBasis'] == 'daily';
+  late final _days = TextEditingController(text: '${_int(_s['daysWorked'])}');
+  late final _base = TextEditingController(
+      text: '${_int(_daily ? _s['rate'] : _s['basePay'])}');
+  TextEditingController _c(String k) => TextEditingController(
+      text: _int(_s[k]) > 0 ? '${_int(_s[k])}' : '');
+  late final _allow = _c('allowance');
+  late final _over = _c('overtime');
+  late final _bonus = _c('bonus');
+  late final _deduct = _c('deductions');
+  late final _back = _c('advanceRecovered');
+  late final _why =
+      TextEditingController(text: '${_s['deductionNote'] ?? ''}');
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    for (final c in [_days, _base, _allow, _over, _bonus, _deduct, _back, _why]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  int get _gross =>
+      (_daily ? _digits(_base) * _digits(_days) : _digits(_base)) +
+      _digits(_allow) +
+      _digits(_over) +
+      _digits(_bonus);
+  int get _net => _gross - _digits(_deduct) - _digits(_back);
+
+  Future<void> _send(String path, Map<String, dynamic> body, String done) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final navigator = Navigator.of(context);
+    try {
+      await _apiPost(path, body);
+      HapticFeedback.mediumImpact();
+      navigator.pop(done);
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final changed = (String _) => setState(() {});
+    final id = _int(_s['id']);
+    final net = _net;
+
+    return _Sheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 8, 20, MediaQuery.paddingOf(context).bottom + 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('${_s['workerName']}', style: _title(20)),
+            const SizedBox(height: 4),
+            Text('Payslip for ${_s['month'] ?? _monthName('${_s['period']}')}',
+                style: _txt(13, color: _mid)),
+            _sheetLabel('PAY (UGX)'),
+            if (_daily)
+              _pair(
+                _Field(
+                    controller: _days,
+                    hint: 'Days worked',
+                    keyboardType: TextInputType.number,
+                    onChanged: changed),
+                _Field(
+                    controller: _base,
+                    hint: 'Pay a day',
+                    keyboardType: TextInputType.number,
+                    onChanged: changed),
+              )
+            else
+              _Field(
+                  controller: _base,
+                  hint: 'Salary',
+                  keyboardType: TextInputType.number,
+                  onChanged: changed),
+            const SizedBox(height: 10),
+            _pair(
+              _Field(
+                  controller: _allow,
+                  hint: 'Allowance',
+                  keyboardType: TextInputType.number,
+                  onChanged: changed),
+              _Field(
+                  controller: _over,
+                  hint: 'Overtime',
+                  keyboardType: TextInputType.number,
+                  onChanged: changed),
+            ),
+            const SizedBox(height: 10),
+            _Field(
+                controller: _bonus,
+                hint: 'Bonus',
+                keyboardType: TextInputType.number,
+                onChanged: changed),
+            _sheetLabel('TAKEN OFF (UGX)'),
+            _pair(
+              _Field(
+                  controller: _deduct,
+                  hint: 'Deductions',
+                  keyboardType: TextInputType.number,
+                  onChanged: changed),
+              _Field(
+                  controller: _back,
+                  hint: 'Advance back',
+                  keyboardType: TextInputType.number,
+                  onChanged: changed),
+            ),
+            const SizedBox(height: 10),
+            _Field(controller: _why, hint: 'Why the deduction'),
+            const SizedBox(height: 6),
+            Text(
+                widget.owed > 0
+                    ? 'Owes ${_ugx(widget.owed)} in advances.'
+                    : 'Owes nothing in advances.',
+                style: _txt(12.5, color: _mid)),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _tile,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Text('Net pay', style: _txt(13.5, color: _inkSoft)),
+                  const Spacer(),
+                  Text(_ugx(net),
+                      style: _title(17,
+                          weight: FontWeight.w800,
+                          color: net < 0 ? _ember : _ink)),
+                ],
+              ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(_error!, style: _txt(13, color: _ember, height: 1.4)),
+            ],
+            const SizedBox(height: 16),
+            _BigButton(
+                'Save payslip',
+                net >= 0 && !_busy
+                    ? () => _send(
+                        '/api/manager/payroll/slips/$id',
+                        {
+                          'daysWorked': _digits(_days),
+                          if (_daily) 'rate': _digits(_base) else 'basePay': _digits(_base),
+                          'allowance': _digits(_allow),
+                          'overtime': _digits(_over),
+                          'bonus': _digits(_bonus),
+                          'deductions': _digits(_deduct),
+                          'advanceRecovered': _digits(_back),
+                          'deductionNote': _why.text.trim(),
+                        },
+                        'Payslip saved: ${_ugx(net)}')
+                    : null,
+                busy: _busy),
+            Center(
+              child: TextButton(
+                onPressed: _busy
+                    ? null
+                    : () => _send('/api/manager/payroll/slips/$id/delete', {},
+                        '${_s['workerName']} taken off this payroll'),
+                child: Text('Take off this payroll',
+                    style: _txt(14, weight: FontWeight.w600, color: _ember)),
+              ),
+            ),
           ],
         ),
       ),

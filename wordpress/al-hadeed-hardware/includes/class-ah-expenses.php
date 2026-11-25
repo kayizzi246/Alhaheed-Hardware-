@@ -44,6 +44,7 @@ class AH_Expenses {
 			'stock_use' => 'Stock taken for the shop',
 			'float'     => 'Float for the till',
 			'advance'   => 'Advance to staff',
+			'salary'    => 'Salary',
 		);
 	}
 
@@ -217,6 +218,8 @@ class AH_Expenses {
 			'decision_note' => $row['decision_note'],
 			'paid_by'       => $who( $row['paid_by'] ),
 			'paid_at'       => $row['paid_at'],
+			'worker_id'     => isset( $row['worker_id'] ) && $row['worker_id'] ? (int) $row['worker_id'] : null,
+			'payslip_id'    => isset( $row['payslip_id'] ) && $row['payslip_id'] ? (int) $row['payslip_id'] : null,
 			'created_at'    => $row['created_at'],
 		);
 	}
@@ -503,6 +506,78 @@ class AH_Expenses {
 		);
 
 		AH_Flow::log_event( 0, $desk, 'expense_paid', null, null, $user->ID, $row['ref'] . ' · UGX ' . number_format( (int) $row['amount'] ) );
+
+		// A salary paid from the Expenses page marks its payslip paid.
+		if ( ! empty( $row['payslip_id'] ) && class_exists( 'AH_Workers' ) ) {
+			AH_Workers::slip_paid( (int) $row['payslip_id'] );
+		}
+	}
+
+	/**
+	 * An expense the manager files from elsewhere (payroll, an advance
+	 * to a worker): already approved, because the manager is the one
+	 * filing it. With $paid it is booked at once, for money that has
+	 * already left; otherwise it waits for the cashier to pay it out.
+	 *
+	 * @return int|WP_Error The new expense's id.
+	 */
+	public static function file_approved( $kind, $details, $amount, $payment, $paid, $links = array() ) {
+		global $wpdb;
+		$user = AH_Auth::current();
+		$payment = array_merge( array( 'method' => null, 'payee' => null, 'pay_number' => null, 'pay_ref' => null ), $payment );
+
+		if ( $paid ) {
+			$payment['method'] = $payment['method'] ?: 'cash';
+			$ok                = self::check_paid( $payment['method'], $payment['pay_ref'] );
+			if ( is_wp_error( $ok ) ) {
+				return $ok;
+			}
+		} else {
+			$payment['pay_ref'] = null;
+		}
+
+		$ref = self::next_ref();
+		$wpdb->insert(
+			AH_Install::table( 'expenses' ),
+			array(
+				'ref'         => $ref,
+				'kind'        => isset( self::kinds()[ $kind ] ) ? $kind : 'expense',
+				'details'     => sanitize_text_field( $details ),
+				'amount'      => (int) $amount,
+				'method'      => $payment['method'],
+				'payee'       => $payment['payee'],
+				'pay_number'  => $payment['pay_number'],
+				'pay_ref'     => $payment['pay_ref'],
+				'status'      => 'approved',
+				'raised_by'   => $user->ID,
+				'raised_desk' => 'manager',
+				'decided_by'  => $user->ID,
+				'decided_at'  => current_time( 'mysql' ),
+				'worker_id'   => isset( $links['worker_id'] ) ? (int) $links['worker_id'] : null,
+				'payslip_id'  => isset( $links['payslip_id'] ) ? (int) $links['payslip_id'] : null,
+				'created_at'  => current_time( 'mysql' ),
+			)
+		);
+		$id = (int) $wpdb->insert_id;
+		if ( ! $id ) {
+			return new WP_Error( 'ah_not_saved', 'That could not be saved. Try again.', array( 'status' => 500 ) );
+		}
+		AH_Flow::log_event( 0, 'manager', 'expense_approved', null, null, $user->ID, $ref . ' · ' . $details . ' · ' . (int) $amount );
+
+		if ( $paid ) {
+			self::book( self::row( $id ), $user, $payment, 'manager' );
+		}
+		return $id;
+	}
+
+	/** Tell the cashier there is payroll to pay out, once, not per slip. */
+	public static function tell_cashier( $message ) {
+		self::tell( 'cashier', $message );
+	}
+
+	/** One expense as the panel shows it. */
+	public static function get( $id ) {
+		return self::find( (int) $id );
 	}
 
 	// -----------------------------------------------------------------

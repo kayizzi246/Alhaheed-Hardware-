@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.5.0';
+	const DB_VERSION = '1.6.0';
 
 	public static function activate() {
 		self::tables();
@@ -120,9 +120,12 @@ class AH_Install {
 			paid_by      BIGINT UNSIGNED NULL,
 			paid_at      DATETIME        NULL,
 			cash_book_id BIGINT UNSIGNED NULL,
+			worker_id    BIGINT UNSIGNED NULL,
+			payslip_id   BIGINT UNSIGNED NULL,
 			created_at   DATETIME        NOT NULL,
 			PRIMARY KEY (id),
 			UNIQUE KEY ref (ref),
+			KEY worker_id (worker_id),
 			KEY status (status),
 			KEY created_at (created_at)
 		) {$charset};";
@@ -207,6 +210,66 @@ class AH_Install {
 			KEY product_id (product_id),
 			KEY kind (kind),
 			KEY created_at (created_at)
+		) {$charset};";
+
+		// Everyone who works at the shop, whether or not they have a desk
+		// login: the loaders, the driver and the guard are paid too.
+		$sql[] = "CREATE TABLE {$p}ah_workers (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			full_name    VARCHAR(191)    NOT NULL,
+			phone        VARCHAR(32)     NULL,
+			job          VARCHAR(120)    NULL,
+			id_number    VARCHAR(64)     NULL,
+			started_on   DATE            NULL,
+			pay_basis    VARCHAR(16)     NOT NULL DEFAULT 'monthly',
+			base_pay     BIGINT          NOT NULL DEFAULT 0,
+			allowance    BIGINT          NOT NULL DEFAULT 0,
+			pay_method   VARCHAR(32)     NULL,
+			pay_number   VARCHAR(64)     NULL,
+			bank_name    VARCHAR(120)    NULL,
+			kin_name     VARCHAR(191)    NULL,
+			kin_phone    VARCHAR(32)     NULL,
+			address      VARCHAR(255)    NULL,
+			notes        TEXT            NULL,
+			status       VARCHAR(16)     NOT NULL DEFAULT 'active',
+			left_on      DATE            NULL,
+			user_id      BIGINT UNSIGNED NULL,
+			created_at   DATETIME        NOT NULL,
+			updated_at   DATETIME        NULL,
+			PRIMARY KEY (id),
+			KEY status (status)
+		) {$charset};";
+
+		// One payslip per worker per month. The name and job are copied
+		// in, so a slip still reads right after the worker is deleted.
+		$sql[] = "CREATE TABLE {$p}ah_payslips (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			period       CHAR(7)         NOT NULL,
+			worker_id    BIGINT UNSIGNED NOT NULL,
+			worker_name  VARCHAR(191)    NOT NULL,
+			job          VARCHAR(120)    NULL,
+			pay_basis    VARCHAR(16)     NOT NULL DEFAULT 'monthly',
+			rate         BIGINT          NOT NULL DEFAULT 0,
+			days_worked  INT             NOT NULL DEFAULT 0,
+			base_pay     BIGINT          NOT NULL DEFAULT 0,
+			allowance    BIGINT          NOT NULL DEFAULT 0,
+			overtime     BIGINT          NOT NULL DEFAULT 0,
+			bonus        BIGINT          NOT NULL DEFAULT 0,
+			deductions   BIGINT          NOT NULL DEFAULT 0,
+			deduction_note VARCHAR(255)  NULL,
+			advance_recovered BIGINT     NOT NULL DEFAULT 0,
+			gross        BIGINT          NOT NULL DEFAULT 0,
+			net          BIGINT          NOT NULL DEFAULT 0,
+			status       VARCHAR(16)     NOT NULL DEFAULT 'draft',
+			expense_id   BIGINT UNSIGNED NULL,
+			note         TEXT            NULL,
+			created_by   BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			created_at   DATETIME        NOT NULL,
+			approved_at  DATETIME        NULL,
+			paid_at      DATETIME        NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY period_worker (period, worker_id),
+			KEY worker_id (worker_id)
 		) {$charset};";
 
 		// One-time codes for phone login, for customers who order on the

@@ -19,6 +19,11 @@ const ACTION_LABEL = {
   data_exported: 'Data exported',
   account_deleted: 'Customer deleted their account',
   products_deleted: 'Products deleted',
+  worker_added: 'Worker added',
+  worker_updated: 'Worker changed',
+  workers_deleted: 'Workers deleted',
+  payroll_started: 'Payroll drafted',
+  payroll_approved: 'Payroll approved',
 };
 
 /**

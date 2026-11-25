@@ -408,6 +408,7 @@ class AH_Rest {
 		AH_Export::routes();
 		AH_Account::routes();
 		AH_Stock::routes();
+		AH_Workers::routes();
 
 		// The screenshot behind a mobile money reference, and the check
 		// that a reference has not already paid for another order.
