@@ -42,7 +42,22 @@ export default function ManagerProducts() {
 
   const load = useCallback(async () => {
     try {
-      setData(await api('/api/manager/products'));
+      const r = await api('/api/manager/products');
+      // Fill in what an older plugin does not send yet.
+      r.products = list(r.products).map((p) => ({
+        tracked: true,
+        cost: 0,
+        margin: null,
+        stock_value: 0,
+        sold_30: 0,
+        days_left: null,
+        state: p.stock_available <= 0 ? 'out' : p.reorder_level > 0 && p.stock_available <= p.reorder_level ? 'low' : 'ok',
+        ...p,
+      }));
+      r.products.forEach((p) => {
+        p.status_label = p.status_label || { out: 'Out of stock', low: 'Low', ok: 'In stock', untracked: 'Not counted' }[p.state];
+      });
+      setData(r);
       setError('');
     } catch (e) {
       setError(e.message);
@@ -68,7 +83,22 @@ export default function ManagerProducts() {
   };
 
   const products = list(data?.products);
-  const s = data?.summary;
+  // An older plugin sends the products without the totals: work them out
+  // here, so the page still opens before the new plugin is uploaded.
+  const s = data && (data.summary || (() => {
+    const on = products.filter((p) => p.active);
+    const sum = (k) => on.reduce((n, p) => n + (Number(p[k]) || 0), 0);
+    const low = (p) => p.stock_available > 0 && p.reorder_level > 0 && p.stock_available <= p.reorder_level;
+    return {
+      products: on.length,
+      stockValue: sum('stock_value'),
+      retailValue: on.reduce((n, p) => n + Math.max(0, p.stock_available || 0) * (p.price || 0), 0),
+      profitInStock: 0,
+      low: on.filter(low).length,
+      out: on.filter((p) => p.stock_available <= 0).length,
+      noCost: on.filter((p) => !p.cost).length,
+    };
+  })());
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
