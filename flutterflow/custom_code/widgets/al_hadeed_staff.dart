@@ -39,7 +39,6 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4539,13 +4538,6 @@ class _FindOrderTabState extends State<_FindOrderTab> {
     }
   }
 
-  Future<void> _scan() async {
-    final code = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const _ScanPage()),
-    );
-    if (code != null && code.isNotEmpty) await _find(code);
-  }
-
   @override
   Widget build(BuildContext context) => Column(
         children: [
@@ -4559,11 +4551,9 @@ class _FindOrderTabState extends State<_FindOrderTab> {
                 Text('Find an order',
                     style: _title(20, weight: FontWeight.w800)),
                 const SizedBox(height: 4),
-                Text('Scan the QR on the receipt, or type the order number.',
+                Text('Type the order number from the receipt.',
                     style: _txt(13, color: _mid)),
                 const SizedBox(height: 14),
-                _BigButton('Scan the receipt', _busy ? null : _scan),
-                const SizedBox(height: 12),
                 Row(children: [
                   Expanded(
                     child: _Field(
@@ -4599,70 +4589,6 @@ class _FindOrderTabState extends State<_FindOrderTab> {
             ),
           ),
         ],
-      );
-}
-
-/// The camera, until it reads a code. Pops what it read.
-class _ScanPage extends StatefulWidget {
-  const _ScanPage();
-
-  @override
-  State<_ScanPage> createState() => _ScanPageState();
-}
-
-class _ScanPageState extends State<_ScanPage> {
-  final _camera = MobileScannerController(
-    formats: const [BarcodeFormat.qrCode, BarcodeFormat.code128],
-  );
-  bool _done = false;
-
-  @override
-  void dispose() {
-    _camera.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          foregroundColor: _white,
-          title: Text('Scan the receipt',
-              style: _txt(16, weight: FontWeight.w600, color: _white)),
-        ),
-        body: Stack(children: [
-          MobileScanner(
-            controller: _camera,
-            onDetect: (capture) {
-              if (_done) return;
-              final codes = capture.barcodes;
-              final value = codes.isEmpty ? null : codes.first.rawValue;
-              if (value == null || value.isEmpty) return;
-              _done = true;
-              HapticFeedback.mediumImpact();
-              Navigator.of(context).pop(value);
-            },
-          ),
-          Center(
-            child: Container(
-              width: 240,
-              height: 240,
-              decoration: BoxDecoration(
-                border: Border.all(color: _lime, width: 3),
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: 40,
-            child: Text('Hold the QR code on the receipt inside the square',
-                textAlign: TextAlign.center,
-                style: _txt(14, color: _white)),
-          ),
-        ]),
       );
 }
 

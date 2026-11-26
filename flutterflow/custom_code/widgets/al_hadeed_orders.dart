@@ -39,7 +39,6 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ═══════════════════════════════════════════════════════════════
@@ -1608,28 +1607,24 @@ class _TrackingSheetState extends State<_TrackingSheet> {
                     style: _txt(12.5, color: _light)),
               ],
 
-              // Paid and waiting to collect: the store scans this.
+              // Paid and waiting to collect: the store types this number.
               if (status == 'payment_verified' || status == 'paid') ...[
                 const SizedBox(height: 16),
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: _hairline),
-                    ),
-                    child: Column(children: [
-                      QrImageView(
-                        data: '${o['order_no'] ?? ''}',
-                        size: 168,
-                        backgroundColor: _white,
-                      ),
-                      const SizedBox(height: 6),
-                      Text('Show this at the store to collect',
-                          style: _txt(12.5, color: _mid)),
-                    ]),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: _brandPale,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _lime),
                   ),
+                  child: Column(children: [
+                    Text('Show this number at the store',
+                        style: _txt(12.5, color: _mid)),
+                    const SizedBox(height: 4),
+                    Text('${o['order_no'] ?? ''}',
+                        style: _title(32, weight: FontWeight.w800, color: _ink)),
+                  ]),
                 ),
               ],
 
