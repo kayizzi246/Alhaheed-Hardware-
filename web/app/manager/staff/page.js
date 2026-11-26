@@ -194,11 +194,37 @@ const DESKS = [
  * by SMS.
  */
 function HireDialog({ onClose, onDone }) {
-  const [form, setForm] = useState({ fullName: '', phone: '', email: '', desk: 'cashier', password: makePassword() });
+  const [form, setForm] = useState({ fullName: '', phone: '', email: '', desk: 'cashier', password: makePassword(), workerId: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [hired, setHired] = useState(null);
+  const [workers, setWorkers] = useState(null);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  // People already on the payroll who have no desk login yet.
+  useEffect(() => {
+    api('/api/manager/workers')
+      .then((r) => setWorkers(list(r.workers).filter((w) => w.status === 'active' && !w.userId)))
+      .catch(() => setWorkers([]));
+  }, []);
+
+  // A job title usually says which desk: "Cashier", "Accounts clerk", "Storekeeper".
+  const deskFor = (job = '') => {
+    const j = job.toLowerCase();
+    if (j.includes('account')) return 'accounts';
+    if (j.includes('store')) return 'store';
+    if (j.includes('manag')) return 'manager';
+    return 'cashier';
+  };
+
+  function pick(id) {
+    const w = (workers || []).find((x) => String(x.id) === String(id));
+    if (!w) {
+      setForm((f) => ({ ...f, workerId: '', fullName: '', phone: '' }));
+      return;
+    }
+    setForm((f) => ({ ...f, workerId: w.id, fullName: w.fullName, phone: w.phone || '', desk: deskFor(w.job) }));
+  }
 
   async function submit(e) {
     e.preventDefault();
@@ -276,8 +302,24 @@ function HireDialog({ onClose, onDone }) {
       <form id="hire" onSubmit={submit} className="space-y-4">
         <Alert>{error}</Alert>
 
+        <Field
+          label="Pick from your workers"
+          hint={
+            workers === null ? 'Loading your workers…'
+              : workers.length ? 'Their name and phone fill in, and the login is linked to them.'
+                : 'Everyone on the Workers list already has a login, or nobody is there yet. Type the details below.'
+          }
+        >
+          <Select value={form.workerId} onChange={(e) => pick(e.target.value)} disabled={!workers?.length}>
+            <option value="">{workers?.length ? 'Choose a worker' : 'No workers without a login'}</option>
+            {(workers || []).map((w) => (
+              <option key={w.id} value={w.id}>{w.fullName}{w.job ? ` · ${w.job}` : ''}{w.phone ? ` · ${w.phone}` : ''}</option>
+            ))}
+          </Select>
+        </Field>
+
         <Field label="Their name">
-          <Input value={form.fullName} onChange={set('fullName')} placeholder="Aisha Nakabugo" autoFocus />
+          <Input value={form.fullName} onChange={set('fullName')} placeholder="Aisha Nakabugo" />
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">

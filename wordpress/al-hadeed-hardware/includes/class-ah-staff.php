@@ -268,6 +268,14 @@ class AH_Staff {
 
 		self::audit( 'staff_added', $name . ' added to ' . $desks[ $desk ][1] . ( '' !== $password ? ', password set by the manager' : '' ) );
 
+		// Hired from the workers list: the worker and their login are the
+		// same person, so the two records point at each other.
+		$worker = (int) $req->get_param( 'workerId' );
+		if ( $worker ) {
+			global $wpdb;
+			$wpdb->update( AH_Install::table( 'workers' ), array( 'user_id' => $user_id ), array( 'id' => $worker ) );
+		}
+
 		return array(
 			'staff'       => AH_Shape::user( $user_id ),
 			'signInWith'  => $phone,
