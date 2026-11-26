@@ -125,7 +125,7 @@ TextStyle _font(
   Color color = _inkSoft,
   double height = 1.3,
 }) {
-  final s = size * _ui;
+  final s = size * _ui * 0.92; // one size step smaller everywhere
   return TextStyle(
     fontFamily: _isApple ? (s >= 20 ? '.SF Pro Display' : '.SF Pro Text') : null,
     fontFamilyFallback: _isApple
@@ -388,7 +388,7 @@ class _Field extends StatelessWidget {
           filled: true,
           fillColor: _tile,
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: _hairline),
@@ -826,7 +826,7 @@ class _BottomBar extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     curve: _ease,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
                       color:
                           key == current ? _brandPale : _white.withOpacity(0),
@@ -839,7 +839,7 @@ class _BottomBar extends StatelessWidget {
                           clipBehavior: Clip.none,
                           children: [
                             Icon(key == current ? iconOn : icon,
-                                size: 23,
+                                size: 21,
                                 color: key == current ? _brand : _light),
                             if (key == 'cart')
                               ListenableBuilder(
@@ -931,7 +931,7 @@ class _Header extends StatelessWidget {
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(
-                  16, MediaQuery.paddingOf(context).top + 14, 16, 20),
+                  16, MediaQuery.paddingOf(context).top + 10, 14, 14),
               child: Row(
                 children: [
                   Container(
@@ -1356,15 +1356,15 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
     );
   }
 
-  /// Navy where the customers' bar is white: one glance says which side
-  /// of the app this is.
+  /// The same bar as the customers' side, so the whole app matches.
   Widget _bar(List<_TabSpec> tabs, int at, MediaQueryData mq) => Padding(
         padding: EdgeInsets.fromLTRB(16, 6, 16, mq.padding.bottom + 10),
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: _navy,
+            color: _white,
             borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _hairline),
           ),
           child: Row(
             children: [
@@ -1376,17 +1376,17 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 220),
                       curve: _ease,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
                       decoration: BoxDecoration(
-                        color: _white.withOpacity(i == at ? 0.16 : 0),
+                        color: i == at ? _brandPale : _white.withOpacity(0),
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(i == at ? tabs[i].$3 : tabs[i].$2,
-                              size: 23,
-                              color: _white.withOpacity(i == at ? 1 : 0.75)),
+                              size: 21,
+                              color: i == at ? _brand : _light),
                           const SizedBox(height: 3),
                           Text(tabs[i].$1,
                               maxLines: 1,
@@ -1395,8 +1395,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
                                   weight: i == at
                                       ? FontWeight.w700
                                       : FontWeight.w500,
-                                  color:
-                                      _white.withOpacity(i == at ? 1 : 0.75))),
+                                  color: i == at ? _brand : _light)),
                         ],
                       ),
                     ),
@@ -1555,7 +1554,7 @@ class _ListTabState extends State<_ListTab> {
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(
                             parent: BouncingScrollPhysics()),
-                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+                        padding: const EdgeInsets.fromLTRB(12, 14, 12, 20),
                         children: [
                           Row(
                             children: [
@@ -1604,7 +1603,7 @@ class _ListTabState extends State<_ListTab> {
 
 BoxDecoration _cardBox() => BoxDecoration(
       color: _white,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(14),
       border: Border.all(color: _hairline.withOpacity(0.7)),
     );
 
@@ -1648,7 +1647,7 @@ class _BigButton extends StatelessWidget {
         child: Opacity(
           opacity: onTap == null && !busy ? 0.45 : 1,
           child: Container(
-            height: 50,
+            height: 46,
             alignment: Alignment.center,
             decoration: soft
                 ? BoxDecoration(
@@ -1681,8 +1680,8 @@ class _PlainCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
         decoration: _cardBox(),
         child: Row(
           children: [
@@ -1737,8 +1736,8 @@ class _OrderCard extends StatelessWidget {
       scale: 0.98,
       onTap: () => _open(context),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
         decoration: _cardBox(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1891,7 +1890,7 @@ class _OrderSheetState extends State<_OrderSheet> {
                     height: 44,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: _how == m ? _brand : _tile,
+                      color: _how == m ? _lime : _tile,
                       borderRadius: BorderRadius.circular(13),
                       border: Border.all(color: _hairline),
                     ),
@@ -1899,7 +1898,7 @@ class _OrderSheetState extends State<_OrderSheet> {
                         maxLines: 1,
                         style: _txt(12.5,
                             weight: FontWeight.w700,
-                            color: _how == m ? _white : _inkSoft)),
+                            color: _how == m ? _onLime : _inkSoft)),
                   ),
                 ),
               ),
@@ -1976,107 +1975,349 @@ class _OrderSheetState extends State<_OrderSheet> {
     return const [];
   }
 
-  Widget _line(String k, Object? v) => v == null || '$v'.isEmpty
-      ? const SizedBox.shrink()
-      : Padding(
-          padding: const EdgeInsets.only(bottom: 7),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(width: 104, child: Text(k, style: _txt(13, color: _mid))),
-              Expanded(
-                  child: Text('$v', style: _txt(13, weight: FontWeight.w600))),
-            ],
-          ),
-        );
+  String _act(String a) => switch (a) {
+        'placed' => 'Order placed',
+        'counter_sale' => 'Sale started at the counter',
+        'payment_received' => 'Paid at the cashier',
+        'verified' => 'Payment checked',
+        'rejected' => 'Payment sent back',
+        'part_released' => 'Part given out',
+        'released' => 'Goods given out',
+        'cancelled' => 'Cancelled',
+        'looked_up' => 'Opened at the store',
+        _ => a.replaceAll('_', ' '),
+      };
+
+  Widget _card(String title, List<Widget> children, {Widget? trailing}) =>
+      Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Text(title.toUpperCase(),
+                  style: _txt(11, weight: FontWeight.w800, color: _light)),
+              const Spacer(),
+              if (trailing != null) trailing,
+            ]),
+            const SizedBox(height: 6),
+            ...children,
+          ],
+        ),
+      );
+
+  Widget _kv(IconData icon, String k, Object? v, {VoidCallback? onTap, Color? color}) =>
+      v == null || '$v'.isEmpty
+          ? const SizedBox.shrink()
+          : _Pressable(
+              scale: onTap == null ? 1 : 0.98,
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(icon, size: 16, color: _mid),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                        width: 92,
+                        child: Text(k, style: _txt(12.5, color: _mid))),
+                    Expanded(
+                      child: Text('$v',
+                          style: _txt(12.5,
+                              weight: FontWeight.w600,
+                              color: color ?? _ink)),
+                    ),
+                    if (onTap != null)
+                      const Icon(Icons.call_rounded, size: 16, color: _brand),
+                  ],
+                ),
+              ),
+            );
+
+  void _showProof(String url) => showDialog<void>(
+        context: context,
+        builder: (c) => Dialog(
+          insetPadding: const EdgeInsets.all(12),
+          backgroundColor: Colors.black,
+          child: Stack(children: [
+            InteractiveViewer(
+              child: Image.network(url, headers: _headers(), fit: BoxFit.contain),
+            ),
+            Positioned(
+              right: 6,
+              top: 6,
+              child: IconButton(
+                onPressed: () => Navigator.of(c).pop(),
+                icon: const Icon(Icons.close_rounded, color: _white),
+              ),
+            ),
+          ]),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
     final o = _full ?? widget.order;
     final payment = (_full?['payment'] as Map?)?.cast<String, dynamic>();
+    final events = ((_full?['events'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .where((e) => e['action'] != 'looked_up')
+        .toList();
     final picking = widget.action == 'release';
+    final status = '${o['status'] ?? ''}';
+    final (sbg, sfg) = _statusColours(status);
+    final phone = '${o['ordered_by_phone'] ?? ''}';
+    final verified = _int(payment?['verified']);
 
     return _Sheet(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-            20, 8, 20, MediaQuery.paddingOf(context).bottom + 20),
+            16, 4, 16, MediaQuery.paddingOf(context).bottom + 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(children: [
-              Text('${o['order_no']}',
-                  style: _title(22, weight: FontWeight.w800)),
-              const Spacer(),
-              Text(_ugx(_int(o['total'])),
-                  style: _title(18, weight: FontWeight.w800)),
+            // The order at a glance.
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: sbg,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text('${o['order_no']}',
+                        style: _title(21, weight: FontWeight.w800)),
+                    const Spacer(),
+                    _Chip('${o['status_label'] ?? _statusLabel(status)}',
+                        bg: _white, fg: sfg),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text(_ugx(_int(o['total'])),
+                      style: _title(24, weight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text(
+                      [
+                        _when(o['created_at']?.toString()),
+                        '${_int(o['item_count'])} items',
+                        o['fulfilment'] == 'delivery' ? 'We deliver' : 'Collect',
+                        if ('${o['source'] ?? ''}' == 'counter') 'At the counter'
+                        else if ('${o['source'] ?? ''}'.isNotEmpty) 'On the app',
+                      ].where((x) => x.isNotEmpty).join(' · '),
+                      style: _txt(12, color: _inkSoft)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            _card('Customer', [
+              _kv(Icons.person_outline_rounded, 'Name',
+                  o['company_name'] ?? o['ordered_by_name']),
+              _kv(Icons.phone_iphone_rounded, 'Phone', phone,
+                  onTap: phone.isEmpty ? null : () => launchURL('tel:$phone')),
+              _kv(Icons.location_on_outlined, 'Deliver to', o['delivery_address']),
+              _kv(Icons.sticky_note_2_outlined, 'Note', o['notes']),
+              if ('${o['cancel_reason'] ?? ''}'.isNotEmpty)
+                _kv(Icons.block_rounded, 'Why cancelled', o['cancel_reason'],
+                    color: _ember),
             ]),
-            const SizedBox(height: 12),
-            _line('Customer', o['company_name'] ?? o['ordered_by_name']),
-            _line('Phone', o['ordered_by_phone']),
-            _line('Deliver to', o['delivery_address']),
-            _line('Note', o['notes']),
-            if (payment != null) ...[
-              _line('Receipt', payment['receipt_no']),
-              _line('Paid by', _method(payment['method'])),
-              _line('Transaction', payment['transaction_ref']),
-              _line('Cashier', payment['cashier_name']),
-            ],
-            const SizedBox(height: 8),
+
             if (_full == null && _error == null)
               const Padding(
                 padding: EdgeInsets.all(20),
-                child: Center(
-                    child: CircularProgressIndicator(color: _brand)),
+                child: Center(child: CircularProgressIndicator(color: _brand)),
               ),
-            // Ticked one by one at the store: releasing without looking is
-            // how the wrong bag leaves.
-            for (final i in _items)
-              _Pressable(
-                scale: 0.99,
-                onTap: picking
-                    ? () => setState(() {
-                          final id = _int(i['id']);
-                          if (!_picked.remove(id)) _picked.add(id);
-                        })
-                    : null,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(children: [
-                    if (picking) ...[
-                      Icon(
-                          _picked.contains(_int(i['id']))
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          size: 22,
-                          color: _picked.contains(_int(i['id']))
-                              ? _green
-                              : _light),
-                      const SizedBox(width: 10),
-                    ],
-                    Expanded(
-                      child: Text('${i['product_name']}',
-                          style: _txt(14, weight: FontWeight.w600)),
+
+            if (_items.isNotEmpty)
+              _card(
+                picking ? 'Tick each item as it goes' : 'Items',
+                [
+                  for (final i in _items)
+                    _Pressable(
+                      scale: picking ? 0.99 : 1,
+                      onTap: picking
+                          ? () => setState(() {
+                                final id = _int(i['id']);
+                                if (!_picked.remove(id)) _picked.add(id);
+                              })
+                          : null,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(children: [
+                          if (picking) ...[
+                            Icon(
+                                _picked.contains(_int(i['id']))
+                                    ? Icons.check_circle_rounded
+                                    : Icons.radio_button_unchecked_rounded,
+                                size: 22,
+                                color: _picked.contains(_int(i['id']))
+                                    ? _green
+                                    : _light),
+                            const SizedBox(width: 10),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('${i['product_name']}',
+                                    style: _txt(13.5,
+                                        weight: FontWeight.w600, color: _ink)),
+                                Text(
+                                    [
+                                      '${_qtyText(_num(i['quantity']))} ${i['unit'] ?? ''} × ${_ugx(_int(i['unit_price']))}',
+                                      if (_num(i['qty_released']) > 0)
+                                        '${_qtyText(_num(i['qty_released']))} given out',
+                                    ].join(' · '),
+                                    style: _txt(11.5, color: _mid)),
+                              ],
+                            ),
+                          ),
+                          Text(_ugx(_int(i['line_total'])),
+                              style: _txt(13, weight: FontWeight.w700, color: _ink)),
+                        ]),
+                      ),
                     ),
-                    Text('${i['quantity']} ${i['unit'] ?? ''}',
-                        style: _title(14.5)),
+                  const Divider(height: 14, color: _hairline),
+                  if (_int(o['delivery_fee']) > 0)
+                    Row(children: [
+                      Text('Delivery', style: _txt(12.5, color: _mid)),
+                      const Spacer(),
+                      Text(_ugx(_int(o['delivery_fee'])),
+                          style: _txt(12.5, weight: FontWeight.w600)),
+                    ]),
+                  Row(children: [
+                    Text('Total', style: _title(14)),
+                    const Spacer(),
+                    Text(_ugx(_int(o['total'])),
+                        style: _title(15, weight: FontWeight.w800)),
                   ]),
+                ],
+              ),
+
+            if (payment != null)
+              _card(
+                'Payment',
+                [
+                  _kv(Icons.receipt_long_outlined, 'Receipt', payment['receipt_no']),
+                  _kv(Icons.payments_outlined, 'Paid by', _method(payment['method'])),
+                  _kv(Icons.tag_rounded, 'Transaction ID', payment['transaction_ref']),
+                  _kv(Icons.account_balance_wallet_outlined, 'Amount',
+                      _ugx(_int(payment['amount_paid']))),
+                  _kv(Icons.person_outline_rounded, 'Cashier', payment['cashier_name']),
+                  _kv(Icons.schedule_rounded, 'Paid at',
+                      _when(payment['created_at']?.toString())),
+                  if (verified != 0)
+                    _kv(Icons.fact_check_outlined, 'Checked by',
+                        payment['verifier_name']),
+                  if ('${payment['verify_remarks'] ?? ''}'.isNotEmpty)
+                    _kv(Icons.comment_outlined, 'Remark', payment['verify_remarks']),
+                  if (payment['has_proof'] == true) ...[
+                    const SizedBox(height: 8),
+                    _Pressable(
+                      scale: 0.98,
+                      onTap: () => _showProof(
+                          '$_apiBase/api/payments/${payment['id']}/proof'),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Stack(children: [
+                          SizedBox(
+                            height: 150,
+                            width: double.infinity,
+                            child: Image.network(
+                              '$_apiBase/api/payments/${payment['id']}/proof',
+                              headers: _headers(),
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                              errorBuilder: (_, __, ___) => Center(
+                                child: Text(
+                                    'The payment screenshot could not be shown.',
+                                    style: _txt(12.5, color: _mid)),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: _Chip('Tap to see it all',
+                                bg: _white.withOpacity(0.92), fg: _ink),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ],
+                ],
+                trailing: _Chip(
+                  verified == 1
+                      ? 'Checked'
+                      : verified == -1
+                          ? 'Sent back'
+                          : 'Not checked yet',
+                  bg: verified == 1
+                      ? _greenPale
+                      : verified == -1
+                          ? _emberPale
+                          : _amberPale,
+                  fg: verified == 1
+                      ? _green
+                      : verified == -1
+                          ? _ember
+                          : _amber,
                 ),
               ),
-            if (payment?['has_proof'] == true) ...[
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Image.network(
-                  '$_apiBase/api/payments/${payment!['id']}/proof',
-                  headers: _headers(),
-                  errorBuilder: (_, __, ___) => Text(
-                      'The payment screenshot could not be shown.',
-                      style: _txt(12.5, color: _mid)),
-                ),
-              ),
-            ],
+
+            if (events.isNotEmpty)
+              _card('History', [
+                for (var n = 0; n < events.length; n++)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          margin: const EdgeInsets.only(top: 3),
+                          decoration: BoxDecoration(
+                            color: n == events.length - 1 ? _brand : _hairline,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        if (n < events.length - 1)
+                          Container(width: 2, height: 30, color: _hairline),
+                      ]),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_act('${events[n]['action']}'),
+                                  style: _txt(12.5,
+                                      weight: FontWeight.w700, color: _ink)),
+                              Text(
+                                  [
+                                    _when(events[n]['created_at']?.toString()),
+                                    if ('${events[n]['handler_name'] ?? ''}'.isNotEmpty)
+                                      '${events[n]['handler_name']}',
+                                  ].join(' · '),
+                                  style: _txt(11.5, color: _mid)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+              ]),
+
             if (_error != null) ...[
-              const SizedBox(height: 10),
               Text(_error!, style: _txt(13, color: _ember, height: 1.4)),
               if (_full == null)
                 TextButton(
@@ -2084,7 +2325,7 @@ class _OrderSheetState extends State<_OrderSheet> {
                     child: Text('Try again',
                         style: _txt(13.5, color: _brandDark))),
             ],
-            const SizedBox(height: 14),
+            const SizedBox(height: 6),
             ..._actions(),
           ],
         ),
@@ -2147,8 +2388,8 @@ class _RequestCardState extends State<_RequestCard> {
     final e = widget.request;
     final status = '${e['status']}';
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: _cardBox(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2287,7 +2528,7 @@ class _PaymentFields extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: p.method == m ? _brand : _tile,
+                    color: p.method == m ? _lime : _tile,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                         color: p.method == m ? _brand : _hairline),
@@ -2295,7 +2536,7 @@ class _PaymentFields extends StatelessWidget {
                   child: Text(_method(m),
                       style: _txt(13,
                           weight: FontWeight.w600,
-                          color: p.method == m ? _white : _inkSoft)),
+                          color: p.method == m ? _onLime : _inkSoft)),
                 ),
               ),
           ]),
@@ -2516,8 +2757,8 @@ class _RequestSheetState extends State<_RequestSheet> {
                   scale: 0.96,
                   onTap: () => setState(() => _kind = k),
                   child: _Chip(label,
-                      bg: _kind == k ? _brand : _tile,
-                      fg: _kind == k ? _white : _inkSoft),
+                      bg: _kind == k ? _lime : _tile,
+                      fg: _kind == k ? _onLime : _inkSoft),
                 ),
             ]),
             const SizedBox(height: 12),
@@ -2545,8 +2786,8 @@ class _RequestSheetState extends State<_RequestSheet> {
                     scale: 0.96,
                     onTap: () => setState(() => _paid = paid),
                     child: _Chip(label,
-                        bg: _paid == paid ? _brand : _tile,
-                        fg: _paid == paid ? _white : _inkSoft),
+                        bg: _paid == paid ? _lime : _tile,
+                        fg: _paid == paid ? _onLime : _inkSoft),
                   ),
               ]),
             ],
@@ -2582,6 +2823,8 @@ class _StockTabState extends State<_StockTab> {
   Map<String, dynamic>? _data;
   String? _error;
   String _show = 'all';
+  String _sort = 'name';
+  String? _cat;
   final _search = TextEditingController();
 
   @override
@@ -2628,6 +2871,20 @@ class _StockTabState extends State<_StockTab> {
     }
   }
 
+  List<String> get _suppliers => ((_data?['suppliers'] as List?) ?? const [])
+      .map((x) => '$x')
+      .toList();
+
+  /// Which filter a product falls under.
+  bool _in(Map<String, dynamic> p, String k) => switch (k) {
+        'low' => '${p['state']}' == 'low' || '${p['state']}' == 'out',
+        'out' => '${p['state']}' == 'out',
+        'noprice' => _int(p['price']) <= 0,
+        'nocost' => _int(p['cost']) <= 0,
+        'selling' => _num(p['sold_30']) > 0,
+        _ => true,
+      };
+
   @override
   Widget build(BuildContext context) {
     final all = ((_data?['products'] as List?) ?? const [])
@@ -2635,17 +2892,47 @@ class _StockTabState extends State<_StockTab> {
         .where((p) => _int(p['active']) == 1 || p['active'] == true)
         .toList();
     final q = _search.text.trim().toLowerCase();
+    final cats = {
+      for (final p in all)
+        if ('${p['category_name'] ?? ''}'.isNotEmpty) '${p['category_name']}'
+    }.toList()
+      ..sort();
     final rows = all.where((p) {
-      final state = '${p['state']}';
-      if (_show == 'low' && state != 'low' && state != 'out') return false;
-      if (_show == 'out' && state != 'out') return false;
+      if (!_in(p, _show)) return false;
+      if (_cat != null && '${p['category_name']}' != _cat) return false;
       if (q.isEmpty) return true;
-      return '${p['name']} ${p['code']} ${p['category_name'] ?? ''}'
+      return '${p['name']} ${p['code']} ${p['category_name'] ?? ''} ${p['supplier'] ?? ''}'
           .toLowerCase()
           .contains(q);
-    }).toList();
+    }).toList()
+      ..sort((a, b) => switch (_sort) {
+            'most' => _num(b['stock_available']).compareTo(_num(a['stock_available'])),
+            'value' => _int(b['stock_value']).compareTo(_int(a['stock_value'])),
+            'least' => _num(a['stock_available']).compareTo(_num(b['stock_available'])),
+            'selling' => _num(b['sold_30']).compareTo(_num(a['sold_30'])),
+            _ => '${a['name']}'.toLowerCase().compareTo('${b['name']}'.toLowerCase()),
+          });
     final s = (_data?['summary'] as Map?)?.cast<String, dynamic>();
-    final toOrder = _int(s?['low']) + _int(s?['out']);
+    final count = {
+      for (final k in ['all', 'low', 'out', 'noprice', 'nocost', 'selling'])
+        k: all.where((p) => _in(p, k)).length,
+    };
+    final shownValue = rows.fold<int>(0, (n, p) => n + _int(p['stock_value']));
+
+    Widget mini(String label, String value) => Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: _txt(11, color: _onLime.withOpacity(0.75))),
+              const SizedBox(height: 2),
+              Text(value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _title(14.5, weight: FontWeight.w800, color: _onLime)),
+            ],
+          ),
+        );
 
     return Column(
       children: [
@@ -2653,10 +2940,7 @@ class _StockTabState extends State<_StockTab> {
           subtitle: '${_deskName(_Session().role)} · ${_Session().fullName}',
           trailing: _Pressable(
             scale: 0.9,
-            onTap: () => _open(_ProductSheet(
-                suppliers: ((_data?['suppliers'] as List?) ?? const [])
-                    .map((x) => '$x')
-                    .toList())),
+            onTap: () => _open(_ProductSheet(suppliers: _suppliers)),
             child: Container(
               width: 38,
               height: 38,
@@ -2684,60 +2968,193 @@ class _StockTabState extends State<_StockTab> {
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(
                             parent: BouncingScrollPhysics()),
-                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+                        padding: const EdgeInsets.fromLTRB(12, 14, 12, 20),
                         children: [
-                          Text('Stock',
-                              style: _title(20, weight: FontWeight.w800)),
-                          const SizedBox(height: 12),
+                          Row(children: [
+                            Text('Stock',
+                                style: _title(20, weight: FontWeight.w800)),
+                            const Spacer(),
+                            Text('${all.length} items',
+                                style: _txt(12.5, color: _mid)),
+                          ]),
+                          const SizedBox(height: 10),
+
+                          // The money in the shop.
                           Container(
-                            padding: const EdgeInsets.all(18),
+                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                             decoration: BoxDecoration(
-                              gradient: _heroGradient,
-                              borderRadius: BorderRadius.circular(20),
+                              color: _lime,
+                              borderRadius: BorderRadius.circular(18),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Stock value at buy price',
-                                    style: _txt(12.5,
+                                    style: _txt(12,
                                         weight: FontWeight.w600,
-                                        color: _onLime.withOpacity(0.9))),
-                                const SizedBox(height: 4),
+                                        color: _onLime.withOpacity(0.85))),
+                                const SizedBox(height: 2),
                                 Text(_ugx(_int(s?['stockValue'])),
-                                    style: _title(26,
+                                    style: _title(24,
                                         weight: FontWeight.w800,
                                         color: _onLime)),
+                                const SizedBox(height: 12),
+                                Container(
+                                  height: 1,
+                                  color: _onLime.withOpacity(0.15),
+                                ),
                                 const SizedBox(height: 10),
-                                Text(
-                                    'Sells for ${_shortUgx(_int(s?['retailValue']))}'
-                                    ' · ${toOrder == 0 ? 'nothing to order' : '$toOrder to order'}',
-                                    style: _txt(12.5,
-                                        color: _onLime.withOpacity(0.92))),
+                                Row(children: [
+                                  mini('Sells for',
+                                      _shortUgx(_int(s?['retailValue']))),
+                                  mini('Profit on shelf',
+                                      _shortUgx(_int(s?['profitInStock']))),
+                                  mini('Buy again', '${count['low']}'),
+                                ]),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 14),
-                          _Field(
-                            controller: _search,
-                            hint: 'Search name or code',
-                            onChanged: (_) => setState(() {}),
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(spacing: 8, runSpacing: 8, children: [
-                            for (final (k, label) in [
-                              ('all', 'All'),
-                              ('low', 'To order ($toOrder)'),
-                              ('out', 'Out (${_int(s?['out'])})'),
-                            ])
-                              _Pressable(
-                                scale: 0.96,
-                                onTap: () => setState(() => _show = k),
-                                child: _Chip(label,
-                                    bg: _show == k ? _brand : _tile,
-                                    fg: _show == k ? _white : _inkSoft),
+                          const SizedBox(height: 12),
+
+                          // Search and sort.
+                          Row(children: [
+                            Expanded(
+                              child: _Field(
+                                controller: _search,
+                                hint: 'Search name, code, supplier',
+                                onChanged: (_) => setState(() {}),
                               ),
+                            ),
+                            const SizedBox(width: 8),
+                            PopupMenuButton<String>(
+                              initialValue: _sort,
+                              onSelected: (v) => setState(() => _sort = v),
+                              color: _white,
+                              itemBuilder: (_) => [
+                                for (final (k, label) in const [
+                                  ('name', 'A to Z'),
+                                  ('least', 'Least left first'),
+                                  ('most', 'Most left first'),
+                                  ('value', 'Most value first'),
+                                  ('selling', 'Best selling first'),
+                                ])
+                                  PopupMenuItem(
+                                    value: k,
+                                    child: Text(label,
+                                        style: _txt(13.5,
+                                            weight: _sort == k
+                                                ? FontWeight.w700
+                                                : FontWeight.w400,
+                                            color: _ink)),
+                                  ),
+                              ],
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: _tile,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: _hairline),
+                                ),
+                                child: const Icon(Icons.sort_rounded,
+                                    size: 20, color: _inkSoft),
+                              ),
+                            ),
                           ]),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 10),
+
+                          // Filters, each with its count.
+                          SizedBox(
+                            height: 34,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: [
+                                for (final (k, label, tone) in [
+                                  ('all', 'All', _lime),
+                                  ('low', 'Buy again', _amber),
+                                  ('out', 'Out', _ember),
+                                  ('noprice', 'No price', _blue),
+                                  ('nocost', 'No buy price', _blue),
+                                  ('selling', 'Selling', _green),
+                                ])
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: _Pressable(
+                                      scale: 0.95,
+                                      onTap: () => setState(() => _show = k),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12),
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: _show == k ? tone : _white,
+                                          borderRadius:
+                                              BorderRadius.circular(17),
+                                          border: Border.all(
+                                              color: _show == k
+                                                  ? tone
+                                                  : _hairline),
+                                        ),
+                                        child: Text('$label  ${count[k]}',
+                                            style: _txt(12.5,
+                                                weight: FontWeight.w700,
+                                                color: _show == k
+                                                    ? (tone == _lime
+                                                        ? _onLime
+                                                        : _white)
+                                                    : _inkSoft)),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (cats.length > 1) ...[
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 30,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: [
+                                  for (final c in [null, ...cats])
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 6),
+                                      child: _Pressable(
+                                        scale: 0.95,
+                                        onTap: () => setState(() => _cat = c),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 11),
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: _cat == c
+                                                ? _brandPale
+                                                : _tile,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                                color: _cat == c
+                                                    ? _brand
+                                                    : _hairline),
+                                          ),
+                                          child: Text(c ?? 'Every category',
+                                              style: _txt(12,
+                                                  weight: FontWeight.w600,
+                                                  color: _cat == c
+                                                      ? _brandDark
+                                                      : _mid)),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 10),
+                          Text(
+                              '${rows.length} shown · worth ${_ugx(shownValue)}',
+                              style: _txt(12, color: _mid)),
+                          const SizedBox(height: 8),
                           if (_error != null) ...[
                             Text('Not up to date: $_error',
                                 style: _txt(12.5, color: _ember)),
@@ -2752,12 +3169,8 @@ class _StockTabState extends State<_StockTab> {
                           for (final p in rows)
                             _Pressable(
                               scale: 0.98,
-                              onTap: () => _open(_MoveSheet(p,
-                                  suppliers:
-                                      ((_data?['suppliers'] as List?) ??
-                                              const [])
-                                          .map((x) => '$x')
-                                          .toList())),
+                              onTap: () => _open(
+                                  _MoveSheet(p, suppliers: _suppliers)),
                               child: _StockRow(p),
                             ),
                         ],
@@ -2776,50 +3189,115 @@ class _StockTabState extends State<_StockTab> {
       _ => (_tile, _mid),
     };
 
+/// One product in the stock list: how many, how it sells, what it is
+/// worth, and where it came from.
 class _StockRow extends StatelessWidget {
   const _StockRow(this.p);
   final Map<String, dynamic> p;
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = _stockColours('${p['state']}');
-    final tracked = p['tracked'] == true;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: _cardBox(),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${p['name']}',
-                    style: _txt(14, weight: FontWeight.w700, color: _ink)),
-                const SizedBox(height: 3),
-                Text(
-                    [
-                      p['code'],
-                      _ugx(_int(p['price'])),
-                      if (_int(p['cost']) > 0) 'buy ${_ugx(_int(p['cost']))}',
-                    ].where((x) => x != null && '$x'.isNotEmpty).join(' · '),
-                    style: _txt(12, color: _mid)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+    final state = '${p['state']}';
+    final (bg, fg) = _stockColours(state);
+    final unit = '${p['unit'] ?? ''}';
+    final left = _num(p['stock_available']);
+    final level = _num(p['reorder_level']);
+    // Full at twice the reorder level, or at what is there if no level.
+    final full = level > 0 ? level * 2 : (left > 0 ? left : 1);
+    final fill = (left / full).clamp(0.0, 1.0);
+    final price = _int(p['price']);
+    final cost = _int(p['cost']);
+    final days = p['days_left'];
+    final last = (p['last_buy'] as Map?)?.cast<String, dynamic>();
+
+    Widget fact(String k, String v, {Color color = _ink}) => Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                  tracked
-                      ? '${_qtyText(_num(p['stock_available']))} ${p['unit'] ?? ''}'
-                      : '',
-                  style: _title(15)),
-              const SizedBox(height: 4),
-              _Chip('${p['status_label']}', bg: bg, fg: fg),
+              Text(k, style: _txt(10.5, color: _light)),
+              const SizedBox(height: 1),
+              Text(v,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _txt(12, weight: FontWeight.w700, color: color)),
             ],
           ),
+        );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+      decoration: _cardBox(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${p['name']}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: _txt(13.5, weight: FontWeight.w700, color: _ink)),
+                    const SizedBox(height: 2),
+                    Text(
+                        [p['code'], p['category_name']]
+                            .where((x) => x != null && '$x'.isNotEmpty)
+                            .join(' · '),
+                        style: _txt(11.5, color: _mid)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('${_qtyText(left)} $unit',
+                      style: _title(16, weight: FontWeight.w800, color: fg)),
+                  const SizedBox(height: 3),
+                  _Chip('${p['status_label']}', bg: bg, fg: fg),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // How full the shelf is.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: fill,
+              minHeight: 5,
+              backgroundColor: _hairline,
+              color: fg,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            fact('Sells at', price > 0 ? _shortUgx(price) : 'No price',
+                color: price > 0 ? _ink : _blue),
+            fact('Buys at', cost > 0 ? _shortUgx(cost) : 'Not set',
+                color: cost > 0 ? _ink : _blue),
+            fact('Margin', p['margin'] != null ? '${p['margin']}%' : '-',
+                color: (_num(p['margin']) < 0) ? _ember : _green),
+            fact('Worth', _shortUgx(_int(p['stock_value']))),
+          ]),
+          if (last != null || days != null || _num(p['sold_30']) > 0) ...[
+            const SizedBox(height: 7),
+            Text(
+                [
+                  if (_num(p['sold_30']) > 0)
+                    'Sold ${_qtyText(_num(p['sold_30']))} in 30 days',
+                  if (days != null) '${_int(days)} days left',
+                  if (last != null && '${last['supplier']}'.isNotEmpty)
+                    'from ${last['supplier']}',
+                ].join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _txt(11.5, color: _mid)),
+          ],
         ],
       ),
     );
@@ -2999,8 +3477,8 @@ class _MoveSheetState extends State<_MoveSheet> {
                     _error = null;
                   }),
                   child: _Chip(label,
-                      bg: _kind == k ? _brand : _tile,
-                      fg: _kind == k ? _white : _inkSoft),
+                      bg: _kind == k ? _lime : _tile,
+                      fg: _kind == k ? _onLime : _inkSoft),
                 ),
             ]),
             const SizedBox(height: 14),
@@ -3028,7 +3506,7 @@ class _MoveSheetState extends State<_MoveSheet> {
               },
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                 decoration: BoxDecoration(
                   color: _tile,
                   borderRadius: BorderRadius.circular(14),
@@ -3388,8 +3866,8 @@ Widget _pickOne(List<(String, String)> options, String value,
           scale: 0.96,
           onTap: () => onPick(k),
           child: _Chip(label,
-              bg: value == k ? _brand : _tile,
-              fg: value == k ? _white : _inkSoft),
+              bg: value == k ? _lime : _tile,
+              fg: value == k ? _onLime : _inkSoft),
         ),
     ]);
 
@@ -3593,7 +4071,7 @@ class _WorkersTabState extends State<_WorkersTab> {
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(
                             parent: BouncingScrollPhysics()),
-                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+                        padding: const EdgeInsets.fromLTRB(12, 14, 12, 20),
                         children: [
                           Text('Workers & salaries',
                               style: _title(20, weight: FontWeight.w800)),
@@ -4424,53 +4902,235 @@ class _SlipSheetState extends State<_SlipSheet> {
   }
 }
 
-class _AccountTab extends StatelessWidget {
+/// The web pages Google Play asks every app to link to.
+const String _panelBase = 'https://alhaheed-hardware.vercel.app';
+
+/// The signed-in staff member: who they are, what their desk does, and
+/// the shop's privacy policy.
+class _AccountTab extends StatefulWidget {
   const _AccountTab({required this.onSignOut});
   final Future<void> Function() onSignOut;
 
   @override
+  State<_AccountTab> createState() => _AccountTabState();
+}
+
+class _AccountTabState extends State<_AccountTab> {
+  Map<String, dynamic>? _me;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiGet('/api/auth/me').then((r) {
+      if (mounted) {
+        setState(() => _me = (r['user'] as Map?)?.cast<String, dynamic>());
+      }
+    }).catchError((_) {});
+  }
+
+  String _day(String? iso) {
+    if (iso == null || iso.length < 10) return '';
+    const m = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final mo = int.tryParse(iso.substring(5, 7)) ?? 1;
+    return '${int.tryParse(iso.substring(8, 10)) ?? ''} ${m[mo - 1]} ${iso.substring(0, 4)}';
+  }
+
+  /// What each desk does, in a few plain words.
+  List<String> _jobs(String role) => switch (role) {
+        'cashier' => [
+            'Take payment for orders',
+            'Give the customer a receipt',
+            'Ask the manager for money for shop expenses',
+          ],
+        'accounts' => [
+            'Check every payment is real',
+            'Send back a payment that does not match',
+            'Keep the cash book',
+          ],
+        'store' => [
+            'Find the order by its number',
+            'Give out the goods, all or part',
+            'Ask for items the shop uses',
+          ],
+        _ => [
+            'See sales, stock and orders',
+            'Approve expenses and salaries',
+            'Change stock, prices and staff',
+          ],
+      };
+
+  Widget _row(IconData icon, String k, String v) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        child: Row(children: [
+          Icon(icon, size: 17, color: _mid),
+          const SizedBox(width: 10),
+          Text(k, style: _txt(13, color: _mid)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(v.isEmpty ? '-' : v,
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _txt(13, weight: FontWeight.w600, color: _ink)),
+          ),
+        ]),
+      );
+
+  Widget _link(IconData icon, String label, String url) => _Pressable(
+        scale: 0.98,
+        onTap: () => launchURL(url),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          child: Row(children: [
+            Icon(icon, size: 18, color: _brand),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Text(label,
+                    style: _txt(13.5, weight: FontWeight.w600, color: _ink))),
+            const Icon(Icons.open_in_new_rounded, size: 16, color: _light),
+          ]),
+        ),
+      );
+
+  BoxDecoration get _box => BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _hairline),
+      );
+
+  @override
   Widget build(BuildContext context) {
     final s = _Session();
+    final me = _me ?? s.user ?? const {};
+    final name = '${me['fullName'] ?? s.fullName}';
+    final email = '${me['email'] ?? ''}';
+    final initials = name.trim().isEmpty
+        ? '?'
+        : name
+            .trim()
+            .split(RegExp(r'\s+'))
+            .take(2)
+            .map((w) => w.characters.first.toUpperCase())
+            .join();
+
     return Column(
       children: [
         _Header(subtitle: '${_deskName(s.role)} · ${s.fullName}'),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
             children: [
+              // Who it is.
               Container(
-                padding: const EdgeInsets.all(20),
-                decoration: _cardBox(),
-                child: Column(children: [
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _brandPale,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _lime.withOpacity(0.6)),
+                ),
+                child: Row(children: [
                   Container(
-                    width: 72,
-                    height: 72,
+                    width: 54,
+                    height: 54,
                     alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      gradient: _heroGradient,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Text(
-                        s.fullName.isEmpty
-                            ? '?'
-                            : s.fullName.substring(0, 1).toUpperCase(),
-                        style: _title(28, color: _onLime)),
+                    decoration: const BoxDecoration(
+                        color: _lime, shape: BoxShape.circle),
+                    child: Text(initials,
+                        style: _title(19,
+                            weight: FontWeight.w800, color: _onLime)),
                   ),
-                  const SizedBox(height: 14),
-                  Text(s.fullName, style: _title(20)),
-                  const SizedBox(height: 4),
-                  Text(_deskName(s.role),
-                      style: _txt(13.5,
-                          weight: FontWeight.w600, color: _brandDark)),
-                  const SizedBox(height: 4),
-                  Text(s.phone, style: _txt(13, color: _mid)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name, style: _title(17)),
+                        const SizedBox(height: 4),
+                        _Chip(_deskName(s.role), bg: _white, fg: _brandDark),
+                      ],
+                    ),
+                  ),
                 ]),
               ),
+              const SizedBox(height: 12),
+
+              // The details.
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                decoration: _box,
+                child: Column(children: [
+                  _row(Icons.phone_iphone_rounded, 'Phone',
+                      '${me['phone'] ?? s.phone}'),
+                  if (email.isNotEmpty && !email.endsWith('.invalid'))
+                    _row(Icons.mail_outline_rounded, 'Email', email),
+                  _row(Icons.badge_outlined, 'Desk', _deskName(s.role)),
+                  if ('${me['memberSince'] ?? ''}'.isNotEmpty)
+                    _row(Icons.event_available_rounded, 'Working since',
+                        _day('${me['memberSince']}')),
+                  _row(Icons.verified_user_outlined, 'Account',
+                      '${me['status'] ?? 'active'}' == 'active'
+                          ? 'Active'
+                          : 'Stopped'),
+                ]),
+              ),
+              const SizedBox(height: 12),
+
+              // What this desk does.
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: _box,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Your work', style: _title(14.5)),
+                    const SizedBox(height: 8),
+                    for (final j in _jobs(s.role))
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Row(children: [
+                          const Icon(Icons.check_circle_rounded,
+                              size: 16, color: _green),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(j,
+                                  style: _txt(13, color: _inkSoft))),
+                        ]),
+                      ),
+                    const SizedBox(height: 6),
+                    Text('Everything you do is saved with your name.',
+                        style: _txt(12, color: _mid)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Help and the shop's rules.
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: _box,
+                child: Column(children: [
+                  _link(Icons.privacy_tip_outlined, 'Privacy policy',
+                      '$_panelBase/privacy'),
+                  const Divider(height: 1, color: _hairline),
+                  _link(Icons.desktop_windows_outlined, 'Open the web panel',
+                      _panelBase),
+                ]),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                  'Staff accounts are opened and closed by the manager. '
+                  'To change your details or close your account, ask the manager.',
+                  style: _txt(12, color: _mid, height: 1.45)),
               const SizedBox(height: 16),
-              _BigButton('Sign out', onSignOut, tint: _ember, soft: true),
-              const SizedBox(height: 10),
+              _BigButton('Sign out', widget.onSignOut,
+                  tint: _ember, soft: true),
+              const SizedBox(height: 8),
               Text('Signing out returns this phone to the shop.',
-                  textAlign: TextAlign.center, style: _txt(12.5, color: _mid)),
+                  textAlign: TextAlign.center, style: _txt(12, color: _mid)),
             ],
           ),
         ),

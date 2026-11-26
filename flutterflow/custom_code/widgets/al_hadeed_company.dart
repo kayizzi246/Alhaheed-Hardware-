@@ -125,7 +125,7 @@ TextStyle _font(
   Color color = _inkSoft,
   double height = 1.3,
 }) {
-  final s = size * _ui;
+  final s = size * _ui * 0.92; // one size step smaller everywhere
   return TextStyle(
     fontFamily: _isApple ? (s >= 20 ? '.SF Pro Display' : '.SF Pro Text') : null,
     fontFamilyFallback: _isApple
@@ -388,7 +388,7 @@ class _Field extends StatelessWidget {
           filled: true,
           fillColor: _tile,
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: _hairline),
@@ -826,7 +826,7 @@ class _BottomBar extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     curve: _ease,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
                       color:
                           key == current ? _brandPale : _white.withOpacity(0),
@@ -839,7 +839,7 @@ class _BottomBar extends StatelessWidget {
                           clipBehavior: Clip.none,
                           children: [
                             Icon(key == current ? iconOn : icon,
-                                size: 23,
+                                size: 21,
                                 color: key == current ? _brand : _light),
                             if (key == 'cart')
                               ListenableBuilder(
@@ -931,7 +931,7 @@ class _Header extends StatelessWidget {
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(
-                  16, MediaQuery.paddingOf(context).top + 14, 16, 20),
+                  16, MediaQuery.paddingOf(context).top + 10, 14, 14),
               child: Row(
                 children: [
                   Container(
@@ -1649,7 +1649,7 @@ class _AlHadeedCompanyState extends State<AlHadeedCompany> {
           scale: 0.98,
           onTap: _openProfile,
           child: Container(
-            height: 50,
+            height: 46,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: _white,
@@ -2062,7 +2062,7 @@ class _ProfileSheet extends StatelessWidget {
                 navigator.pop();
               },
               child: Container(
-                height: 50,
+                height: 46,
                 width: double.infinity,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
@@ -2240,7 +2240,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
               child: Opacity(
                 opacity: _ready || _busy ? 1 : 0.45,
                 child: Container(
-                  height: 50,
+                  height: 46,
                   width: double.infinity,
                   alignment: Alignment.center,
                   decoration: _liquid(tint: _ember, radius: 25),
@@ -2320,7 +2320,7 @@ class _ConfirmSheet extends StatelessWidget {
                     scale: 0.98,
                     onTap: () => Navigator.of(context).pop(false),
                     child: Container(
-                      height: 50,
+                      height: 46,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _tile,
@@ -2339,7 +2339,7 @@ class _ConfirmSheet extends StatelessWidget {
                     scale: 0.98,
                     onTap: () => Navigator.of(context).pop(true),
                     child: Container(
-                      height: 50,
+                      height: 46,
                       alignment: Alignment.center,
                       decoration: _liquid(tint: _ember, radius: 25),
                       child: Text(confirm,
