@@ -215,6 +215,26 @@ Accountability rules: a paid order can only be cancelled by the manager, with a 
 
 Rules: reorder when days of stock < 15 or book < target (`reorder_level`); suggested order = max(0, target − book); average daily sales = units sold in the last 90 days ÷ 90; dead = stock with no sale in 180 days; slow = over 180 days of stock; zakat = 2.5% of the month's gross profit, matched on year and month. The tests are in `wordpress/al-hadeed-hardware/tests/run.php`.
 
+## Purchasing, till and exceptions — `/api/manager`, `/api/cashier`, `/api/store`
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET | `/manager/purchasing` | manager | Purchase orders, bills, balances per supplier, returns, deliveries received without a PO in 30 days |
+| POST | `/manager/purchase-orders` | manager | {supplier, expectedOn, note, lines:[{productId, qty, unitCost}]} |
+| GET | `/manager/purchase-orders/{id}` | manager | Lines (ordered, received, outstanding), deliveries, bills, three-way `match` |
+| POST | `/manager/purchase-orders/{id}/receive` | manager | {fdn, date, lines:[{lineId, qty}]}; only what is outstanding; part deliveries leave it open |
+| POST | `/manager/purchase-orders/{id}/close` | manager | Nothing more coming |
+| POST | `/manager/supplier-bills` | manager | {poId?, supplier, invoiceNo, billDate, dueDate, amount}; the same invoice number from a supplier is refused twice |
+| POST | `/manager/supplier-bills/{id}/pay` | manager | {amount ≤ owed, method, ref (not for cash), date} |
+| POST | `/manager/supplier-returns` | manager | {productId, qty, supplier, ref, reason, date}: out of the book (`supplier_return`) and a credit note |
+| GET/POST | `/cashier/close` | cashier | Blind till count: the expected figure is only shown once the count is entered; a difference needs a note; a close cannot be redone |
+| GET | `/manager/tills` | manager | Closings with over/short, and days cash was taken with no count |
+| GET | `/manager/exceptions` | manager | Per person: cancellations, payments rejected, overrides, write-offs and value, price changes, deletions, till short and over |
+| GET | `/store/lookup?no=AH-123` | store, manager | The order with sold, released and `qty_to_deliver` per line, `canRelease` and plain `advice` |
+| POST | `/store/orders/{id}/release` | store, manager | `lines: {itemId: qty}` for a part delivery; omitted means everything left |
+
+Stock value and cost of sales use the weighted average cost (`_ah_avg_cost`), blended at each delivery; the below-cost floor stays the latest buy price (`_ah_cost`). A partly delivered order cannot be cancelled. Receipts and the customer's app carry a QR of the order number for the store to scan.
+
 ## Workers and salaries — `/api/manager`  *(manager only)*
 
 Everyone the shop pays, with or without a desk login. Approved salaries

@@ -94,12 +94,13 @@ class AH_Ledger {
 			$done = "LEFT JOIN {$wpdb->postmeta} red ON red.post_id = o.ID AND red.meta_key = '_order_stock_reduced'";
 		}
 		$rows = $wpdb->get_results(
-			"SELECT pid.meta_value AS product_id, SUM(qty.meta_value) AS q
+			"SELECT pid.meta_value AS product_id, SUM(qty.meta_value - COALESCE(rel.meta_value,0)) AS q
 			   FROM {$items} i
 			   JOIN {$from}
 			   {$done}
 			   JOIN {$meta} pid ON pid.order_item_id = i.order_item_id AND pid.meta_key = '_product_id'
 			   JOIN {$meta} qty ON qty.order_item_id = i.order_item_id AND qty.meta_key = '_qty'
+			   LEFT JOIN {$meta} rel ON rel.order_item_id = i.order_item_id AND rel.meta_key = '_ah_qty_released'
 			  WHERE i.order_item_type = 'line_item'
 			    AND ( red.meta_value IS NULL OR red.meta_value NOT IN ('yes','1') ){$only}
 			  GROUP BY pid.meta_value",
@@ -135,7 +136,7 @@ class AH_Ledger {
 			return array();
 		}
 		$ids  = implode( ',', array_map( 'intval', wp_list_pluck( $products, 'ID' ) ) );
-		$keys = "'_sku','_price','_ah_cost','_ah_reorder_level','_ah_unit','_stock','_manage_stock'";
+		$keys = "'_sku','_price','_ah_cost','_ah_avg_cost','_ah_reorder_level','_ah_unit','_stock','_manage_stock'";
 		$meta = array();
 		foreach ( (array) $wpdb->get_results( "SELECT post_id, meta_key, meta_value FROM {$wpdb->postmeta} WHERE post_id IN ({$ids}) AND meta_key IN ({$keys})", ARRAY_A ) as $m ) {
 			$meta[ (int) $m['post_id'] ][ $m['meta_key'] ] = $m['meta_value'];
@@ -176,6 +177,7 @@ class AH_Ledger {
 			$m  = isset( $meta[ $id ] ) ? $meta[ $id ] : array();
 			$b     = isset( $book[ $id ] ) ? $book[ $id ] : 0;
 			$cost  = (int) ( $m['_ah_cost'] ?? 0 );
+			$avgc  = (int) ( $m['_ah_avg_cost'] ?? 0 ) ?: $cost;
 			$min   = (int) ( $m['_ah_reorder_level'] ?? 0 );
 			$avg   = AH_Stock_Math::avg_daily_sales( $sold[ $id ] ?? 0 );
 			$days  = AH_Stock_Math::days_of_stock( $b, $avg );
@@ -193,7 +195,10 @@ class AH_Ledger {
 				'cost'           => $cost,
 				'book'           => $b,
 				'reserved'       => $res[ $id ] ?? 0,
-				'value'          => max( 0, $b ) * $cost,
+				'avgCost'        => $avgc,
+				// Stock is worth what it cost, on average, not what the
+				// last delivery happened to cost.
+				'value'          => max( 0, $b ) * $avgc,
 				'minLevel'       => $min,
 				'sold90'         => $sold[ $id ] ?? 0,
 				'avgDaily'       => round( $avg, 2 ),
@@ -278,6 +283,27 @@ class AH_Ledger {
 		if ( $reorder ) {
 			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d %s to reorder, about UGX %s.', count( $reorder ), count( $reorder ) === 1 ? 'item' : 'items', number_format( array_sum( wp_list_pluck( $reorder, 'orderCost' ) ) ) ), 'link' => '#reorder' );
 		}
+		// Money: the till and the suppliers.
+		$tills = AH_Till::tills( new WP_REST_Request( 'GET', '/' ) );
+		if ( $tills['short'] < 0 ) {
+			array_unshift( $todo, array( 'level' => 'bad', 'text' => sprintf( 'Tills were short by UGX %s in the last 30 days. See who and why.', number_format( -$tills['short'] ) ), 'link' => '/manager/exceptions' ) );
+		}
+		if ( $tills['notClosed'] ) {
+			array_unshift( $todo, array( 'level' => 'bad', 'text' => sprintf( '%d %s a cashier took cash and never counted the till.', count( $tills['notClosed'] ), count( $tills['notClosed'] ) === 1 ? 'day' : 'days' ), 'link' => '/manager/exceptions' ) );
+		}
+		$buying    = AH_Purchasing::overview();
+		$over      = array_filter( $buying['bills'], function ( $b ) { return $b['match'] && 'over_billed' === $b['match']['state'] && $b['owed'] > 0; } );
+		$overdue   = array_filter( $buying['bills'], function ( $b ) { return $b['overdue']; } );
+		if ( $over ) {
+			array_unshift( $todo, array( 'level' => 'bad', 'text' => sprintf( '%d supplier %s for more than was delivered. Do not pay the difference.', count( $over ), count( $over ) === 1 ? 'bill charges' : 'bills charge' ), 'link' => '/manager/purchasing' ) );
+		}
+		if ( $overdue ) {
+			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d supplier %s overdue, UGX %s.', count( $overdue ), count( $overdue ) === 1 ? 'bill is' : 'bills are', number_format( array_sum( wp_list_pluck( $overdue, 'owed' ) ) ) ), 'link' => '/manager/purchasing' );
+		}
+		if ( $buying['receivedNoPo'] ) {
+			$todo[] = array( 'level' => 'info', 'text' => sprintf( '%d %s received in the last 30 days without a purchase order.', $buying['receivedNoPo'], 1 === $buying['receivedNoPo'] ? 'delivery was' : 'deliveries were' ), 'link' => '/manager/purchasing' );
+		}
+
 		$no_price = count( array_filter( $items, function ( $i ) { return $i['price'] <= 0; } ) );
 		if ( $no_price ) {
 			$todo[] = array( 'level' => 'info', 'text' => sprintf( '%d %s no selling price, so cannot be sold yet.', $no_price, 1 === $no_price ? 'product has' : 'products have' ), 'link' => '/manager/products' );

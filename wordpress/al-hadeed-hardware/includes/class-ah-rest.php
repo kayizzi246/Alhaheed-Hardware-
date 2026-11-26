@@ -376,6 +376,16 @@ class AH_Rest {
 				},
 			)
 		);
+		// The store types or scans an order number and gets the order,
+		// with what was sold, what has gone and what is still to deliver.
+		register_rest_route(
+			$ns, '/store/lookup',
+			array(
+				'methods'             => $get,
+				'permission_callback' => self::desk( array( 'store', 'manager' ) ),
+				'callback'            => array( __CLASS__, 'store_lookup' ),
+			)
+		);
 		register_rest_route(
 			$ns, '/store/orders/(?P<id>\d+)/release',
 			array(
@@ -411,6 +421,8 @@ class AH_Rest {
 		AH_Workers::routes();
 		AH_Ledger::routes();
 		AH_Stocktake::routes();
+		AH_Purchasing::routes();
+		AH_Till::routes();
 
 		// The screenshot behind a mobile money reference, and the check
 		// that a reference has not already paid for another order.
@@ -1168,7 +1180,9 @@ class AH_Rest {
 						: sprintf( 'Price UGX %s is below the buy price UGX %s', number_format( $price ), number_format( $cost ) ),
 				);
 			}
-			$lines[] = array( 'product' => $product, 'qty' => $w['qty'], 'cost' => $cost );
+			// The line carries the average cost: what the goods cost the
+			// shop. The floor checked above is the latest buy price.
+			$lines[] = array( 'product' => $product, 'qty' => $w['qty'], 'cost' => AH_Stock::cost_of( $id ) );
 		}
 
 		if ( ! $problems ) {
@@ -1352,6 +1366,34 @@ class AH_Rest {
 		);
 	}
 
+	public static function store_lookup( $req ) {
+		$raw = strtoupper( trim( (string) $req->get_param( 'no' ) ) );
+		$id  = (int) preg_replace( '/\D/', '', $raw );
+		$order = $id ? wc_get_order( $id ) : null;
+		if ( ! $order || ! in_array( $order->get_type(), array( 'shop_order' ), true ) ) {
+			return self::err( 'ah_not_found', 'No order with that number. Check it against the receipt.', 404 );
+		}
+		$row    = AH_Shape::order( $order, true );
+		$status = $row['status'];
+		$say    = array(
+			'pending_payment'  => 'Not paid yet. Send the customer to the cashier.',
+			'paid'             => 'Paid, but Accounts has not checked the payment yet. Do not release.',
+			'rejected'         => 'The payment was rejected. Do not release.',
+			'payment_verified' => 'Paid and checked. Ready to deliver.',
+			'released'         => 'Everything on this order has already been delivered.',
+			'cancelled'        => 'This order was cancelled. Do not release.',
+			'refunded'         => 'This order was refunded. Do not release.',
+		);
+		$row['canRelease'] = 'payment_verified' === $status;
+		$row['advice']     = $say[ $status ] ?? '';
+		foreach ( $row['items'] as &$it ) {
+			$it['qty_to_deliver'] = max( 0, (int) $it['quantity'] - (int) $it['qty_released'] );
+		}
+		unset( $it );
+		AH_Flow::log_event( $order->get_id(), 'store', 'looked_up', null, null, AH_Auth::current()->ID, 'Order opened at the store' );
+		return array( 'order' => $row );
+	}
+
 	public static function release( $req ) {
 		$user = AH_Auth::current();
 		return self::wrap(
@@ -1360,6 +1402,8 @@ class AH_Rest {
 				array(
 					'collected_by'    => $req->get_param( 'collectedBy' ),
 					'delivery_status' => $req->get_param( 'deliveryStatus' ),
+					// { itemId: qty } for a part delivery; absent means all of it.
+					'lines'           => is_array( $req->get_param( 'lines' ) ) ? $req->get_param( 'lines' ) : null,
 				),
 				$user->ID
 			),

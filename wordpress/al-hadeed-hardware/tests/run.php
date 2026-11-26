@@ -86,5 +86,20 @@ check( 'January 2025 on its own', $M::zakat( '2025-01', $rows ), 25000 );
 check( 'a month name alone never matches', $M::zakat( 'Jan, 2026', $rows ), 0 );
 check( 'a loss month owes no zakat', $M::zakat( '2026-03', array( array( 'date' => '2026-03-02', 'profit' => -50000 ) ) ), 0 );
 
+echo "Average cost\n";
+check( '6 at 200,000 then 4 at 210,000', $M::weighted_average( 6, 200000, 4, 210000 ), 204000 );
+check( 'nothing on the shelf takes the new price', $M::weighted_average( 0, 150000, 5, 210000 ), 210000 );
+check( 'below-zero stock does not drag the average', $M::weighted_average( -3, 100000, 10, 120000 ), 120000 );
+
+echo "Three-way check\n";
+check( 'billed exactly what arrived', $M::three_way( 100, 100, 100 )['state'], 'matches' );
+check( 'billed for goods that never came', $M::three_way( 100, 40, 100 ), array( 'state' => 'over_billed', 'diff' => 60, 'notReceived' => 60 ) );
+check( 'no bill yet', $M::three_way( 100, 40, 0 )['state'], 'not_billed' );
+check( 'billed less than arrived', $M::three_way( 100, 100, 90 )['state'], 'under_billed' );
+
+echo "Till\n";
+check( 'counted 95,000 against 100,000 is 5,000 short', $M::over_short( 100000, 95000 ), -5000 );
+check( 'exact', $M::over_short( 100000, 100000 ), 0 );
+
 echo "\n{$passed} passed, {$failed} failed\n";
 exit( $failed ? 1 : 0 );

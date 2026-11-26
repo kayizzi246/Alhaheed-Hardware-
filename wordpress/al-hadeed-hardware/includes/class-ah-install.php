@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.7.1';
+	const DB_VERSION = '1.8.0';
 
 	public static function activate() {
 		self::tables();
@@ -207,6 +207,7 @@ class AH_Install {
 			user_name    VARCHAR(191)    NULL,
 			moved_on     DATE            NULL,
 			count_id     BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			po_id        BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			created_at   DATETIME        NOT NULL,
 			PRIMARY KEY (id),
 			KEY product_id (product_id),
@@ -324,6 +325,88 @@ class AH_Install {
 			PRIMARY KEY (id),
 			KEY rule (rule),
 			KEY order_id (order_id)
+		) {$charset};";
+
+		// The till at closing: what the book says should be in the drawer,
+		// what the cashier counted, and the difference.
+		$sql[] = "CREATE TABLE {$p}ah_till_closes (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			close_date   DATE            NOT NULL,
+			cashier_id   BIGINT UNSIGNED NOT NULL,
+			cashier_name VARCHAR(191)    NULL,
+			expected     BIGINT          NOT NULL DEFAULT 0,
+			counted      BIGINT          NOT NULL DEFAULT 0,
+			over_short   BIGINT          NOT NULL DEFAULT 0,
+			note         TEXT            NULL,
+			created_at   DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY day_cashier (close_date, cashier_id)
+		) {$charset};";
+
+		// Buying: what was ordered from a supplier, what arrived against it,
+		// what the supplier billed, and what has been paid.
+		$sql[] = "CREATE TABLE {$p}ah_purchase_orders (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			po_no         VARCHAR(32)     NOT NULL,
+			supplier      VARCHAR(191)    NOT NULL,
+			status        VARCHAR(16)     NOT NULL DEFAULT 'open',
+			expected_on   DATE            NULL,
+			note          TEXT            NULL,
+			created_by    BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			created_name  VARCHAR(191)    NULL,
+			created_at    DATETIME        NOT NULL,
+			closed_at     DATETIME        NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY po_no (po_no),
+			KEY status (status)
+		) {$charset};";
+
+		$sql[] = "CREATE TABLE {$p}ah_po_lines (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			po_id         BIGINT UNSIGNED NOT NULL,
+			product_id    BIGINT UNSIGNED NOT NULL,
+			product_name  VARCHAR(191)    NOT NULL,
+			qty_ordered   INT             NOT NULL DEFAULT 0,
+			qty_received  INT             NOT NULL DEFAULT 0,
+			unit_cost     BIGINT          NOT NULL DEFAULT 0,
+			PRIMARY KEY (id),
+			KEY po_id (po_id)
+		) {$charset};";
+
+		// A supplier's invoice (positive) or credit note (negative, for
+		// goods sent back), and what has been paid against it.
+		$sql[] = "CREATE TABLE {$p}ah_supplier_bills (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			kind          VARCHAR(12)     NOT NULL DEFAULT 'bill',
+			supplier      VARCHAR(191)    NOT NULL,
+			po_id         BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			invoice_no    VARCHAR(64)     NULL,
+			bill_date     DATE            NOT NULL,
+			due_date      DATE            NULL,
+			amount        BIGINT          NOT NULL DEFAULT 0,
+			paid          BIGINT          NOT NULL DEFAULT 0,
+			status        VARCHAR(12)     NOT NULL DEFAULT 'unpaid',
+			note          TEXT            NULL,
+			created_by    BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			created_name  VARCHAR(191)    NULL,
+			created_at    DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			KEY supplier (supplier),
+			KEY po_id (po_id)
+		) {$charset};";
+
+		$sql[] = "CREATE TABLE {$p}ah_bill_payments (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			bill_id       BIGINT UNSIGNED NOT NULL,
+			amount        BIGINT          NOT NULL DEFAULT 0,
+			method        VARCHAR(32)     NULL,
+			ref           VARCHAR(64)     NULL,
+			paid_on       DATE            NOT NULL,
+			user_id       BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			user_name     VARCHAR(191)    NULL,
+			created_at    DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			KEY bill_id (bill_id)
 		) {$charset};";
 
 		// One-time codes for phone login, for customers who order on the

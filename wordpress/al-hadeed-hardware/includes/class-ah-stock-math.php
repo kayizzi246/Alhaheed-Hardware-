@@ -103,6 +103,41 @@ class AH_Stock_Math {
 		return $out;
 	}
 
+	/**
+	 * Weighted average cost: the units on the shelf at their average,
+	 * plus the new units at their price, over all of them.
+	 */
+	public static function weighted_average( $on_hand, $avg, $qty, $cost ) {
+		$units = max( 0, (int) $on_hand ) + max( 0, (int) $qty );
+		if ( $units <= 0 ) {
+			return (int) $cost;
+		}
+		return (int) round( ( max( 0, $on_hand ) * $avg + max( 0, $qty ) * $cost ) / $units );
+	}
+
+	/**
+	 * The three-way check on a supplier's bill: pay for what arrived,
+	 * not for what was ordered or what was invoiced.
+	 *
+	 * @return array [ 'state' => not_billed|matches|over_billed|under_billed, 'diff' => billed - received ]
+	 */
+	public static function three_way( $ordered, $received, $billed ) {
+		if ( $billed <= 0 ) {
+			return array( 'state' => 'not_billed', 'diff' => 0, 'notReceived' => max( 0, $ordered - $received ) );
+		}
+		$diff = (int) $billed - (int) $received;
+		return array(
+			'state'       => 0 === $diff ? 'matches' : ( $diff > 0 ? 'over_billed' : 'under_billed' ),
+			'diff'        => $diff,
+			'notReceived' => max( 0, $ordered - $received ),
+		);
+	}
+
+	/** Till over (+) or short (−): what was counted against what should be there. */
+	public static function over_short( $expected, $counted ) {
+		return (int) $counted - (int) $expected;
+	}
+
 	/** An amount without VAT, when the amounts include it. */
 	public static function ex_vat( $amount, $vat_included = true ) {
 		return $vat_included ? (int) round( $amount / ( 1 + self::VAT ) ) : (int) $amount;

@@ -187,7 +187,7 @@ class AH_Stocktake {
 				continue;
 			}
 			$book = AH_Ledger::book( $pid );
-			$cost = (int) get_post_meta( $pid, '_ah_cost', true );
+			$cost = AH_Stock::cost_of( $pid );
 			$var  = $counted - $book;
 			$wpdb->query( $wpdb->prepare(
 				"INSERT INTO {$table} (count_id, product_id, product_name, book_qty, counted_qty, variance, unit_cost, variance_value, counted_by, counted_at)

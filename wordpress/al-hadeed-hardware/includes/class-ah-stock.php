@@ -39,6 +39,7 @@ class AH_Stock {
 		'own_use'    => 'Used by the shop',
 		'count'      => 'Stock count',
 		'correction' => 'Correction',
+		'supplier_return' => 'Returned to supplier',
 	);
 
 	/** What a person may record by hand, and which way it moves the count. */
@@ -539,9 +540,11 @@ class AH_Stock {
 			}
 			$args['ref']      = $fdn;
 			$args['supplier'] = $supplier;
-			// The buy price is what was last paid: what the shop would
-			// pay to put the same thing back on the shelf. Every sale
-			// after this takes its cost from here.
+			// Two figures: the latest buy price (what it costs to restock,
+			// and the floor no sale may go under) and the weighted average
+			// of everything on the shelf (what stock is worth and what each
+			// sale cost the shop).
+			self::blend_cost( $product->get_id(), $qty, $cost );
 			update_post_meta( $product->get_id(), '_ah_cost', $cost );
 			$args['unit_cost'] = $cost;
 			if ( $supplier && ! get_post_meta( $product->get_id(), '_ah_supplier', true ) ) {
@@ -594,6 +597,7 @@ class AH_Stock {
 			'user_name'    => $user ? $user->display_name : 'The shop',
 			'moved_on'     => ! empty( $args['moved_on'] ) ? $args['moved_on'] : current_time( 'Y-m-d' ),
 			'count_id'     => isset( $args['count_id'] ) ? (int) $args['count_id'] : 0,
+			'po_id'        => isset( $args['po_id'] ) ? (int) $args['po_id'] : 0,
 			'created_at'   => current_time( 'mysql' ),
 		) );
 	}
@@ -610,7 +614,7 @@ class AH_Stock {
 		}
 		wc_update_product_stock( $product, abs( (int) $delta ), $delta >= 0 ? 'increase' : 'decrease' );
 		if ( empty( $args['unit_cost'] ) ) {
-			$args['unit_cost'] = (int) get_post_meta( $product->get_id(), '_ah_cost', true );
+			$args['unit_cost'] = self::cost_of( $product->get_id() );
 		}
 		self::record( $product->get_id(), $kind, (int) $delta, $before, $before + (int) $delta, $args );
 	}
@@ -623,6 +627,26 @@ class AH_Stock {
 				update_post_meta( $id, '_stock_status', 'outofstock' );
 			}
 		}
+	}
+
+	/**
+	 * Weighted average cost after a delivery: what is on the shelf at
+	 * its average, plus what came in at its price, over the new total.
+	 */
+	public static function blend_cost( $product_id, $qty, $cost ) {
+		$before = max( 0, AH_Ledger::book( $product_id ) );
+		$avg    = self::cost_of( $product_id );
+		$new    = $before > 0 && $avg > 0
+			? AH_Stock_Math::weighted_average( $before, $avg, $qty, $cost )
+			: (int) $cost;
+		update_post_meta( $product_id, '_ah_avg_cost', $new );
+		return $new;
+	}
+
+	/** The average cost of what is on the shelf, or the buy price before any delivery. */
+	public static function cost_of( $product_id ) {
+		$avg = (int) get_post_meta( $product_id, '_ah_avg_cost', true );
+		return $avg > 0 ? $avg : (int) get_post_meta( $product_id, '_ah_cost', true );
 	}
 
 	/** "a, b and c" */
@@ -644,7 +668,7 @@ class AH_Stock {
 		self::record( $product->get_id(), 'sold', (int) $change['to'] - (int) $change['from'], (int) $change['from'], (int) $change['to'], array(
 			'order_id'   => $order->get_id(),
 			// The latest purchase cost when the sale was made, never typed.
-			'unit_cost'  => (int) ( $item->get_meta( '_ah_unit_cost' ) ?: get_post_meta( $product->get_id(), '_ah_cost', true ) ),
+			'unit_cost'  => (int) ( $item->get_meta( '_ah_unit_cost' ) ?: self::cost_of( $product->get_id() ) ),
 			'unit_price' => (int) round( (float) $item->get_total() / $qty ),
 			'ref'        => AH_Shape::order_no( $order ),
 		) );
@@ -660,7 +684,7 @@ class AH_Stock {
 			'order_id'  => $order->get_id(),
 			// The cost and price it went out at, so a cancelled sale
 			// comes off the month's sales and cost of sales exactly.
-			'unit_cost'  => (int) ( $item->get_meta( '_ah_unit_cost' ) ?: get_post_meta( $product->get_id(), '_ah_cost', true ) ),
+			'unit_cost'  => (int) ( $item->get_meta( '_ah_unit_cost' ) ?: self::cost_of( $product->get_id() ) ),
 			'unit_price' => (int) round( (float) $item->get_total() / $qty ),
 			'ref'       => AH_Shape::order_no( $order ),
 		) );

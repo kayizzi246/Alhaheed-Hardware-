@@ -35,6 +35,7 @@ export const NAV = {
     { href: '/manager/stock', label: 'Stock control', icon: 'scales' },
     { href: '/manager/products', label: 'Products & ledger', icon: 'box' },
     { href: '/manager/stock-take', label: 'Stock-take', icon: 'check' },
+    { href: '/manager/purchasing', label: 'Purchasing', icon: 'mail' },
     { href: '/manager/margins', label: 'Margins & zakat', icon: 'chart' },
 
     { group: 'The shop' },
@@ -47,6 +48,7 @@ export const NAV = {
     { group: 'Records' },
     { href: '/manager/reports', label: 'Reports', icon: 'chart' },
     { href: '/manager/monthly', label: 'Monthly Report', icon: 'receipt' },
+    { href: '/manager/exceptions', label: 'Staff exceptions', icon: 'scales' },
     { href: '/manager/audit', label: 'Audit Trail', icon: 'clock' },
   ],
 };

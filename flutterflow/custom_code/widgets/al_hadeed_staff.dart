@@ -39,6 +39,7 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ═══════════════════════════════════════════════════════════════
@@ -1174,6 +1175,12 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
     return switch (desk) {
       'store' => [
           (
+            'Find order',
+            Icons.qr_code_scanner_rounded,
+            Icons.qr_code_scanner_rounded,
+            _FindOrderTab(onExpired: out)
+          ),
+          (
             'To release',
             Icons.inventory_2_outlined,
             Icons.inventory_2_rounded,
@@ -1702,7 +1709,10 @@ class _OrderCard extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _OrderSheet(order: order, action: action),
+      // The store delivers by quantity, part now and part later.
+      builder: (_) => action == 'release'
+          ? _DeliverSheet(orderNo: '${order['order_no']}')
+          : _OrderSheet(order: order, action: action),
     );
     if (changed == true) await done();
   }
@@ -4454,6 +4464,406 @@ class _AccountTab extends StatelessWidget {
     );
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  STORE — FIND AN ORDER, DELIVER WHAT IS DUE
+//
+//  Scan the QR on the customer's receipt (or type the number). The
+//  order comes up with what was sold, what has already gone and what is
+//  still to deliver. The store sets how many go now and confirms; only
+//  that comes off the stock book, and the manager sees every delivery.
+// ═══════════════════════════════════════════════════════════════
+
+class _FindOrderTab extends StatefulWidget {
+  const _FindOrderTab({required this.onExpired});
+  final Future<void> Function() onExpired;
+
+  @override
+  State<_FindOrderTab> createState() => _FindOrderTabState();
+}
+
+class _FindOrderTabState extends State<_FindOrderTab> {
+  final _no = TextEditingController();
+  Map<String, dynamic>? _order;
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _no.dispose();
+    super.dispose();
+  }
+
+  Future<void> _find([String? code]) async {
+    final raw = (code ?? _no.text).trim();
+    if (raw.isEmpty) return;
+    _no.text = raw;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final r =
+          await _apiGet('/api/store/lookup?no=${Uri.encodeComponent(raw)}');
+      if (!mounted) return;
+      setState(() {
+        _order = (r['order'] as Map).cast<String, dynamic>();
+        _busy = false;
+      });
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      if (e.unauthorised) {
+        await widget.onExpired();
+        return;
+      }
+      setState(() {
+        _order = null;
+        _error = e.message;
+        _busy = false;
+      });
+    }
+  }
+
+  Future<void> _scan() async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const _ScanPage()),
+    );
+    if (code != null && code.isNotEmpty) await _find(code);
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          _Header(
+              subtitle:
+                  '${_deskName(_Session().role)} · ${_Session().fullName}'),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+              children: [
+                Text('Find an order',
+                    style: _title(20, weight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text('Scan the QR on the receipt, or type the order number.',
+                    style: _txt(13, color: _mid)),
+                const SizedBox(height: 14),
+                _BigButton('Scan the receipt', _busy ? null : _scan),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(
+                    child: _Field(
+                      controller: _no,
+                      hint: 'Order number, e.g. AH-115',
+                      capitalisation: TextCapitalization.characters,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _SmallButton('Find', () => _find()),
+                ]),
+                if (_busy)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                        child: CircularProgressIndicator(color: _brand)),
+                  ),
+                if (_error != null) ...[
+                  const SizedBox(height: 14),
+                  Text(_error!, style: _txt(13.5, color: _ember, height: 1.4)),
+                ],
+                if (_order != null && !_busy) ...[
+                  const SizedBox(height: 16),
+                  _Delivery(
+                    order: _order!,
+                    onDone: (msg) async {
+                      _toast(context, msg);
+                      await _find();
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      );
+}
+
+/// The camera, until it reads a code. Pops what it read.
+class _ScanPage extends StatefulWidget {
+  const _ScanPage();
+
+  @override
+  State<_ScanPage> createState() => _ScanPageState();
+}
+
+class _ScanPageState extends State<_ScanPage> {
+  final _camera = MobileScannerController(
+    formats: const [BarcodeFormat.qrCode, BarcodeFormat.code128],
+  );
+  bool _done = false;
+
+  @override
+  void dispose() {
+    _camera.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: _white,
+          title: Text('Scan the receipt',
+              style: _txt(16, weight: FontWeight.w600, color: _white)),
+        ),
+        body: Stack(children: [
+          MobileScanner(
+            controller: _camera,
+            onDetect: (capture) {
+              if (_done) return;
+              final codes = capture.barcodes;
+              final value = codes.isEmpty ? null : codes.first.rawValue;
+              if (value == null || value.isEmpty) return;
+              _done = true;
+              HapticFeedback.mediumImpact();
+              Navigator.of(context).pop(value);
+            },
+          ),
+          Center(
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                border: Border.all(color: _lime, width: 3),
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 40,
+            child: Text('Hold the QR code on the receipt inside the square',
+                textAlign: TextAlign.center,
+                style: _txt(14, color: _white)),
+          ),
+        ]),
+      );
+}
+
+/// One order at the store: what was sold, what has gone, what is due,
+/// and how many go now.
+class _Delivery extends StatefulWidget {
+  const _Delivery({required this.order, required this.onDone});
+  final Map<String, dynamic> order;
+  final Future<void> Function(String message) onDone;
+
+  @override
+  State<_Delivery> createState() => _DeliveryState();
+}
+
+class _DeliveryState extends State<_Delivery> {
+  final Map<int, int> _now = {};
+  final _who = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  List<Map<String, dynamic>> get _items =>
+      ((widget.order['items'] as List?) ?? const [])
+          .map((x) => (x as Map).cast<String, dynamic>())
+          .toList();
+
+  @override
+  void initState() {
+    super.initState();
+    for (final i in _items) {
+      _now[_int(i['id'])] = _int(i['qty_to_deliver']);
+    }
+  }
+
+  @override
+  void dispose() {
+    _who.dispose();
+    super.dispose();
+  }
+
+  int get _going => _now.values.fold(0, (a, b) => a + b);
+
+  Future<void> _confirm() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _apiPost('/api/store/orders/${_int(widget.order['id'])}/release', {
+        'lines': {
+          for (final e in _now.entries)
+            if (e.value > 0) '${e.key}': e.value,
+        },
+        'collectedBy': _who.text.trim(),
+      });
+      HapticFeedback.mediumImpact();
+      await widget.onDone('Delivered. It is in the stock book.');
+    } on _ApiError catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = e.message;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final o = widget.order;
+    final can = o['canRelease'] == true;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardBox(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            Text('${o['order_no']}',
+                style: _title(20, weight: FontWeight.w800)),
+            const Spacer(),
+            Text(_ugx(_int(o['total'])), style: _title(16)),
+          ]),
+          const SizedBox(height: 4),
+          Text('${o['company_name'] ?? o['ordered_by_name'] ?? ''}',
+              style: _txt(13.5, weight: FontWeight.w600)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: can ? _greenPale : _emberPale,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text('${o['advice'] ?? ''}',
+                style: _txt(13.5,
+                    weight: FontWeight.w600, color: can ? _green : _ember)),
+          ),
+          const SizedBox(height: 12),
+          for (final i in _items)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${i['product_name']}',
+                          style: _txt(14, weight: FontWeight.w700, color: _ink)),
+                      Text(
+                          'Sold ${_int(i['quantity'])} · gone ${_int(i['qty_released'])} · '
+                          'to deliver ${_int(i['qty_to_deliver'])} ${i['unit'] ?? ''}',
+                          style: _txt(12, color: _mid)),
+                    ],
+                  ),
+                ),
+                if (can && _int(i['qty_to_deliver']) > 0) ...[
+                  _Pressable(
+                    scale: 0.85,
+                    onTap: () => setState(() {
+                      final id = _int(i['id']);
+                      _now[id] = ((_now[id] ?? 0) - 1).clamp(0, _int(i['qty_to_deliver']));
+                    }),
+                    child: const Icon(Icons.remove_circle_outline_rounded,
+                        size: 26, color: _mid),
+                  ),
+                  SizedBox(
+                    width: 40,
+                    child: Text('${_now[_int(i['id'])] ?? 0}',
+                        textAlign: TextAlign.center,
+                        style: _title(16, weight: FontWeight.w800)),
+                  ),
+                  _Pressable(
+                    scale: 0.85,
+                    onTap: () => setState(() {
+                      final id = _int(i['id']);
+                      _now[id] = ((_now[id] ?? 0) + 1).clamp(0, _int(i['qty_to_deliver']));
+                    }),
+                    child: const Icon(Icons.add_circle_outline_rounded,
+                        size: 26, color: _brand),
+                  ),
+                ],
+              ]),
+            ),
+          if (can) ...[
+            const SizedBox(height: 8),
+            _Field(
+              controller: _who,
+              hint: 'Who is collecting? (optional)',
+              capitalisation: TextCapitalization.words,
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(_error!, style: _txt(13, color: _ember, height: 1.4)),
+            ],
+            const SizedBox(height: 12),
+            _BigButton(
+              _going == 0
+                  ? 'Choose what goes now'
+                  : 'Confirm delivery of $_going',
+              _going == 0 ? null : _confirm,
+              busy: _busy,
+              tint: _green,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The To release list opens the same delivery view, by number.
+class _DeliverSheet extends StatefulWidget {
+  const _DeliverSheet({required this.orderNo});
+  final String orderNo;
+
+  @override
+  State<_DeliverSheet> createState() => _DeliverSheetState();
+}
+
+class _DeliverSheetState extends State<_DeliverSheet> {
+  Map<String, dynamic>? _order;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiGet('/api/store/lookup?no=${Uri.encodeComponent(widget.orderNo)}')
+        .then((r) {
+      if (mounted) setState(() => _order = (r['order'] as Map).cast<String, dynamic>());
+    }).catchError((e) {
+      if (mounted) setState(() => _error = '$e');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => _Sheet(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+              16, 8, 16, MediaQuery.paddingOf(context).bottom + 20),
+          child: _order == null
+              ? Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: _error != null
+                      ? Text(_error!, style: _txt(13.5, color: _ember))
+                      : const Center(
+                          child: CircularProgressIndicator(color: _brand)),
+                )
+              : _Delivery(
+                  order: _order!,
+                  onDone: (msg) async {
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+        ),
+      );
+}
+
 
 void _toast(BuildContext context, String message, {bool bad = false}) =>
     ScaffoldMessenger.of(context).showSnackBar(

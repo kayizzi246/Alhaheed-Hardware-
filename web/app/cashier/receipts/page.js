@@ -1,5 +1,6 @@
 'use client';
 
+import QrCode from '@/components/QrCode';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { money, dateTime, today, methodLabel, list } from '@/lib/format';
@@ -170,7 +171,11 @@ function ReceiptModal({ receiptNo, onClose }) {
           {receipt.transactionRef && <Row k="Reference" v={receipt.transactionRef} />}
         </dl>
 
-        <p className="mt-5 text-center text-[11.5px] text-ink-muted">
+        <div className="mt-5 flex flex-col items-center gap-1">
+          <QrCode value={receipt.orderNo} size={104} label={`Order ${receipt.orderNo}, for the store to scan`} />
+          <p className="text-center text-[11.5px] text-ink-muted">Show this at the store to collect your goods.</p>
+        </div>
+        <p className="mt-3 text-center text-[11.5px] text-ink-muted">
           Thank you for your business.
         </p>
       </div>

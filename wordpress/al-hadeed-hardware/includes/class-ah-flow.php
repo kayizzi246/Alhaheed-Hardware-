@@ -287,13 +287,44 @@ class AH_Flow {
 			);
 		}
 
-		// Stock comes off the shelf when the goods leave it, not when
-		// the order is placed — otherwise an abandoned order holds
-		// cement nobody can sell.
-		wc_maybe_reduce_stock_levels( $order->get_id() );
+		// Stock comes off the shelf when the goods leave it, not when the
+		// order is placed, and only as much as leaves: a builder can take
+		// ten lengths today and the other ten next week. Each delivery is
+		// its own line in the stock book.
+		$want    = isset( $args['lines'] ) && is_array( $args['lines'] ) ? $args['lines'] : null;
+		$going   = array();
+		$left    = 0;
+		foreach ( $order->get_items() as $item_id => $item ) {
+			$sold = (int) $item->get_quantity();
+			$done = (int) $item->get_meta( '_ah_qty_released' );
+			$rest = max( 0, $sold - $done );
+			$now  = null === $want ? $rest : (int) ( $want[ $item_id ] ?? $want[ (string) $item_id ] ?? 0 );
+			if ( $now < 0 || $now > $rest ) {
+				return new WP_Error( 'ah_bad_qty', sprintf( 'Only %d of %s are still to deliver', $rest, $item->get_name() ), array( 'status' => 400 ) );
+			}
+			if ( $now > 0 ) {
+				$going[] = array( $item, $now );
+			}
+			$left += $rest - $now;
+		}
+		if ( ! $going ) {
+			return new WP_Error( 'ah_nothing', 'Choose what is being delivered now', array( 'status' => 400 ) );
+		}
 
-		foreach ( $order->get_items() as $item ) {
-			$item->update_meta_data( '_ah_qty_released', (int) $item->get_quantity() );
+		$no = AH_Shape::order_no( $order );
+		foreach ( $going as list( $item, $now ) ) {
+			$product = $item->get_product();
+			if ( $product ) {
+				$sold_qty = max( 1, (int) $item->get_quantity() );
+				AH_Stock::adjust( $product, -$now, 'sold', array(
+					'order_id'   => $order->get_id(),
+					'ref'        => $no,
+					'unit_cost'  => (int) ( $item->get_meta( '_ah_unit_cost' ) ?: AH_Stock::cost_of( $product->get_id() ) ),
+					'unit_price' => (int) round( (float) $item->get_total() / $sold_qty ),
+					'note'       => ! empty( $args['collected_by'] ) ? 'Collected by ' . sanitize_text_field( $args['collected_by'] ) : '',
+				) );
+			}
+			$item->update_meta_data( '_ah_qty_released', (int) $item->get_meta( '_ah_qty_released' ) + $now );
 			$item->save();
 		}
 
@@ -304,10 +335,24 @@ class AH_Flow {
 			$order->update_meta_data( '_ah_delivery_status', sanitize_text_field( $args['delivery_status'] ) );
 		}
 
+		$what = implode( ', ', array_map( function ( $g ) { return $g[1] . ' ' . $g[0]->get_name(); }, $going ) );
+		$note = trim( $what . ( ! empty( $args['collected_by'] ) ? ' · collected by ' . $args['collected_by'] : '' ) );
+
+		if ( $left > 0 ) {
+			// Part of it has gone; the order waits at the store for the rest.
+			$order->update_meta_data( '_ah_part_released', 'yes' );
+			$order->add_order_note( 'Part delivered: ' . $what );
+			$order->save();
+			self::log_event( $order->get_id(), 'store', 'part_released', 'payment_verified', 'payment_verified', $user_id, $note . " · {$left} still to deliver" );
+			return AH_Shape::order( $order, true );
+		}
+
+		// Everything has gone. The stock was taken line by line above, so
+		// WooCommerce is told not to take it again.
+		$order->update_meta_data( '_order_stock_reduced', 'yes' );
 		$order->set_status( 'completed', 'Goods released by the store.' );
 		$order->save();
 
-		$note = ! empty( $args['collected_by'] ) ? 'Collected by ' . $args['collected_by'] : null;
 		self::after_move( $order, 'store', 'released', 'payment_verified', 'released', $user_id, $note );
 
 		return AH_Shape::order( $order, true );
@@ -343,6 +388,11 @@ class AH_Flow {
 			if ( mb_strlen( trim( (string) $reason ) ) < 5 ) {
 				return new WP_Error( 'ah_need_reason', 'Say why a paid order is being cancelled, and how the money goes back.', array( 'status' => 400 ) );
 			}
+		}
+
+		// Goods that have left cannot be cancelled back onto the shelf.
+		if ( 'yes' === $order->get_meta( '_ah_part_released' ) ) {
+			return new WP_Error( 'ah_part_released', 'Some of this order has already been delivered. Deliver the rest, or raise a refund for what is not wanted.', array( 'status' => 409 ) );
 		}
 
 		$order->update_meta_data( '_ah_cancel_reason', $reason ? sanitize_text_field( $reason ) : null );
