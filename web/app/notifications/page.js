@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { api, peek } from '@/lib/api';
+import { confirmAction } from '@/components/Confirm';
 import { usePoll } from '@/lib/live';
 import { dateTime, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -24,7 +25,7 @@ export default function NotificationsPage() {
 
   // Deleting clears this person's list only; the Audit Trail keeps it all.
   async function remove(body, ask) {
-    if (ask && !window.confirm(ask)) return;
+    if (ask && !(await confirmAction(ask))) return;
     setBusy(true);
     try {
       await api('/api/notifications/delete', { method: 'POST', body });
@@ -69,7 +70,7 @@ export default function NotificationsPage() {
           <Button variant="outline" size="sm" onClick={markAllRead}>Mark all read</Button>
         )}
         {list(data.notifications).length > 0 && (
-          <Button variant="outline" size="sm" className="text-bad" disabled={busy} onClick={() => remove({ all: true }, 'Delete every alert from your list? The Audit Trail still keeps every record.')}>
+          <Button variant="outline" size="sm" className="text-bad" disabled={busy} onClick={() => remove({ all: true }, { title: 'Delete every alert?', body: 'Your alert list will be empty.', points: ['This only clears your list.', 'The Audit Trail still keeps every record.'], confirm: 'Delete all', cancel: 'Keep them' })}>
             Delete all
           </Button>
         )}

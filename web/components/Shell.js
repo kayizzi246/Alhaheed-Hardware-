@@ -10,6 +10,7 @@ import { usePoll, freshness } from '@/lib/live';
 import { time, list } from '@/lib/format';
 import { ThemeChoice } from '@/components/Theme';
 import { cn } from '@/lib/cn';
+import { ConfirmHost } from '@/components/Confirm';
 import { Button, IconButton, Spinner } from '@/components/ui';
 
 /**
@@ -99,6 +100,7 @@ export default function Shell({ allow, children }) {
 
   return (
     <div className="min-h-dvh lg:pl-rail print:pl-0" data-may-export={user.role === 'manager' ? 'yes' : 'no'}>
+      <ConfirmHost />
       {/* ── The rail ──────────────────────────────────────────────── */}
       {/* The rail is the shop's dark warm navy, the same slab the
           sign-in page wears, so the brand is on screen the whole shift

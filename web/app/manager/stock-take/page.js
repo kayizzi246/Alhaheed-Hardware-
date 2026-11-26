@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { confirmAction } from '@/components/Confirm';
 import { money, list, today } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
@@ -288,7 +289,14 @@ function CountScreen({ id, onLeave }) {
   }
 
   async function discard() {
-    if (!window.confirm('Delete this count? Everything typed in it is thrown away. The stock book does not change.')) return;
+    const yes = await confirmAction({
+      title: 'Delete this count?',
+      body: 'Use this for a count started by mistake.',
+      points: ['Every number typed in it is thrown away.', 'The stock book does not change.'],
+      confirm: 'Delete the count',
+      cancel: 'Keep counting',
+    });
+    if (!yes) return;
     setBusy(true);
     try {
       await api(`/api/manager/stocktakes/${id}/delete`, { method: 'POST', body: {} });

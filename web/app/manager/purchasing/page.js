@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
+import { confirmAction } from '@/components/Confirm';
 import { money, list, today } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
@@ -161,7 +162,7 @@ export default function Purchasing() {
                             {b.kind === 'bill' && b.owed > 0 && <Button size="sm" onClick={() => setDialog({ kind: 'pay', bill: b })}>Pay</Button>}
                             {b.kind === 'bill' && b.paid === 0 && (
                               <Button size="sm" variant="outline" className="text-bad" onClick={async () => {
-                                if (!window.confirm(`Delete invoice ${b.invoiceNo} from ${b.supplier}? Only for a bill typed by mistake.`)) return;
+                                if (!(await confirmAction({ title: `Delete invoice ${b.invoiceNo}?`, body: `From ${b.supplier}, for ${money(b.amount)}. Only for a bill typed by mistake.`, points: ['Nothing has been paid on it.', 'The Audit Trail keeps a record that it was deleted.'], confirm: 'Delete the bill', cancel: 'Keep it' }))) return;
                                 try { await api(`/api/manager/supplier-bills/${b.id}/delete`, { method: 'POST', body: {} }); done(`Invoice ${b.invoiceNo} deleted.`); } catch (e) { setError(e.message); }
                               }}>Delete</Button>
                             )}
@@ -320,7 +321,7 @@ function ShowPo({ id, onClose, onBill }) {
   }
 
   async function remove() {
-    if (!window.confirm('Delete this purchase order? Use this only for an order typed by mistake.')) return;
+    if (!(await confirmAction({ title: `Delete ${po.poNo}?`, body: `The order to ${po.supplier}. Only for an order typed by mistake.`, points: ['Nothing has been received or billed on it.', 'The Audit Trail keeps a record that it was deleted.'], confirm: 'Delete the order', cancel: 'Keep it' }))) return;
     setBusy(true);
     try {
       await api(`/api/manager/purchase-orders/${id}/delete`, { method: 'POST', body: {} });
@@ -332,7 +333,7 @@ function ShowPo({ id, onClose, onBill }) {
   }
 
   async function close() {
-    if (!window.confirm('Nothing more is coming on this order? What was not delivered will not be owed.')) return;
+    if (!(await confirmAction({ title: 'Close this order?', body: 'Nothing more is coming from the supplier on it.', points: ['What was not delivered will not be owed.', 'What did arrive stays in stock and in the books.'], confirm: 'Close the order', cancel: 'Keep it open', tone: 'ask' }))) return;
     setBusy(true);
     try {
       const r = await api(`/api/manager/purchase-orders/${id}/close`, { method: 'POST', body: { reason: 'Closed by the manager' } });
