@@ -774,12 +774,31 @@ class AH_Rest {
 			// Decoded, like every other name this API sends. A filter
 			// chip reading "Iron &amp; Steel" is the same bug as the
 			// products list had, in the one place it was missed.
+			$img   = (int) get_term_meta( $t->term_id, 'thumbnail_id', true );
+			$src   = $img ? wp_get_attachment_image_src( $img, 'woocommerce_thumbnail' ) : null;
 			$out[] = array(
 				'id'            => $t->term_id,
 				'name'          => AH_Shape::text( $t->name ),
+				'parent'        => (int) $t->parent,
+				'picture'       => $src ? $src[0] : null,
 				'product_count' => (int) $t->count,
 			);
 		}
+
+		// A main category counts the products in its sub-categories too.
+		$total = array();
+		foreach ( $out as $c ) {
+			$total[ $c['id'] ] = $c['product_count'];
+		}
+		foreach ( $out as $c ) {
+			if ( $c['parent'] && isset( $total[ $c['parent'] ] ) ) {
+				$total[ $c['parent'] ] += $c['product_count'];
+			}
+		}
+		foreach ( $out as &$c ) {
+			$c['product_count'] = $total[ $c['id'] ];
+		}
+		unset( $c );
 
 		// An empty category is a filter that leads nowhere. WordPress
 		// always has "Uncategorized" whether anything is in it or not,
@@ -1533,14 +1552,15 @@ class AH_Rest {
 				: array( 'day' => $day, 'total' => 0, 'receipts' => 0 );
 		}
 
+		// The same rule as Stock control's reorder list, so the dashboard
+		// and that page never give two different numbers.
 		$low = array();
-		foreach ( wc_get_products( array( 'limit' => 200, 'status' => 'publish' ) ) as $p ) {
-			if ( ! $p->get_manage_stock() ) {
-				continue;
-			}
-			$reorder = (int) get_post_meta( $p->get_id(), '_ah_reorder_level', true );
-			if ( (int) $p->get_stock_quantity() <= $reorder ) {
-				$low[] = AH_Shape::product( $p );
+		foreach ( AH_Ledger::items() as $i ) {
+			if ( $i['reorder'] ) {
+				$row = AH_Shape::product( $i['id'] );
+				if ( $row ) {
+					$low[] = $row;
+				}
 			}
 		}
 

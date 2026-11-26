@@ -19,9 +19,9 @@ const STATUS = {
 
 function Match({ m }) {
   if (!m) return null;
-  if (m.state === 'matches') return <Chip tone="good">Bill matches delivery</Chip>;
-  if (m.state === 'over_billed') return <Chip tone="bad">Billed {money(m.diff)} more than delivered</Chip>;
-  if (m.state === 'under_billed') return <Chip tone="pending">Billed {money(-m.diff)} less than delivered</Chip>;
+  if (m.state === 'matches') return <Chip tone="good">Bill is correct</Chip>;
+  if (m.state === 'over_billed') return <Chip tone="bad">Bill is {money(m.diff)} too much</Chip>;
+  if (m.state === 'under_billed') return <Chip tone="pending">Bill is {money(-m.diff)} less</Chip>;
   return <Chip tone="grey">No bill yet</Chip>;
 }
 
@@ -56,7 +56,7 @@ export default function Purchasing() {
 
   return (
     <>
-      <PageHead title="Purchasing" sub="Order from suppliers, receive what arrives, pay only for what came.">
+      <PageHead title="Buying" sub="Order from suppliers. Pay only for what came.">
         <Button variant="outline" onClick={() => setDialog({ kind: 'return' })}>Send goods back</Button>
         <Button variant="outline" onClick={() => setDialog({ kind: 'bill' })}>Record a bill</Button>
         <Button onClick={() => setDialog({ kind: 'po' })}>New purchase order</Button>
@@ -70,7 +70,7 @@ export default function Purchasing() {
             ['Orders still coming', list(data.orders).filter((o) => ['open', 'partial'].includes(o.status)).length],
             ['Owed to suppliers', money(owed)],
             ['Overdue', money(overdue), overdue > 0 ? 'text-bad' : ''],
-            ['Received with no order, 30 days', data.receivedNoPo, data.receivedNoPo ? 'text-warn' : ''],
+            ['Came with no order', data.receivedNoPo, data.receivedNoPo ? 'text-warn' : ''],
           ].map(([k, v, c]) => (
             <div key={k} className="rounded-xl border border-line bg-surface px-4 py-3">
               <p className="text-[12px] text-ink-muted">{k}</p>
@@ -85,8 +85,8 @@ export default function Purchasing() {
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'orders', label: 'Purchase orders' },
-          { value: 'bills', label: 'Bills and what we owe' },
+          { value: 'orders', label: 'Orders' },
+          { value: 'bills', label: 'Bills & money owed' },
           { value: 'returns', label: 'Returns' },
         ]}
       />

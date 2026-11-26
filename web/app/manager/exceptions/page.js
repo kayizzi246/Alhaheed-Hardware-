@@ -44,7 +44,7 @@ export default function Exceptions() {
 
   return (
     <>
-      <PageHead title="Staff exceptions" sub="Everyone's unusual moves side by side. Patterns show here that one record never does.">
+      <PageHead title="Staff checks" sub="What each person did that you should check.">
         <Field label="From"><Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></Field>
         <Field label="To"><Input type="date" value={to} min={from} max={today()} onChange={(e) => setTo(e.target.value)} /></Field>
       </PageHead>
@@ -61,8 +61,8 @@ export default function Exceptions() {
             <Table>
               <thead>
                 <tr>
-                  <Th>Person</Th><Th num>Cancelled</Th><Th num>Payments rejected</Th><Th num>Overrides</Th>
-                  <Th num>Write-offs</Th><Th num>Written off</Th><Th num>Price changes</Th><Th num>Deleted</Th><Th num>Till short</Th><Th num>Till over</Th>
+                  <Th>Person</Th><Th num>Cancelled</Th><Th num>Bad payments</Th><Th num>Rule broken</Th>
+                  <Th num>Stock lost</Th><Th num>Value lost</Th><Th num>Price changes</Th><Th num>Deleted</Th><Th num>Cash missing</Th><Th num>Cash extra</Th>
                 </tr>
               </thead>
               <tbody>
@@ -85,13 +85,13 @@ export default function Exceptions() {
           </TableWrap>
         )}
         <p className="border-t border-line px-4 py-3 text-[12.5px] text-ink-muted sm:px-6">
-          A till <b>over</b> is as worth asking about as a till short: it usually means a sale was taken without a receipt.
+          Too much cash in the till is also a problem. It can mean a sale had no receipt.
         </p>
       </Card>
 
       {tills && list(tills.notClosed).length > 0 && (
         <Card>
-          <CardHead><CardTitle>Days the till was never counted</CardTitle></CardHead>
+          <CardHead><CardTitle>Days the cash was not counted</CardTitle></CardHead>
           <TableWrap>
             <Table>
               <thead><tr><Th>Date</Th><Th>Cashier</Th><Th num>Cash the book expected</Th></tr></thead>
@@ -107,7 +107,7 @@ export default function Exceptions() {
 
       <Card>
         <CardHead>
-          <CardTitle>Till closings</CardTitle>
+          <CardTitle>Cash counts</CardTitle>
           {tills && <span className="text-[12.5px] text-ink-muted">short {money(-tills.short)} · over {money(tills.over)}</span>}
         </CardHead>
         {!tills ? (

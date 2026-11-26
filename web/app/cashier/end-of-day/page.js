@@ -28,7 +28,7 @@ export default function EndOfDayPage() {
 
   return (
     <>
-      <PageHead title="End of day" sub="Count the drawer, enter the total, then hand over.">
+      <PageHead title="End of day" sub="Count the cash, then hand over.">
         <Input
           type="date"
           value={date}
@@ -59,7 +59,7 @@ export default function EndOfDayPage() {
                   <Tr><Td>Date</Td><Td num>{data.date}</Td></Tr>
                   <Tr>
                     <Td className="font-medium text-ink">Cash in the till</Td>
-                    <Td num className="font-bold text-ink">{blind ? 'Shown after you close the till' : money(data.cash)}</Td>
+                    <Td num className="font-bold text-ink">{blind ? 'Shown after you count' : money(data.cash)}</Td>
                   </Tr>
                   <Tr><Td>Mobile Money</Td><Td num>{money(data.mobile_money)}</Td></Tr>
                   <Tr><Td>Card</Td><Td num>{money(data.card)}</Td></Tr>
@@ -112,7 +112,7 @@ function CloseTill({ onState }) {
   const c = state.close;
   return (
     <Card>
-      <CardHead><CardTitle>Close the till</CardTitle></CardHead>
+      <CardHead><CardTitle>Count the cash</CardTitle></CardHead>
       <div className="space-y-4 p-4 sm:p-6">
         <Alert>{error}</Alert>
         {c ? (
@@ -123,16 +123,16 @@ function CloseTill({ onState }) {
           </div>
         ) : (
           <>
-            <p className="text-[13.5px] text-ink-2">Count every note and coin in the drawer and enter the total. The manager sees the result. It cannot be changed afterwards.</p>
+            <p className="text-[13.5px] text-ink-2">Count all the cash in the drawer. Type the total. You cannot change it later.</p>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Cash counted in the drawer (UGX)">
+              <Field label="Cash in the drawer (UGX)">
                 <Input type="number" inputMode="numeric" min="0" value={counted} onChange={(e) => setCounted(e.target.value)} className="tnum text-lg font-semibold" />
               </Field>
-              <Field label="Note" hint="Needed if the count does not match.">
+              <Field label="Note" hint="Needed if the cash is not right.">
                 <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
               </Field>
             </div>
-            <Button disabled={busy || counted === ''} onClick={close}>{busy ? 'Closing…' : 'Close the till'}</Button>
+            <Button disabled={busy || counted === ''} onClick={close}>{busy ? 'Saving…' : 'Save the count'}</Button>
           </>
         )}
       </div>

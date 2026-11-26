@@ -17,7 +17,7 @@ const q = (n) => String(Math.round(n * 100) / 100);
 function verdict(diff, unit, cost) {
   if (diff === null || diff === undefined) return { text: 'Not counted yet', tone: 'text-ink-faint' };
   diff = Math.round(diff * 100) / 100;
-  if (diff === 0) return { text: 'Matches the book', tone: 'text-ok' };
+  if (diff === 0) return { text: 'Same as system', tone: 'text-ok' };
   const v = cost ? ` · ${money(Math.abs(diff) * cost)}` : '';
   return diff < 0
     ? { text: `${q(-diff)} ${unit} short${v}`, tone: 'text-bad' }
@@ -25,7 +25,7 @@ function verdict(diff, unit, cost) {
 }
 
 function Steps({ at }) {
-  const steps = ['Count the shelf', 'Check the differences', 'Approve'];
+  const steps = ['Count', 'Check', 'Approve'];
   return (
     <ol className="flex flex-wrap gap-2">
       {steps.map((s, i) => (
@@ -97,7 +97,7 @@ export default function StockTake() {
 
   return (
     <>
-      <PageHead title="Stock-take" sub="Count what is really on the shelf, so every item is accounted for." />
+      <PageHead title="Count stock" sub="Count what is on the shelf." />
       <Alert>{error}</Alert>
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
@@ -106,15 +106,15 @@ export default function StockTake() {
           <div>
             <h2 className="text-[20px] font-extrabold text-ink">Count the shelf</h2>
             <p className="mt-1 max-w-2xl text-[14px] leading-relaxed text-ink-2">
-              Walk the shop with a phone or a printout. For each item, type how many are really there.
-              The system compares it with the book and shows anything missing or extra. Nothing changes until you approve.
+              Walk the shop. Type how many of each item you see.
+              The system shows what is missing or extra. Nothing changes until you press Approve.
             </p>
           </div>
           <ol className="grid gap-3 sm:grid-cols-3">
             {[
-              ['1', 'Count', 'Type the number on the shelf, or press Matches if it agrees with the book. It saves by itself.'],
-              ['2', 'Check', 'See only the items that are short or extra, with what they are worth.'],
-              ['3', 'Approve', 'The stock book is corrected to what you counted. Shortages show as losses.'],
+              ['1', 'Count', 'Type the number on the shelf. Press Matches if it is the same.'],
+              ['2', 'Check', 'See only what is missing or extra.'],
+              ['3', 'Approve', 'The stock is changed to your count.'],
             ].map(([n, t, d]) => (
               <li key={n} className="rounded-xl border border-line bg-surface-2 p-4">
                 <span className="grid size-7 place-items-center rounded-full bg-fill text-[13px] font-bold text-on-fill">{n}</span>
@@ -288,6 +288,26 @@ function CountScreen({ id, onLeave }) {
     }
   }
 
+  // An approved count already changed the stock: deleting it puts it back.
+  async function deleteApproved() {
+    const yes = await confirmAction({
+      title: 'Delete this count?',
+      body: 'The stock goes back to what it was before this count.',
+      points: ['History keeps a record of the count and the delete.', 'You cannot undo this.'],
+      confirm: 'Delete the count',
+      cancel: 'Keep it',
+    });
+    if (!yes) return;
+    setBusy(true);
+    try {
+      const r = await api(`/api/manager/stocktakes/${id}/delete`, { method: 'POST', body: {} });
+      onLeave(`Count deleted. ${r.undone} ${r.undone === 1 ? 'item was' : 'items were'} put back.`);
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  }
+
   async function discard() {
     const yes = await confirmAction({
       title: 'Delete this count?',
@@ -310,7 +330,7 @@ function CountScreen({ id, onLeave }) {
   if (!data) {
     return (
       <>
-        <PageHead title="Stock-take" />
+        <PageHead title="Count stock" />
         <Card>{error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Opening the count…</Loading>}</Card>
       </>
     );
@@ -320,8 +340,9 @@ function CountScreen({ id, onLeave }) {
   if (!draft) {
     return (
       <>
-        <PageHead title={`Count of ${nice(c.date)}`} sub={`Approved by ${c.approvedBy}. The stock book was corrected to what was counted.`}>
+        <PageHead title={`Count of ${nice(c.date)}`} sub={`Approved by ${c.approvedBy}. The stock was changed to this count.`}>
           <Button variant="outline" onClick={() => onLeave()}>Back</Button>
+          <Button variant="danger" disabled={busy} onClick={deleteApproved}>Delete</Button>
         </PageHead>
         <Summary c={c} total={items.length} />
         <Differences items={differ} />
@@ -331,8 +352,8 @@ function CountScreen({ id, onLeave }) {
 
   return (
     <>
-      <PageHead title={`Counting · ${nice(c.date)}`} sub={saving ? 'Saving…' : 'Every number saves by itself.'}>
-        <Button variant="outline" onClick={() => onLeave()}>Leave and finish later</Button>
+      <PageHead title={`Counting · ${nice(c.date)}`} sub={saving ? 'Saving…' : 'Saved by itself.'}>
+        <Button variant="outline" onClick={() => onLeave()}>Finish later</Button>
       </PageHead>
       <Steps at={view === 'count' ? 0 : 1} />
       <Alert>{error}</Alert>
@@ -344,7 +365,7 @@ function CountScreen({ id, onLeave }) {
             <div className="space-y-3 p-4 sm:p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="text-[15px] font-bold text-ink">{counted} of {items.length} items counted</p>
-                <p className="text-[13px] text-ink-muted">{differ.length ? `${differ.length} differ from the book` : 'Nothing differs so far'}</p>
+                <p className="text-[13px] text-ink-muted">{differ.length ? `${differ.length} not the same` : 'All the same so far'}</p>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-surface-sunk">
                 <div className="h-full rounded-full bg-fill transition-[width] duration-300" style={{ width: `${items.length ? (counted / items.length) * 100 : 0}%` }} />
@@ -362,7 +383,7 @@ function CountScreen({ id, onLeave }) {
                   <input type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={fillFromSheet} />
                 </label>
               </div>
-              <p className="text-[12.5px] text-ink-muted">A spreadsheet with a <b>Code</b> (or SKU) column and a <b>Counted</b> column fills every item at once. You still check and approve.</p>
+              <p className="text-[12.5px] text-ink-muted">Have a spreadsheet? It needs a <b>Code</b> column and a <b>Counted</b> column.</p>
             </div>
           </Card>
 
@@ -381,7 +402,7 @@ function CountScreen({ id, onLeave }) {
                     <li key={i.id} className={cn('flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5', diff === 0 && 'bg-ok-bg/40', diff && diff < 0 && 'bg-bad-bg/40')}>
                       <div className="min-w-[180px] flex-1">
                         <p className="font-semibold text-ink">{i.name}</p>
-                        <p className="text-[12.5px] text-ink-muted">{i.code} · the book says <b className="text-ink-2">{book} {i.unit}</b></p>
+                        <p className="text-[12.5px] text-ink-muted">{i.code} · system says <b className="text-ink-2">{book} {i.unit}</b></p>
                         <p className={cn('text-[12.5px] font-semibold', say.tone)}>{unsaved ? 'Saving…' : say.text}</p>
                       </div>
                       <Input
@@ -416,7 +437,7 @@ function CountScreen({ id, onLeave }) {
             <span className="text-[13.5px] text-ink-2">{counted} counted · {differ.length} differ</span>
             <div className="flex gap-2">
               <Button variant="ghost" className="text-bad hover:bg-bad-bg" disabled={busy} onClick={discard}>Delete this count</Button>
-              <Button disabled={!counted || saving} onClick={async () => { await flush(); setView('check'); }}>Check the differences</Button>
+              <Button disabled={!counted || saving} onClick={async () => { await flush(); setView('check'); }}>Next: check</Button>
             </div>
           </div>
         </>
@@ -426,7 +447,7 @@ function CountScreen({ id, onLeave }) {
           <Differences items={differ} />
           <div className="flex flex-wrap justify-between gap-2">
             <Button variant="outline" onClick={() => setView('count')}>Back to counting</Button>
-            <Button size="lg" disabled={busy} onClick={() => setConfirm(true)}>Approve the count</Button>
+            <Button size="lg" disabled={busy} onClick={() => setConfirm(true)}>Approve</Button>
           </div>
         </>
       )}
@@ -472,9 +493,9 @@ function Summary({ c, total }) {
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {[
         ['Items counted', `${c.counted} of ${total}`, ''],
-        ['Differ from the book', c.differ, c.differ ? 'text-warn' : 'text-ok'],
-        ['Missing, at cost', money(-c.shortValue), c.shortValue ? 'text-bad' : ''],
-        ['Extra, at cost', money(c.overValue), ''],
+        ['Not the same', c.differ, c.differ ? 'text-warn' : 'text-ok'],
+        ['Missing (value)', money(-c.shortValue), c.shortValue ? 'text-bad' : ''],
+        ['Extra (value)', money(c.overValue), ''],
       ].map(([k, v, tone]) => (
         <div key={k} className="rounded-xl border border-line bg-surface px-4 py-3">
           <p className="text-[12px] text-ink-muted">{k}</p>
@@ -488,13 +509,13 @@ function Summary({ c, total }) {
 function Differences({ items }) {
   return (
     <Card>
-      <CardHead><CardTitle>Items that differ from the book</CardTitle></CardHead>
+      <CardHead><CardTitle>Not the same as the system</CardTitle></CardHead>
       {!items.length ? (
         <Empty title="Everything matches">Every item you counted agrees with the stock book.</Empty>
       ) : (
         <TableWrap>
           <Table>
-            <thead><tr><Th>Item</Th><Th num>Book said</Th><Th num>Counted</Th><Th>What it means</Th><Th num>Value</Th></tr></thead>
+            <thead><tr><Th>Item</Th><Th num>System said</Th><Th num>Counted</Th><Th>Result</Th><Th num>Value</Th></tr></thead>
             <tbody>
               {items.map((i) => {
                 const say = verdict(i.variance, i.unit, 0);

@@ -115,11 +115,12 @@ class AH_Stock {
 			'profitInStock' => 0,
 		);
 		foreach ( $rows as $r ) {
+			// A retired item still on the shelf is still worth its cost.
+			$sum['stockValue'] += $r['stock_value'];
 			if ( ! $r['active'] ) {
 				continue;
 			}
 			++$sum['products'];
-			$sum['stockValue']  += $r['stock_value'];
 			$sum['retailValue'] += $r['retail_value'];
 			if ( 'out' === $r['state'] ) {
 				++$sum['out'];
@@ -133,6 +134,10 @@ class AH_Stock {
 				$sum['profitInStock'] += $r['retail_value'] - $r['stock_value'];
 			}
 		}
+
+		// "Needs ordering" uses the same rule as the Stock page, so the two
+		// pages never show different numbers.
+		$sum['low'] = count( array_filter( AH_Ledger::items(), function ( $i ) { return $i['reorder']; } ) );
 
 		return array(
 			'products'   => $rows,
@@ -153,12 +158,21 @@ class AH_Stock {
 			$product = wc_get_product( $product );
 		}
 		$id      = $product->get_id();
-		$tracked = (bool) $product->get_manage_stock();
-		$stock   = $tracked ? (float) $product->get_stock_quantity() : null;
+		$tracked = true;
+		// The stock book's figure, the one the stock-take and the ledger use.
+		static $books = null;
+		if ( null !== $sold ) {
+			if ( null === $books ) {
+				$books = AH_Ledger::book();
+			}
+			$stock = isset( $books[ $id ] ) ? (float) $books[ $id ] : 0.0;
+		} else {
+			$stock = AH_Ledger::book( $id );
+		}
 		$cost    = (int) get_post_meta( $id, '_ah_cost', true );
 		$price   = (int) $s['price'];
 		$reorder = (int) $s['reorder_level'];
-		$on_hand = max( 0, (int) $stock );
+		$on_hand = max( 0, (float) $stock );
 
 		if ( null === $sold ) {
 			$sold = self::sold_since( gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - 30 * DAY_IN_SECONDS ), $id );
@@ -184,7 +198,9 @@ class AH_Stock {
 			'reorder_qty'     => (int) get_post_meta( $id, '_ah_reorder_qty', true ),
 			'shelf'           => (string) get_post_meta( $id, '_ah_shelf', true ),
 			'supplier'        => AH_Shape::text( (string) get_post_meta( $id, '_ah_supplier', true ) ),
-			'stock_value'     => $on_hand * $cost,
+			// At the average cost of what is on the shelf, the same figure
+			// Stock control shows, so the two pages always agree.
+			'stock_value'     => (int) round( $on_hand * self::cost_of( $id ) ),
 			'retail_value'    => $on_hand * $price,
 			'sold_30'         => $sold30,
 			// At the last thirty days' pace. Null when nothing sold.
@@ -479,7 +495,8 @@ class AH_Stock {
 		}
 		$qty  = (float) $req->get_param( 'qty' );
 		$note = trim( sanitize_text_field( (string) $req->get_param( 'note' ) ) );
-		$now  = $product->get_manage_stock() ? (float) $product->get_stock_quantity() : 0;
+		// The stock book is the one figure: every change starts from it.
+		$now  = AH_Ledger::book( $product->get_id() );
 		$unit = get_post_meta( $product->get_id(), '_ah_unit', true ) ?: 'pc';
 
 		if ( 'count' === $kind ) {
@@ -502,7 +519,7 @@ class AH_Stock {
 			$target = $now + self::MANUAL[ $kind ] * $qty;
 		}
 		if ( $target < 0 ) {
-			return self::err( 'ah_not_enough', sprintf( 'There are only %d %s in stock', $now, $unit ), 409 );
+			return self::err( 'ah_not_enough', sprintf( 'There are only %s %s in stock', 0 + round( $now, 2 ), $unit ), 409 );
 		}
 		if ( in_array( $kind, array( 'damaged', 'own_use' ), true ) && strlen( $note ) < 3 ) {
 			return self::err( 'ah_no_note', 'Say what happened, so the stock book can explain it', 400 );
@@ -556,12 +573,17 @@ class AH_Stock {
 			}
 		}
 
-		if ( $target === $now && $product->get_manage_stock() ) {
+		if ( 'count' === $kind ) {
+			$args['note'] = trim( 'Quick count' . ( $note ? ': ' . $note : '' ) );
+		}
+		$delta = round( $target - $now, 2 );
+		if ( abs( $delta ) < 0.005 ) {
 			// A count that agrees with the book is worth writing down too:
 			// it says somebody looked.
 			self::record( $product->get_id(), $kind, 0, $now, $now, $args );
+			self::sync_shelf( $product );
 		} else {
-			self::set_count( $product, $target, $kind, $args );
+			self::adjust( $product, $delta, $kind, $args );
 		}
 
 		return array( 'product' => self::item( $product->get_id() ) );
@@ -612,15 +634,25 @@ class AH_Stock {
 	 */
 	public static function adjust( $product, $delta, $kind, $args = array() ) {
 		$before = AH_Ledger::book( $product->get_id() );
-		if ( ! $product->get_manage_stock() ) {
-			$product->set_manage_stock( true );
-			$product->save();
-		}
-		wc_update_product_stock( $product, abs( (float) $delta ), $delta >= 0 ? 'increase' : 'decrease' );
 		if ( empty( $args['unit_cost'] ) ) {
 			$args['unit_cost'] = self::cost_of( $product->get_id() );
 		}
 		self::record( $product->get_id(), $kind, (float) $delta, $before, $before + (float) $delta, $args );
+		self::sync_shelf( $product );
+	}
+
+	/**
+	 * WooCommerce keeps its own count, which the shop and the app read.
+	 * After every change it is set to the stock book, so there is only
+	 * ever one figure.
+	 */
+	public static function sync_shelf( $product ) {
+		$product = wc_get_product( $product->get_id() );
+		if ( ! $product->get_manage_stock() ) {
+			$product->set_manage_stock( true );
+			$product->save();
+		}
+		wc_update_product_stock( $product, AH_Ledger::book( $product->get_id() ), 'set' );
 	}
 
 	public static function stock_amount( $amount ) {

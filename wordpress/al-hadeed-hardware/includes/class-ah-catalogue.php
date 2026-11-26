@@ -28,6 +28,27 @@ class AH_Catalogue {
 		$get     = WP_REST_Server::READABLE;
 		$manager = AH_Rest::desk( array( 'manager' ) );
 
+		// Categories and sub-categories, each with a picture.
+		register_rest_route( $ns, '/manager/categories', array(
+			array( 'methods' => $get, 'permission_callback' => $manager, 'callback' => array( __CLASS__, 'category_tree' ) ),
+			array( 'methods' => $post, 'permission_callback' => $manager, 'callback' => array( __CLASS__, 'category_save' ) ),
+		) );
+		register_rest_route( $ns, '/manager/categories/(?P<id>\d+)', array(
+			'methods'             => $post,
+			'permission_callback' => $manager,
+			'callback'            => array( __CLASS__, 'category_save' ),
+		) );
+		register_rest_route( $ns, '/manager/categories/(?P<id>\d+)/image', array(
+			'methods'             => $post,
+			'permission_callback' => $manager,
+			'callback'            => array( __CLASS__, 'category_image' ),
+		) );
+		register_rest_route( $ns, '/manager/categories/(?P<id>\d+)/delete', array(
+			'methods'             => $post,
+			'permission_callback' => $manager,
+			'callback'            => array( __CLASS__, 'category_delete' ),
+		) );
+
 		register_rest_route( $ns, '/manager/products/(?P<id>\d+)/image', array(
 			'methods'             => $post,
 			'permission_callback' => $manager,
@@ -59,6 +80,27 @@ class AH_Catalogue {
 			return new WP_Error( 'ah_not_found', 'Product not found', array( 'status' => 404 ) );
 		}
 
+		$attachment_id = self::save_picture( $req, $product->get_name() );
+		if ( is_wp_error( $attachment_id ) ) {
+			return $attachment_id;
+		}
+
+		set_post_thumbnail( $product->get_id(), $attachment_id );
+
+		return array( 'product' => AH_Shape::product( $product->get_id() ) );
+	}
+
+	/**
+	 * Save an uploaded picture and return its attachment.
+	 *
+	 * Fast: WordPress normally cuts every image into each size the
+	 * theme, WooCommerce and every plugin ever asked for, a dozen or
+	 * more resizes for one photo. The shop shows two, so only those two
+	 * are made. The panel has already shrunk the photo before sending.
+	 *
+	 * @return int|WP_Error
+	 */
+	public static function save_picture( $req, $title ) {
 		$files = $req->get_file_params();
 		if ( empty( $files['file'] ) ) {
 			return new WP_Error( 'ah_no_file', 'No picture was sent', array( 'status' => 400 ) );
@@ -89,7 +131,15 @@ class AH_Catalogue {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 
-		$attachment_id = media_handle_sideload( $file, 0, $product->get_name() );
+		$only_two = function ( $sizes ) {
+			return array_intersect_key( $sizes, array_flip( array( 'woocommerce_thumbnail', 'woocommerce_single' ) ) );
+		};
+		add_filter( 'intermediate_image_sizes_advanced', $only_two );
+		add_filter( 'big_image_size_threshold', '__return_false' );
+		$attachment_id = media_handle_sideload( $file, 0, $title );
+		remove_filter( 'intermediate_image_sizes_advanced', $only_two );
+		remove_filter( 'big_image_size_threshold', '__return_false' );
+
 		if ( is_wp_error( $attachment_id ) ) {
 			return new WP_Error(
 				'ah_upload_failed',
@@ -97,10 +147,106 @@ class AH_Catalogue {
 				array( 'status' => 400 )
 			);
 		}
+		return (int) $attachment_id;
+	}
 
-		set_post_thumbnail( $product->get_id(), $attachment_id );
+	// -----------------------------------------------------------------
+	// Categories and sub-categories
+	// -----------------------------------------------------------------
 
-		return array( 'product' => AH_Shape::product( $product->get_id() ) );
+	private static function category_picture( $term_id ) {
+		$img = (int) get_term_meta( $term_id, 'thumbnail_id', true );
+		if ( ! $img ) {
+			return null;
+		}
+		$src = wp_get_attachment_image_src( $img, 'woocommerce_thumbnail' );
+		return $src ? $src[0] : wp_get_attachment_url( $img );
+	}
+
+	/** Every category, with its sub-categories beneath it. */
+	public static function category_tree() {
+		$terms = get_terms( array( 'taxonomy' => 'product_cat', 'hide_empty' => false, 'orderby' => 'name' ) );
+		$by    = array();
+		foreach ( (array) $terms as $t ) {
+			if ( is_wp_error( $t ) ) {
+				continue;
+			}
+			$by[ $t->term_id ] = array(
+				'id'       => (int) $t->term_id,
+				'name'     => AH_Shape::text( $t->name ),
+				'parent'   => (int) $t->parent,
+				'picture'  => self::category_picture( $t->term_id ),
+				'products' => (int) $t->count,
+				'children' => array(),
+			);
+		}
+		$top = array();
+		foreach ( $by as $id => $c ) {
+			if ( $c['parent'] && isset( $by[ $c['parent'] ] ) ) {
+				$by[ $c['parent'] ]['children'][] = &$by[ $id ];
+			}
+		}
+		foreach ( $by as $id => $c ) {
+			if ( ! $c['parent'] || ! isset( $by[ $c['parent'] ] ) ) {
+				$top[] = &$by[ $id ];
+			}
+		}
+		return array( 'categories' => $top );
+	}
+
+	/** Add a category or sub-category, or rename or move one. */
+	public static function category_save( $req ) {
+		$name   = trim( sanitize_text_field( (string) $req->get_param( 'name' ) ) );
+		$parent = (int) $req->get_param( 'parent' );
+		$id     = (int) ( $req['id'] ?? 0 );
+		if ( mb_strlen( $name ) < 2 ) {
+			return new WP_Error( 'ah_bad_name', 'Give the category a name', array( 'status' => 400 ) );
+		}
+		if ( $parent && ( $parent === $id || ! term_exists( $parent, 'product_cat' ) ) ) {
+			return new WP_Error( 'ah_bad_parent', 'Choose a different main category', array( 'status' => 400 ) );
+		}
+		$r = $id
+			? wp_update_term( $id, 'product_cat', array( 'name' => $name, 'parent' => $parent ) )
+			: wp_insert_term( $name, 'product_cat', array( 'parent' => $parent ) );
+		if ( is_wp_error( $r ) ) {
+			return new WP_Error( 'ah_category', 'term_exists' === $r->get_error_code() ? 'There is already a category with that name' : $r->get_error_message(), array( 'status' => 400 ) );
+		}
+		$me = AH_Auth::current();
+		AH_Flow::log_event( 0, 'manager', $id ? 'category_changed' : 'category_added', null, null, $me ? $me->ID : null, $name . ( $parent ? ' under ' . get_term( $parent, 'product_cat' )->name : '' ) );
+		return self::category_tree();
+	}
+
+	public static function category_image( $req ) {
+		$term = get_term( (int) $req['id'], 'product_cat' );
+		if ( ! $term || is_wp_error( $term ) ) {
+			return new WP_Error( 'ah_not_found', 'That category was not found', array( 'status' => 404 ) );
+		}
+		$img = self::save_picture( $req, $term->name );
+		if ( is_wp_error( $img ) ) {
+			return $img;
+		}
+		update_term_meta( $term->term_id, 'thumbnail_id', $img );
+		return array( 'picture' => self::category_picture( $term->term_id ) );
+	}
+
+	/** Only an empty category goes: its products and sub-categories move first. */
+	public static function category_delete( $req ) {
+		$term = get_term( (int) $req['id'], 'product_cat' );
+		if ( ! $term || is_wp_error( $term ) ) {
+			return new WP_Error( 'ah_not_found', 'That category was not found', array( 'status' => 404 ) );
+		}
+		$kids = get_terms( array( 'taxonomy' => 'product_cat', 'parent' => $term->term_id, 'hide_empty' => false, 'fields' => 'ids' ) );
+		if ( $kids ) {
+			return new WP_Error( 'ah_has_children', 'It still has sub-categories. Delete or move them first.', array( 'status' => 409 ) );
+		}
+		$used = wc_get_products( array( 'category' => array( $term->slug ), 'limit' => 1, 'status' => array( 'publish', 'draft', 'private' ), 'return' => 'ids' ) );
+		if ( $used ) {
+			return new WP_Error( 'ah_has_products', 'Products are still in it. Move them to another category first.', array( 'status' => 409 ) );
+		}
+		wp_delete_term( $term->term_id, 'product_cat' );
+		$me = AH_Auth::current();
+		AH_Flow::log_event( 0, 'manager', 'category_deleted', null, null, $me ? $me->ID : null, $term->name );
+		return self::category_tree();
 	}
 
 	// -----------------------------------------------------------------

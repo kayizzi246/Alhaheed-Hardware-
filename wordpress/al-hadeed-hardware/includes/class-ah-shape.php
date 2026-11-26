@@ -90,6 +90,7 @@ class AH_Shape {
 			'code'            => $product->get_sku(),
 			'name'            => self::text( $product->get_name() ),
 			'category_id'     => $category ? $category->term_id : null,
+			'category_parent' => $category ? (int) $category->parent : null,
 			'category_name'   => $category ? self::text( $category->name ) : null,
 			'description'     => wp_strip_all_tags( $product->get_short_description() ?: $product->get_description() ),
 			'unit'            => $unit ? $unit : 'pc',

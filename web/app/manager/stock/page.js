@@ -44,7 +44,7 @@ export default function StockControl() {
   if (!data) {
     return (
       <>
-        <PageHead title="Stock control" />
+        <PageHead title="Stock" />
         <Card>{error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Adding up the stock book…</Loading>}</Card>
       </>
     );
@@ -59,12 +59,12 @@ export default function StockControl() {
 
   return (
     <>
-      <PageHead title="Stock control" sub="Worked out from every purchase, sale and count in the stock book." />
+      <PageHead title="Stock" sub="Your stock, what to buy, and what is lost." />
       <Alert>{error}</Alert>
 
       <Card>
         <CardHead>
-          <CardTitle>What needs your attention</CardTitle>
+          <CardTitle>Check these</CardTitle>
           <span className="text-[12.5px] text-ink-muted">{list(data.todo).length ? `${list(data.todo).length} things` : 'all clear'}</span>
         </CardHead>
         {!list(data.todo).length ? (
@@ -83,14 +83,14 @@ export default function StockControl() {
           </ul>
         )}
         <details className="border-t border-line px-4 py-3 text-[13px] text-ink-2 sm:px-6">
-          <summary className="cursor-pointer font-semibold text-ink">How the stock book keeps every item accounted for</summary>
+          <summary className="cursor-pointer font-semibold text-ink">How stock is counted</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5 leading-relaxed">
-            <li><b>Stock = what was bought in − what was sold + counts and adjustments.</b> Nobody types the stock figure; it is added up from the book every time.</li>
-            <li>Goods only come in with a <b>delivery note (FDN), supplier, date and buy price</b>. Goods only go out as a <b>sale</b>, a <b>write-off</b> with a reason, or a <b>count</b> you approve.</li>
-            <li>A sale <b>cannot</b> take stock below zero or go below the buy price unless you override it, and every override is listed here with your reason.</li>
-            <li>The cost of each sale is the <b>latest buy price</b>, filled in by the system, so profit cannot be made up.</li>
-            <li>Only you can receive stock, change prices, write off, count, delete or cancel a paid order. Every change is in the Audit Trail with who did it.</li>
-            <li>The one thing a system cannot see is goods leaving with no record at all. A <b>monthly stock-take</b> catches that: anything short shows up as a loss below.</li>
+            <li><b>Stock = bought − sold.</b> The system adds it up. Nobody types it.</li>
+            <li>Goods come in only with a <b>delivery note (FDN)</b>. Goods go out only as a <b>sale</b>, a <b>loss with a reason</b>, or a <b>count</b>.</li>
+            <li>Nobody can sell more than the stock, or below the buy price. Only you can allow it, with a reason.</li>
+            <li>The system puts the buy price on every sale. Nobody types it.</li>
+            <li>Only you can change stock, prices or delete things. Everything is saved in History.</li>
+            <li>Count your stock <b>every month</b>. Anything missing shows below as lost.</li>
           </ul>
         </details>
       </Card>
@@ -119,8 +119,8 @@ export default function StockControl() {
       {list(data.unreleased).length > 0 && (
         <Card id="unreleased">
           <CardHead>
-            <CardTitle>Paid, not released after a day</CardTitle>
-            <span className="text-[12.5px] text-ink-muted">check the goods are still here</span>
+            <CardTitle>Paid but not given to the customer</CardTitle>
+            <span className="text-[12.5px] text-ink-muted">check the goods</span>
           </CardHead>
           <TableWrap>
             <Table>
@@ -143,7 +143,7 @@ export default function StockControl() {
 
       <Card id="reorder">
         <CardHead>
-          <CardTitle>Reorder now</CardTitle>
+          <CardTitle>Buy again</CardTitle>
           <span className="text-[12.5px] text-ink-muted">
             {list(data.reorder).length} items{s.reorderCost ? ` · ${money(s.reorderCost)} to order` : ''}
           </span>
@@ -181,7 +181,7 @@ export default function StockControl() {
 
       <Card>
         <CardHead>
-          <CardTitle>Sales and purchases, by month</CardTitle>
+          <CardTitle>Sold and bought, each month</CardTitle>
           <span className="text-[12.5px] text-ink-muted">without VAT</span>
         </CardHead>
         <div className="p-4 sm:p-6"><MonthChart months={list(data.months)} /></div>
@@ -190,7 +190,7 @@ export default function StockControl() {
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHead>
-            <CardTitle>Slow and dead stock</CardTitle>
+            <CardTitle>Not selling</CardTitle>
             <span className="text-[12.5px] text-ink-muted">{money(s.slowValue)} at cost</span>
           </CardHead>
           <div className="border-b border-line px-4 py-3 sm:px-6">
@@ -232,7 +232,7 @@ export default function StockControl() {
         <Card id="negative">
           <CardHead>
             <CardTitle>Below zero</CardTitle>
-            <span className="text-[12.5px] text-ink-muted">sold before the purchase was recorded</span>
+            <span className="text-[12.5px] text-ink-muted">sold before it was bought</span>
           </CardHead>
           {!list(data.negative).length ? (
             <Empty title="Nothing below zero">Every item has at least as much bought as sold.</Empty>
@@ -264,7 +264,7 @@ export default function StockControl() {
       <div className="grid gap-4">
         <Card id="losses">
           <CardHead>
-            <CardTitle>Losses and write-offs</CardTitle>
+            <CardTitle>Lost stock</CardTitle>
             <span className="text-[12.5px] text-ink-muted">{money(data.losses?.monthValue || 0)} this month · {money(data.losses?.value90 || 0)} in 90 days</span>
           </CardHead>
           {!list(data.losses?.lines).length ? (
@@ -292,8 +292,8 @@ export default function StockControl() {
 
         <Card id="overrides">
           <CardHead>
-            <CardTitle>Overrides, last 30 days</CardTitle>
-            <span className="text-[12.5px] text-ink-muted">sales let through against the rules</span>
+            <CardTitle>Rules you allowed to break</CardTitle>
+            <span className="text-[12.5px] text-ink-muted">last 30 days</span>
           </CardHead>
           {!list(data.overrides).length ? (
             <Empty title="No overrides">Every sale kept to the rules.</Empty>

@@ -1214,6 +1214,7 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
   List<Map<String, dynamic>> _products = [];
   List<Map<String, dynamic>> _categories = [];
   int? _categoryId;
+  int? _subId;
   String _query = '';
   String? _error;
   bool _loading = true;
@@ -1277,7 +1278,14 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
   List<Map<String, dynamic>> get _shown {
     final q = _query.trim().toLowerCase();
     return _products.where((p) {
-      if (_categoryId != null && p['category_id'] != _categoryId) return false;
+      // A sub-category narrows it; a main category takes in its sub-categories.
+      if (_subId != null) {
+        if (p['category_id'] != _subId) return false;
+      } else if (_categoryId != null &&
+          p['category_id'] != _categoryId &&
+          p['category_parent'] != _categoryId) {
+        return false;
+      }
       if (q.isEmpty) return true;
       final name = (p['name'] as String? ?? '').toLowerCase();
       final code = (p['code'] as String? ?? '').toLowerCase();
@@ -1432,6 +1440,7 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
                   setState(() {
                     _query = '';
                     _categoryId = null;
+                    _subId = null;
                   });
                 },
               ),
@@ -1537,14 +1546,80 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
                 _filterChip('All', null),
-                for (final c in _categories)
+                // Main categories as chips; their sub-categories show as
+                // picture tiles once one is chosen.
+                for (final c in _categories.where((c) => _parentOf(c) == 0))
                   _filterChip(c['name'] as String, (c['id'] as num).toInt()),
               ],
             ),
           ),
+          if (_subs.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 96,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [for (final s in _subs) _subTile(s)],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
         ],
       );
+
+  int _parentOf(Map<String, dynamic> c) => (c['parent'] as num?)?.toInt() ?? 0;
+
+  /// The sub-categories of the chosen main category.
+  List<Map<String, dynamic>> get _subs => _categoryId == null
+      ? const []
+      : _categories.where((c) => _parentOf(c) == _categoryId).toList();
+
+  Widget _subTile(Map<String, dynamic> s) {
+    final id = (s['id'] as num).toInt();
+    final on = _subId == id;
+    final pic = s['picture'] as String?;
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: _Pressable(
+        scale: 0.95,
+        onTap: () => setState(() => _subId = on ? null : id),
+        child: SizedBox(
+          width: 76,
+          child: Column(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: _categoryColour(s['name'] as String?),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: on ? _brand : _hairline, width: on ? 2.5 : 1),
+                ),
+                child: pic != null
+                    ? Image.network(pic, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink())
+                    : Center(
+                        child: Text(
+                            (s['name'] as String? ?? '?').characters.first.toUpperCase(),
+                            style: _title(22, weight: FontWeight.w800, color: _white)),
+                      ),
+              ),
+              const SizedBox(height: 5),
+              Text(s['name'] as String? ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: _txt(11.5,
+                      weight: on ? FontWeight.w700 : FontWeight.w500,
+                      color: on ? _brandDark : _inkSoft)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _filterChip(String label, int? id) {
     final on = _categoryId == id;
@@ -1552,7 +1627,10 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
       padding: const EdgeInsets.only(right: 8),
       child: _Pressable(
         scale: 0.94,
-        onTap: () => setState(() => _categoryId = id),
+        onTap: () => setState(() {
+          _categoryId = id;
+          _subId = null;
+        }),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           alignment: Alignment.center,

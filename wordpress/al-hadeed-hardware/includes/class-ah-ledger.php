@@ -266,51 +266,51 @@ class AH_Ledger {
 		// What the owner should look at today, in plain words, worst first.
 		$todo = array();
 		if ( $negative ) {
-			$todo[] = array( 'level' => 'bad', 'text' => sprintf( '%d %s below zero: sold more than was ever bought in. Record the missing purchase, or count the shelf.', count( $negative ), count( $negative ) === 1 ? 'item is' : 'items are' ), 'link' => '#negative' );
+			$todo[] = array( 'level' => 'bad', 'text' => sprintf( '%d %s below zero. More was sold than bought. Enter the missing delivery, or count it.', count( $negative ), count( $negative ) === 1 ? 'item is' : 'items are' ), 'link' => '#negative' );
 		}
 		if ( $unreleased ) {
-			$todo[] = array( 'level' => 'bad', 'text' => sprintf( '%d paid %s not released by the store after a day. Check the goods are still here, or that the store recorded them.', count( $unreleased ), count( $unreleased ) === 1 ? 'order is' : 'orders are' ), 'link' => '#unreleased' );
+			$todo[] = array( 'level' => 'bad', 'text' => sprintf( '%d paid %s not given to the customer after 1 day. Check the goods.', count( $unreleased ), count( $unreleased ) === 1 ? 'order is' : 'orders are' ), 'link' => '#unreleased' );
 		}
 		if ( $alert['raised'] ) {
-			$todo[] = array( 'level' => 'bad', 'text' => sprintf( 'Profit margin this month is %s%%, under the usual %s%%. Check selling prices against the latest buying prices.', $alert['current'], $alert['average'] ), 'link' => '/manager/margins' );
+			$todo[] = array( 'level' => 'bad', 'text' => sprintf( 'Profit this month is %s%%. Normal is %s%%. Check your selling prices.', $alert['current'], $alert['average'] ), 'link' => '/manager/margins' );
 		}
 		if ( $losses['monthValue'] > 0 ) {
-			$todo[] = array( 'level' => 'warn', 'text' => sprintf( 'UGX %s of stock lost this month (damaged, used, or short at a count).', number_format( $losses['monthValue'] ) ), 'link' => '#losses' );
+			$todo[] = array( 'level' => 'warn', 'text' => sprintf( 'UGX %s of stock lost this month.', number_format( $losses['monthValue'] ) ), 'link' => '#losses' );
 		}
 		if ( $overrides ) {
-			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d %s let through by override in the last 30 days.', count( $overrides ), count( $overrides ) === 1 ? 'sale was' : 'sales were' ), 'link' => '#overrides' );
+			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d %s allowed by you against the rules this month.', count( $overrides ), count( $overrides ) === 1 ? 'sale was' : 'sales were' ), 'link' => '#overrides' );
 		}
 		if ( $reorder ) {
-			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d %s to reorder, about UGX %s.', count( $reorder ), count( $reorder ) === 1 ? 'item' : 'items', number_format( array_sum( wp_list_pluck( $reorder, 'orderCost' ) ) ) ), 'link' => '#reorder' );
+			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d %s to buy again. Cost about UGX %s.', count( $reorder ), count( $reorder ) === 1 ? 'item' : 'items', number_format( array_sum( wp_list_pluck( $reorder, 'orderCost' ) ) ) ), 'link' => '#reorder' );
 		}
 		// Money: the till and the suppliers.
 		$tills = AH_Till::tills( new WP_REST_Request( 'GET', '/' ) );
 		if ( $tills['short'] < 0 ) {
-			array_unshift( $todo, array( 'level' => 'bad', 'text' => sprintf( 'Tills were short by UGX %s in the last 30 days. See who and why.', number_format( -$tills['short'] ) ), 'link' => '/manager/exceptions' ) );
+			array_unshift( $todo, array( 'level' => 'bad', 'text' => sprintf( 'Cash missing from the till: UGX %s this month. See who.', number_format( -$tills['short'] ) ), 'link' => '/manager/exceptions' ) );
 		}
 		if ( $tills['notClosed'] ) {
-			array_unshift( $todo, array( 'level' => 'bad', 'text' => sprintf( '%d %s a cashier took cash and never counted the till.', count( $tills['notClosed'] ), count( $tills['notClosed'] ) === 1 ? 'day' : 'days' ), 'link' => '/manager/exceptions' ) );
+			array_unshift( $todo, array( 'level' => 'bad', 'text' => sprintf( '%d %s the cashier did not count the cash.', count( $tills['notClosed'] ), count( $tills['notClosed'] ) === 1 ? 'day' : 'days' ), 'link' => '/manager/exceptions' ) );
 		}
 		$buying    = AH_Purchasing::overview();
 		$over      = array_filter( $buying['bills'], function ( $b ) { return $b['match'] && 'over_billed' === $b['match']['state'] && $b['owed'] > 0; } );
 		$overdue   = array_filter( $buying['bills'], function ( $b ) { return $b['overdue']; } );
 		if ( $over ) {
-			array_unshift( $todo, array( 'level' => 'bad', 'text' => sprintf( '%d supplier %s for more than was delivered. Do not pay the difference.', count( $over ), count( $over ) === 1 ? 'bill charges' : 'bills charge' ), 'link' => '/manager/purchasing' ) );
+			array_unshift( $todo, array( 'level' => 'bad', 'text' => sprintf( '%d supplier %s for more than came. Do not pay the extra.', count( $over ), count( $over ) === 1 ? 'bill charges' : 'bills charge' ), 'link' => '/manager/purchasing' ) );
 		}
 		if ( $overdue ) {
-			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d supplier %s overdue, UGX %s.', count( $overdue ), count( $overdue ) === 1 ? 'bill is' : 'bills are', number_format( array_sum( wp_list_pluck( $overdue, 'owed' ) ) ) ), 'link' => '/manager/purchasing' );
+			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d supplier %s late to pay: UGX %s.', count( $overdue ), count( $overdue ) === 1 ? 'bill is' : 'bills are', number_format( array_sum( wp_list_pluck( $overdue, 'owed' ) ) ) ), 'link' => '/manager/purchasing' );
 		}
 		if ( $buying['receivedNoPo'] ) {
-			$todo[] = array( 'level' => 'info', 'text' => sprintf( '%d %s received in the last 30 days without a purchase order.', $buying['receivedNoPo'], 1 === $buying['receivedNoPo'] ? 'delivery was' : 'deliveries were' ), 'link' => '/manager/purchasing' );
+			$todo[] = array( 'level' => 'info', 'text' => sprintf( '%d %s came with no order this month.', $buying['receivedNoPo'], 1 === $buying['receivedNoPo'] ? 'delivery' : 'deliveries' ), 'link' => '/manager/purchasing' );
 		}
 
 		$no_price = count( array_filter( $items, function ( $i ) { return $i['price'] <= 0; } ) );
 		if ( $no_price ) {
-			$todo[] = array( 'level' => 'info', 'text' => sprintf( '%d %s no selling price, so cannot be sold yet.', $no_price, 1 === $no_price ? 'product has' : 'products have' ), 'link' => '/manager/products' );
+			$todo[] = array( 'level' => 'info', 'text' => sprintf( '%d %s no price. They cannot be sold.', $no_price, 1 === $no_price ? 'product has' : 'products have' ), 'link' => '/manager/products' );
 		}
 		$last_count = self::last_count();
 		if ( ! $last_count || ( strtotime( current_time( 'Y-m-d' ) ) - strtotime( $last_count ) ) > 30 * DAY_IN_SECONDS ) {
-			$todo[] = array( 'level' => 'info', 'text' => $last_count ? sprintf( 'The shelf was last counted on %s. Count it at least once a month.', $last_count ) : 'The shelf has never been counted. A stock-take shows what is really there.', 'link' => '/manager/stock-take' );
+			$todo[] = array( 'level' => 'info', 'text' => $last_count ? sprintf( 'Last stock count: %s. Count every month.', $last_count ) : 'Stock was never counted. Count it now.', 'link' => '/manager/stock-take' );
 		}
 
 		return array(

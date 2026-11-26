@@ -84,7 +84,7 @@ class AH_Stocktake {
 
 	public static function index() {
 		global $wpdb;
-		$rows = $wpdb->get_results( 'SELECT * FROM ' . self::t( 'stock_counts' ) . ' ORDER BY count_date DESC, id DESC LIMIT 100', ARRAY_A );
+		$rows = $wpdb->get_results( 'SELECT * FROM ' . self::t( 'stock_counts' ) . " WHERE status <> 'deleted' ORDER BY count_date DESC, id DESC LIMIT 100", ARRAY_A );
 		return array( 'counts' => array_map( array( __CLASS__, 'shape' ), (array) $rows ) );
 	}
 
@@ -263,11 +263,41 @@ class AH_Stocktake {
 		if ( ! $h ) {
 			return self::err( 'ah_not_found', 'That count was not found', 404 );
 		}
-		if ( 'draft' !== $h['status'] ) {
-			return self::err( 'ah_count_closed', 'An approved count is part of the stock book and stays.', 409 );
+		if ( 'deleted' === $h['status'] ) {
+			return self::err( 'ah_count_gone', 'This count is already deleted.', 409 );
 		}
-		$wpdb->delete( self::t( 'stock_count_lines' ), array( 'count_id' => (int) $h['id'] ) );
-		$wpdb->delete( self::t( 'stock_counts' ), array( 'id' => (int) $h['id'] ) );
-		return array( 'ok' => true );
+		if ( 'draft' === $h['status'] ) {
+			$wpdb->delete( self::t( 'stock_count_lines' ), array( 'count_id' => (int) $h['id'] ) );
+			$wpdb->delete( self::t( 'stock_counts' ), array( 'id' => (int) $h['id'] ) );
+			return array( 'ok' => true, 'undone' => 0 );
+		}
+
+		// An approved count already changed the stock. Deleting it puts
+		// every item back by the same amount, written in the stock book as
+		// its own line, so the history shows the count and its undoing.
+		$lines  = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . self::t( 'stock_count_lines' ) . ' WHERE count_id = %d', $h['id'] ), ARRAY_A );
+		$undone = 0;
+		foreach ( (array) $lines as $l ) {
+			$var = (float) $l['variance'];
+			if ( abs( $var ) < 0.005 ) {
+				continue;
+			}
+			$product = wc_get_product( (int) $l['product_id'] );
+			if ( ! $product ) {
+				continue;
+			}
+			AH_Stock::adjust( $product, -$var, 'count', array(
+				'note'      => 'Count deleted: stock put back',
+				'ref'       => 'Count #' . $h['id'],
+				'count_id'  => (int) $h['id'],
+				'unit_cost' => (int) $l['unit_cost'],
+			) );
+			++$undone;
+		}
+		$wpdb->update( self::t( 'stock_counts' ), array( 'status' => 'deleted' ), array( 'id' => (int) $h['id'] ) );
+		$user = AH_Auth::current();
+		AH_Flow::log_event( 0, 'manager', 'stock_count_deleted', null, null, $user ? $user->ID : null,
+			sprintf( 'Count of %s deleted, %d item(s) put back', $h['count_date'], $undone ) );
+		return array( 'ok' => true, 'undone' => $undone );
 	}
 }

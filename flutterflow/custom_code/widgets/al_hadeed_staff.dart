@@ -2838,7 +2838,7 @@ class _MoveSheet extends StatefulWidget {
 }
 
 class _MoveSheetState extends State<_MoveSheet> {
-  String _kind = 'received';
+  String _kind = 'count';
   final _qty = TextEditingController();
   late final _cost = TextEditingController(
       text: _int(widget.p['cost']) > 0 ? '${_int(widget.p['cost'])}' : '');
@@ -2853,7 +2853,8 @@ class _MoveSheetState extends State<_MoveSheet> {
   // Counting the shelf is a stock-take on the web panel, where the
   // manager approves it before the book changes.
   static const _kinds = [
-    ('received', 'Received', 1),
+    ('count', 'Count it', 0),
+    ('received', 'Goods arrived', 1),
     ('damaged', 'Damaged or lost', -1),
     ('own_use', 'Used by the shop', -1),
     ('returned', 'Customer return', 1),

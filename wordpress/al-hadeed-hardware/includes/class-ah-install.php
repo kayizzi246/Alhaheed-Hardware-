@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.9.0';
+	const DB_VERSION = '1.9.1';
 
 	public static function activate() {
 		self::tables();
@@ -436,6 +436,7 @@ class AH_Install {
 		AH_Roles::add();
 		self::open_the_books();
 		self::track_everything();
+		self::one_figure();
 		update_option( 'ah_db_version', self::DB_VERSION );
 	}
 
@@ -452,6 +453,28 @@ class AH_Install {
 	 * the shop ever knowing how many it had, so each is switched on with
 	 * the stock book's own figure.
 	 */
+	/**
+	 * One stock figure. Where WooCommerce's own count had drifted from the
+	 * stock book (a count added on top of an old figure), it is set to the
+	 * book, which is what every stock-take and ledger shows.
+	 */
+	public static function one_figure() {
+		if ( ! class_exists( 'AH_Ledger' ) ) {
+			return;
+		}
+		$book = AH_Ledger::book();
+		$ids  = get_posts( array( 'post_type' => 'product', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids' ) );
+		foreach ( $ids as $id ) {
+			$want = isset( $book[ $id ] ) ? $book[ $id ] : 0;
+			if ( abs( (float) get_post_meta( $id, '_stock', true ) - $want ) > 0.005 ) {
+				update_post_meta( $id, '_manage_stock', 'yes' );
+				update_post_meta( $id, '_stock', $want );
+				update_post_meta( $id, '_stock_status', $want > 0 ? 'instock' : 'outofstock' );
+				wc_delete_product_transients( $id );
+			}
+		}
+	}
+
 	public static function track_everything() {
 		$ids = get_posts( array( 'post_type' => 'product', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids' ) );
 		foreach ( $ids as $id ) {

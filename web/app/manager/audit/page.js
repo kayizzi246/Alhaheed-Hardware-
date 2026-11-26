@@ -43,6 +43,10 @@ const ACTION_LABEL = {
   customers_deleted: 'Customers deleted',
   supplier_return: 'Goods sent back to supplier',
   stock_count_approved: 'Stock count approved',
+  stock_count_deleted: 'Stock count deleted',
+  category_added: 'Category added',
+  category_changed: 'Category changed',
+  category_deleted: 'Category deleted',
   customer_added: 'Customer added',
 };
 
@@ -84,7 +88,7 @@ export default function ManagerAudit() {
 
   return (
     <>
-      <PageHead title="Audit trail" sub={`${shown.length} of the most recent 300 events`}>
+      <PageHead title="History" sub={`Who did what. ${shown.length} of the last 300.`}>
         <Select value={who} onChange={(e) => setWho(e.target.value)} className="w-[180px]">
           <option value="all">Everyone</option>
           {people.map((p) => <option key={p} value={p}>{p}</option>)}

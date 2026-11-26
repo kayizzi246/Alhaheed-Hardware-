@@ -5,6 +5,8 @@ import { api, upload } from '@/lib/api';
 import { money, list, today } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { Icon } from '@/components/icons';
+import Categories from '@/components/Categories';
+import { shrinkImage } from '@/lib/ocr';
 import {
   Alert, Button, Card, Checkbox, Chip, Empty, Field, Input, Loading, Modal, PageHead, Segmented, Select,
   Stat, Table, TableWrap, Td, Textarea, Th, Tr, LoadFailed } from '@/components/ui';
@@ -137,7 +139,7 @@ export default function ManagerProducts() {
 
   return (
     <>
-      <PageHead title="Products and stock" sub={data ? `${s.products} on sale` : null}>
+      <PageHead title="Products" sub={data ? `${s.products} on sale` : null}>
         <Button variant="outline" onClick={() => setImporting(true)}>Import</Button>
         <Button variant="outline" onClick={exportSheet} disabled={!products.length}>Export</Button>
         <Button onClick={() => setForm({})}>Add product</Button>
@@ -159,9 +161,9 @@ export default function ManagerProducts() {
           <Stat label="Sale value" value={money(s.retailValue)} note="if it all sold at today's prices" icon={Icon.cash()} tone="neutral" />
           <Stat label="Profit on the shelf" value={money(s.profitInStock)} note="sale value less buy price" icon={Icon.chart()} tone="ok" />
           <Stat
-            label="Needs ordering"
-            value={String(s.low + s.out)}
-            note={s.out ? `${s.out} out of stock` : s.low ? 'at or below the reorder level' : 'everything is stocked'}
+            label="Buy again"
+            value={String(s.low)}
+            note={s.out ? `${s.out} have no stock` : 'everything is stocked'}
             icon={Icon.clock()}
             tone={s.out ? 'bad' : s.low ? 'warn' : 'ok'}
           />
@@ -173,11 +175,13 @@ export default function ManagerProducts() {
           label="View"
           value={tab}
           onChange={setTab}
-          options={[{ value: 'products', label: 'Products' }, { value: 'book', label: 'Stock book' }]}
+          options={[{ value: 'products', label: 'Products' }, { value: 'categories', label: 'Categories' }, { value: 'book', label: 'Stock history' }]}
         />
       </div>
 
-      {tab === 'book' ? (
+      {tab === 'categories' ? (
+        <Categories />
+      ) : tab === 'book' ? (
         <StockBook kinds={data?.kinds || {}} />
       ) : (
         <Card>
@@ -422,6 +426,11 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
     description: product?.description || '',
   }));
   const [newCategory, setNewCategory] = useState(false);
+  // Main categories with their sub-categories, for a grouped list.
+  const [tree, setTree] = useState(null);
+  useEffect(() => {
+    api('/api/manager/categories').then((r) => setTree(list(r.categories))).catch(() => setTree(null));
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
@@ -511,7 +520,16 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
                   onChange={(e) => (e.target.value === '+new' ? (setNewCategory(true), setF({ ...f, category: '' })) : set('category')(e))}
                 >
                   <option value="">None</option>
-                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {tree
+                    ? tree.map((t) => (t.children.length ? (
+                        <optgroup key={t.id} label={t.name}>
+                          <option value={t.name}>{t.name} (main)</option>
+                          {t.children.map((c) => <option key={c.id} value={c.name}>{t.name} › {c.name}</option>)}
+                        </optgroup>
+                      ) : (
+                        <option key={t.id} value={t.name}>{t.name}</option>
+                      )))
+                    : categories.map((c) => <option key={c} value={c}>{c}</option>)}
                   <option value="+new">Add a new category…</option>
                 </Select>
               )}
@@ -592,15 +610,16 @@ const Section = ({ title, children }) => (
 /* ── Moving stock ────────────────────────────────────────────────── */
 
 const MOVES = [
-  { value: 'received', label: 'Received', sign: 1, about: 'Goods in from a supplier.' },
-  { value: 'damaged', label: 'Damaged or lost', sign: -1, about: 'Broken, spoilt, stolen or missing.' },
-  { value: 'own_use', label: 'Used by the shop', sign: -1, about: 'Taken off the shelf for the shop itself.' },
-  { value: 'returned', label: 'Customer return', sign: 1, about: 'A customer brought it back and it can be sold again.' },
-  { value: 'correction', label: 'Correction', sign: 0, about: 'A mistake put right. Use a minus for fewer.' },
+  { value: 'count', label: 'Count it', sign: 0, about: 'Type the number on the shelf.' },
+  { value: 'received', label: 'Goods arrived', sign: 1, about: 'New goods from a supplier.' },
+  { value: 'damaged', label: 'Damaged or lost', sign: -1, about: 'Broken, stolen or missing. Say why.' },
+  { value: 'own_use', label: 'Used by the shop', sign: -1, about: 'The shop used it. Say what for.' },
+  { value: 'returned', label: 'Customer returned', sign: 1, about: 'A customer brought it back.' },
+  { value: 'correction', label: 'Fix a mistake', sign: 0, about: 'Fix a typing mistake. Use minus (-) for less.' },
 ];
 
 function StockMove({ product, suppliers, onClose, onDone }) {
-  const [kind, setKind] = useState('received');
+  const [kind, setKind] = useState('count');
   const [qty, setQty] = useState('');
   const [cost, setCost] = useState(product.cost ? String(product.cost) : '');
   const [supplier, setSupplier] = useState(product.supplier || '');
@@ -618,7 +637,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
   // A purchase only counts with its paperwork.
   const purchaseOk = kind !== 'received' || (supplier.trim() && ref.trim() && int(cost) > 0);
   const ok = !busy && qty !== '' && after >= 0 && !!date && !!purchaseOk &&
-    (kind === 'correction' ? n !== 0 : n > 0) &&
+    (kind === 'correction' ? n !== 0 : kind === 'count' ? n >= 0 : n > 0) &&
     (!needsNote || note.trim().length >= 3);
 
   async function save() {
@@ -645,12 +664,12 @@ function StockMove({ product, suppliers, onClose, onDone }) {
   return (
     <Modal
       title={`Stock: ${product.name}`}
-      description={`${now} ${product.unit} in stock now.`}
+      description={`Stock now: ${now} ${product.unit}.`}
       onClose={onClose}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button disabled={!ok} onClick={save}>{busy ? 'Saving…' : 'Save to the stock book'}</Button>
+          <Button disabled={!ok} onClick={save}>{busy ? 'Saving…' : 'Save'}</Button>
           {kind === 'received' && !purchaseOk && (
             <span className="order-first mr-auto self-center text-[12.5px] text-ink-muted">Needs the supplier, FDN number and buy price.</span>
           )}
@@ -681,7 +700,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={kind === 'correction' ? `${product.unit} to add, or minus to take off` : `How many ${product.unit}?`}>
+          <Field label={kind === 'count' ? `How many ${product.unit} are on the shelf?` : kind === 'correction' ? `${product.unit} to add, or minus to take off` : `How many ${product.unit}?`}>
             <Input type="number" step="any" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum text-lg font-semibold" autoFocus />
           </Field>
           <Field label={kind === 'received' ? 'Delivery date' : 'Date'}>
@@ -785,7 +804,7 @@ function History({ product, onClose, onStock, onEdit, onDelete }) {
         <>
           <Button variant="ghost" className="mr-auto text-bad hover:bg-bad-bg hover:text-bad" onClick={onDelete}>Delete</Button>
           <Button variant="outline" onClick={onEdit}>Edit</Button>
-          <Button onClick={onStock}>Receive or adjust</Button>
+          <Button onClick={onStock}>Change stock</Button>
         </>
       }
     >
@@ -811,7 +830,7 @@ function History({ product, onClose, onStock, onEdit, onDelete }) {
       </dl>
 
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-[12px] font-bold uppercase tracking-[0.06em] text-ink-muted">Stock ledger</h3>
+        <h3 className="text-[12px] font-bold uppercase tracking-[0.06em] text-ink-muted">Stock history</h3>
         <Segmented
           label="Show"
           value={kind}
@@ -837,10 +856,10 @@ function History({ product, onClose, onStock, onEdit, onDelete }) {
               <tr>
                 <Th>Date</Th>
                 <Th>What</Th>
-                <Th>From or to</Th>
-                <Th num>In (debit)</Th>
-                <Th num>Out (credit)</Th>
-                <Th num>Balance</Th>
+                <Th>Who</Th>
+                <Th num>In</Th>
+                <Th num>Out</Th>
+                <Th num>Stock</Th>
                 <Th num>Cost</Th>
                 <Th num>Price</Th>
                 <Th>By</Th>
@@ -1148,8 +1167,8 @@ function ProductPicture({ product }) {
       setError('That is not a picture. Use a JPG, PNG or WEBP.');
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      setError('That picture is over 8MB. Most phones can shrink it before sending.');
+    if (file.size > 30 * 1024 * 1024) {
+      setError('That picture is over 30MB. Choose a smaller one.');
       return;
     }
 
@@ -1159,8 +1178,11 @@ function ProductPicture({ product }) {
     setBusy(true);
 
     try {
+      // A phone photo is often 4 to 8MB. Shrunk here to about 1200 pixels,
+      // it is a fraction of that, so it uploads in a moment.
+      const small = await shrinkImage(file, 1200);
       const body = new FormData();
-      body.append('file', file);
+      body.append('file', small, small.name || 'photo.jpg');
       // Not api(): that sets a JSON content type, and multipart needs
       // the browser to set its own boundary.
       await upload(`/api/manager/products/${product.id}/image`, body);

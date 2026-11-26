@@ -102,8 +102,8 @@ export default function ManagerConsole() {
       {todo && todo.length > 0 && (
         <section className="mb-5 rounded-xl border border-line bg-surface">
           <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
-            <h2 className="text-[15px] font-bold text-ink">Needs your attention</h2>
-            <Link href="/manager/stock" className="text-[13px] font-semibold text-brand hover:underline">Stock control</Link>
+            <h2 className="text-[15px] font-bold text-ink">Check these</h2>
+            <Link href="/manager/stock" className="text-[13px] font-semibold text-brand hover:underline">See all</Link>
           </div>
           <ul className="divide-y divide-line">
             {todo.slice(0, 5).map((t, n) => (
