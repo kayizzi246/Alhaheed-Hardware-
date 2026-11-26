@@ -9,6 +9,7 @@ import {
   Alert, Button, Card, CardBody, CardHead, CardNote, CardTitle,
   Fresh, Skeleton, StatusChip, Table, TableWrap, Td, Th, Tr } from '@/components/ui';
 import { usePoll } from '@/lib/live';
+import { Icon } from '@/components/icons';
 import { useDismissed } from '@/lib/dismissed';
 import { RemoveLine } from '@/components/RemoveLine';
 
@@ -102,9 +103,12 @@ export default function ManagerConsole() {
 
       {/* The owner's short list: what is wrong, in plain words. */}
       {shown.length > 0 && (
-        <section className="mb-3 rounded-xl border border-line bg-surface">
+        <section className="mb-3 overflow-hidden rounded-xl border border-line bg-surface">
           <div className="flex items-center justify-between gap-3 border-b border-line px-3.5 py-2">
-            <h2 className="text-[13.5px] font-bold text-ink">Check these</h2>
+            <h2 className="flex items-center gap-2 text-[13.5px] font-bold text-ink">
+              Check these
+              <span className="tnum rounded-full bg-bad-bg px-2 py-px text-[11.5px] font-bold text-bad">{shown.length}</span>
+            </h2>
             <div className="flex items-center gap-4">
               <button type="button" onClick={() => hide(shown.map((t) => t.text))} className="text-[13px] font-semibold text-ink-muted hover:text-bad hover:underline">Remove all</button>
               <Link href="/manager/stock" className="text-[13px] font-semibold text-brand hover:underline">See all</Link>
@@ -113,9 +117,12 @@ export default function ManagerConsole() {
           <ul className="divide-y divide-line">
             {shown.slice(0, 5).map((t) => (
               <li key={t.text} className="flex items-stretch">
-                <Link href={t.link.startsWith('#') ? `/manager/stock${t.link}` : t.link} className="flex min-w-0 flex-1 items-start gap-2.5 px-3.5 py-1.5 text-[13px] text-ink hover:bg-surface-2">
-                  <span aria-hidden="true" className={cn('mt-1.5 size-2 shrink-0 rounded-full', t.level === 'bad' ? 'bg-bad' : t.level === 'warn' ? 'bg-warn' : 'bg-info')} />
+                <Link href={t.link.startsWith('#') ? `/manager/stock${t.link}` : t.link} className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-1.5 text-[13px] text-ink hover:bg-surface-2">
+                  <span aria-hidden="true" className={cn('grid size-5 shrink-0 place-items-center rounded-md text-[11px] font-extrabold', t.level === 'bad' ? 'bg-bad-bg text-bad' : t.level === 'warn' ? 'bg-warn-bg text-warn' : 'bg-info-bg text-info')}>
+                    {t.level === 'bad' ? '!' : 'i'}
+                  </span>
                   <span className="min-w-0 flex-1">{t.text}</span>
+                  <span aria-hidden="true" className="text-ink-faint">›</span>
                 </Link>
                 <RemoveLine onClick={() => hide([t.text])} />
               </li>
@@ -130,11 +137,11 @@ export default function ManagerConsole() {
       {/* Two across on a phone, the day's sales across the top. One per
           row put five tiles between the manager and everything else. */}
       <div className="mb-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
-        <Tile hero label="Sales today" value={money(d.salesToday)} note={delta === null ? (d.salesToday ? 'first sales this week' : 'nothing yet') : `${delta >= 0 ? '↑' : '↓'} ${Math.abs(delta)}% vs average`} href="/manager/reports" />
-        <Tile label="Orders today" value={String(d.ordersToday)} note={waiting ? `${waiting} still open` : 'all done'} href="/manager/orders" />
-        <Tile label="Average order" value={money(avgOrder)} note="today" />
-        <Tile label="Waiting" value={String(waiting)} note="cashier, accounts, store" tone={waiting ? 'warn' : 'ok'} href="/manager/orders" />
-        <Tile label="Low on stock" value={String(low.length)} note={low.length ? 'buy soon' : 'all stocked'} tone={low.length ? 'bad' : 'ok'} href="/manager/stock" />
+        <Tile hero icon={Icon.cash()} label="Sales today" value={money(d.salesToday)} note={delta === null ? (d.salesToday ? 'first sales this week' : 'nothing yet') : `${delta >= 0 ? '↑' : '↓'} ${Math.abs(delta)}% vs average`} href="/manager/reports" />
+        <Tile icon={Icon.receipt()} label="Orders today" value={String(d.ordersToday)} note={waiting ? `${waiting} still open` : 'all done'} href="/manager/orders" />
+        <Tile icon={Icon.chart()} label="Average order" value={money(avgOrder)} note="today" />
+        <Tile icon={Icon.clock()} label="Waiting" value={String(waiting)} note="cashier, accounts, store" tone={waiting ? 'warn' : 'ok'} href="/manager/orders" />
+        <Tile icon={Icon.box()} label="Low on stock" value={String(low.length)} note={low.length ? 'buy soon' : 'all stocked'} tone={low.length ? 'bad' : 'ok'} href="/manager/stock" />
       </div>
 
       {/* ── Trajectory and funnel ──────────────────────────────────── */}
@@ -201,15 +208,24 @@ export default function ManagerConsole() {
 /* ── Pieces ───────────────────────────────────────────────────────── */
 
 /** One small figure. Small on purpose: the whole day fits on one screen. */
-function Tile({ label, value, note, hero, tone, href }) {
+function Tile({ label, value, note, hero, tone, href, icon }) {
+  const chip = hero
+    ? 'bg-[#102108]/10 text-[#102108]'
+    : tone === 'bad' ? 'bg-bad-bg text-bad' : tone === 'warn' ? 'bg-warn-bg text-warn' : tone === 'ok' ? 'bg-ok-bg text-ok' : 'bg-brand-soft text-brand';
   const body = (
     <>
-      <span className={cn('block text-[11.5px] font-semibold uppercase tracking-wide', hero ? 'text-[#102108]/75' : 'text-ink-muted')}>{label}</span>
-      <span className={cn('tnum mt-0.5 block truncate font-display text-[19px] font-extrabold leading-tight', hero ? 'text-[#102108]' : tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink')}>{value}</span>
+      <span className="flex items-center justify-between gap-2">
+        <span className={cn('text-[12px] font-semibold', hero ? 'text-[#102108]/80' : 'text-ink-muted')}>{label}</span>
+        {icon && <span className={cn('grid size-7 shrink-0 place-items-center rounded-lg [&>svg]:size-4', chip)}>{icon}</span>}
+      </span>
+      <span className={cn('tnum mt-1 block truncate font-display text-[21px] font-extrabold leading-tight tracking-tight', hero ? 'text-[#102108]' : tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink')}>{value}</span>
       {note && <span className={cn('mt-0.5 block truncate text-[11.5px]', hero ? 'text-[#102108]/75' : 'text-ink-muted')}>{note}</span>}
     </>
   );
-  const cls = cn('block rounded-xl border px-3.5 py-2.5 transition-colors', hero ? 'border-transparent bg-[#92D050] hover:bg-[#86c445]' : 'border-line bg-surface hover:bg-surface-2');
+  const cls = cn(
+    'block rounded-xl border px-3.5 py-3 transition-[background-color,transform] duration-150 active:scale-[0.98]',
+    hero ? 'border-transparent bg-[#92D050] hover:bg-[#86c445]' : 'border-line bg-surface hover:border-line-firm hover:bg-surface-2'
+  );
   return href ? <Link href={href} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
 }
 
@@ -271,7 +287,7 @@ function Trajectory({ days, average }) {
         </span>
       </div>
 
-      <div className="relative flex items-end gap-1.5">
+      <div className="relative flex items-end gap-2">
         {average > 0 && (
           // The line sits in its own track, which stops above the day
           // names. Measured against the whole chart it came out 22px
@@ -303,10 +319,8 @@ function Trajectory({ days, average }) {
             <span className="flex items-end" style={{ height: TRACK }}>
               <span
                 className={cn(
-                  'w-full rounded-b-[3px] rounded-t-lg transition-[height,box-shadow,opacity] duration-200 ease-out',
-                  i === active
-                    ? 'bg-[linear-gradient(180deg,rgb(var(--brand)),rgb(var(--brand-dark)))]'
-                    : 'bg-[linear-gradient(180deg,rgb(var(--brand)/0.34),rgb(var(--brand)/0.14))]'
+                  'w-full rounded-md transition-[height,background-color] duration-200 ease-out',
+                  i === active ? 'bg-[#92D050]' : 'bg-[#92D050]/35 group-hover:bg-[#92D050]/60'
                 )}
                 style={{ height: Math.max(4, Math.round((d.total / max) * TRACK)) }}
               />
@@ -436,27 +450,23 @@ function Latest({ rows }) {
   if (!rows.length) return <None>No orders yet.</None>;
 
   return (
-    <ul className="-my-1">
-      {rows.map((o) => (
+    <ul className="-my-1 divide-y divide-line">
+      {rows.slice(0, 5).map((o) => (
         <li key={o.id}>
           <Link
             href={`/manager/orders/${o.id}`}
-            className="flex items-center gap-2.5 rounded-sm px-1.5 py-1 text-[13px] transition-colors duration-150 hover:bg-surface-2"
+            className="block rounded-lg px-2 py-1.5 text-[13px] transition-colors duration-150 hover:bg-surface-2"
           >
-            {/* One line on a wide screen; on a phone the status drops
-                under the name, where it fits instead of pushing the row
-                past the edge. */}
-            <span className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-2.5">
-              <span className="flex min-w-0 items-baseline gap-2.5 sm:flex-1">
-                <span className="tnum shrink-0 font-bold text-ink">{o.order_no}</span>
-                <span className="min-w-0 truncate text-ink-muted">{o.company_name || o.ordered_by_name}</span>
-              </span>
-              <span className="mt-1 block sm:mt-0">
-                <StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip>
-              </span>
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="tnum font-bold text-ink">{o.order_no}</span>
+              <span className="tnum font-semibold text-ink">{money(o.total)}</span>
             </span>
-            <span className="tnum shrink-0 font-semibold text-ink">{money(o.total)}</span>
-            <span className="tnum hidden shrink-0 text-ink-faint sm:block">{time(o.created_at)}</span>
+            <span className="mt-0.5 flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate text-[12px] text-ink-muted">
+                {o.company_name || o.ordered_by_name} · {time(o.created_at)}
+              </span>
+              <StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip>
+            </span>
           </Link>
         </li>
       ))}
