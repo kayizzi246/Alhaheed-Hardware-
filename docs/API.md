@@ -191,6 +191,28 @@ The accounts queue carries `payment_id` and `has_proof` on each row.
 
 Deleting a desk login: `DELETE /manager/staff/{id}` or `POST /manager/staff/{id}/delete`. It ends their sessions, removes the desk, scrambles the password and frees the phone and email. The record stays so receipts, expenses and the audit trail keep the name. Not allowed on yourself or the owner account.
 
+## Stock control — `/api/manager`  *(manager only)*
+
+Book stock is never stored: it is `SUM(qty)` of every line in `wp_ah_stock_moves` for the item (purchases +, sales −, counts and corrections ±), with no row limit. WooCommerce's own count is kept in step and any item where the two differ is reported.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/manager/stock/control` | Dashboard: stock value, in/out of stock, days of stock, this month's margin against last, the six-month margin alert, reorder list (with suggested qty and cost), slow and dead stock, items below zero, 12 months of sales and purchases |
+| GET | `/manager/stock/margins?month=YYYY-MM` | 12 months of sales, cost of sales, profit, margin and zakat (all without VAT), and every line sold below cost in the month, grouped by item |
+| GET | `/manager/products/{id}/ledger` | One item: date, in (debit), out (credit), running balance, supplier or customer, cost, price, who; totals and its reorder figures |
+| GET | `/manager/stock/overrides` | Rules the manager bent, with the reason |
+| POST | `/manager/products/{id}/stock` | A purchase (`kind: received`) needs `date`, `supplier`, `ref` (FDN) and `unitCost`, or it is refused |
+| GET | `/manager/stocktakes` | The counts |
+| POST | `/manager/stocktakes/start` | {date, note}; one draft at a time |
+| GET | `/manager/stocktakes/{id}` | Every item with book stock and what was counted |
+| POST | `/manager/stocktakes/{id}/lines` | {lines:[{productId, counted}]}; each saved line keeps the book figure at that moment |
+| POST | `/manager/stocktakes/{id}/approve` | Posts each variance as a "stock count" adjustment dated the day of the count |
+| POST | `/manager/stocktakes/{id}/delete` | Drafts only |
+
+Sales (`POST /cashier/orders`, and app orders) are refused with `409 ah_sale_blocked` when they would take the book below zero (counting goods sold and paid for but not yet released) or sell below the latest purchase cost. `data.problems` lists why and `data.canOverride` says whether this login may override; a manager resends with `override: "reason"`, which is kept in `wp_ah_overrides`. A line with no item, quantity or price is refused outright. Each sold line is stamped with the latest purchase cost (`_ah_unit_cost`); nobody types it.
+
+Rules: reorder when days of stock < 15 or book < target (`reorder_level`); suggested order = max(0, target − book); average daily sales = units sold in the last 90 days ÷ 90; dead = stock with no sale in 180 days; slow = over 180 days of stock; zakat = 2.5% of the month's gross profit, matched on year and month. The tests are in `wordpress/al-hadeed-hardware/tests/run.php`.
+
 ## Workers and salaries — `/api/manager`  *(manager only)*
 
 Everyone the shop pays, with or without a desk login. Approved salaries

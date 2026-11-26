@@ -26,7 +26,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::Open($out, 'Create')
 try {
   $files = Get-ChildItem -Path $src -Recurse -File |
-           Where-Object { $_.Name -ne '.DS_Store' -and $_.Extension -ne '.zip' }
+           Where-Object { $_.Name -ne '.DS_Store' -and $_.Extension -ne '.zip' -and $_.FullName -notmatch '[\\/]tests[\\/]' }
 
   foreach ($f in $files) {
     # Path inside the zip: always "al-hadeed-hardware/..." with forward

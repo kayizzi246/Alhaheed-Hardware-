@@ -409,6 +409,8 @@ class AH_Rest {
 		AH_Account::routes();
 		AH_Stock::routes();
 		AH_Workers::routes();
+		AH_Ledger::routes();
+		AH_Stocktake::routes();
 
 		// The screenshot behind a mobile money reference, and the check
 		// that a reference has not already paid for another order.
@@ -719,7 +721,7 @@ class AH_Rest {
 	public static function products( $req ) {
 		$args = array(
 			'status' => 'publish',
-			'limit'  => 500,
+			'limit'  => -1,
 			'return' => 'objects',
 		);
 		if ( $req->get_param( 'search' ) ) {
@@ -732,6 +734,11 @@ class AH_Rest {
 		$products = wc_get_products( $args );
 		$out      = array();
 		foreach ( $products as $p ) {
+			// Not for sale until the manager gives it a price: an imported
+			// list arrives without prices, and UGX 0 is not a price.
+			if ( (float) $p->get_price() <= 0 ) {
+				continue;
+			}
 			$row = AH_Shape::product( $p );
 			if ( $row ) {
 				$out[] = $row;
@@ -1019,7 +1026,7 @@ class AH_Rest {
 		$bill_name  = $customer ? $customer->display_name : 'Walk-in customer';
 		$bill_phone = $customer ? (string) get_user_meta( $customer->ID, 'ah_phone', true ) : '';
 
-		$order = self::build_order( $customer, $items, $bill_phone, $bill_name, $how, $where, 'counter' );
+		$order = self::build_order( $customer, $items, $bill_phone, $bill_name, $how, $where, 'counter', trim( sanitize_textarea_field( (string) $req->get_param( 'override' ) ) ) );
 		if ( is_wp_error( $order ) ) {
 			return $order;
 		}
@@ -1047,34 +1054,23 @@ class AH_Rest {
 	 *
 	 * @return WC_Order|WP_Error
 	 */
-	private static function build_order( $user, $items, $phone, $name, $how, $where, $source = 'app' ) {
+	private static function build_order( $user, $items, $phone, $name, $how, $where, $source = 'app', $override = '' ) {
+		$checked = self::check_sale( $items, $source, $override );
+		if ( is_wp_error( $checked ) ) {
+			return $checked;
+		}
+
 		// No account at all is allowed: a walk-in who would rather not
 		// give a name or number. WooCommerce calls that a guest order.
 		$order = wc_create_order( array( 'customer_id' => $user ? $user->ID : 0 ) );
 
-		foreach ( $items as $line ) {
-			$product_id = isset( $line['productId'] ) ? (int) $line['productId'] : 0;
-			$qty        = isset( $line['quantity'] ) ? max( 1, (int) $line['quantity'] ) : 1;
-			$product    = $product_id ? wc_get_product( $product_id ) : null;
-
-			if ( ! $product ) {
-				$order->delete( true );
-				return self::err( 'ah_bad_product', "Product {$product_id} is not available", 400 );
+		foreach ( $checked['lines'] as $line ) {
+			$item_id = $order->add_product( $line['product'], $line['qty'] );
+			// The latest purchase cost, stamped on the line as it is sold.
+			// Nobody types it, so margins cannot be made up afterwards.
+			if ( $item_id ) {
+				wc_update_order_item_meta( $item_id, '_ah_unit_cost', $line['cost'] );
 			}
-			if ( $product->get_manage_stock() && $qty > (int) $product->get_stock_quantity() ) {
-				$order->delete( true );
-				return self::err(
-					'ah_no_stock',
-					sprintf(
-						'Only %d %s of %s left in stock',
-						(int) $product->get_stock_quantity(),
-						$product->get_attribute( 'unit' ) ?: 'pc',
-						$product->get_name()
-					),
-					409
-				);
-			}
-			$order->add_product( $product, $qty );
 		}
 
 		if ( $phone ) {
@@ -1099,9 +1095,105 @@ class AH_Rest {
 		$order->set_status( 'pending' );
 		$order->save();
 
+		// The manager's reasons, now there is an order to pin them to.
+		foreach ( $checked['overrides'] as $o ) {
+			AH_Ledger::override( $o['rule'], $checked['reason'], array(
+				'product_id' => $o['productId'],
+				'order_id'   => $order->get_id(),
+				'detail'     => AH_Shape::order_no( $order ) . ' · ' . $o['detail'],
+			) );
+		}
+
 		AH_Flow::on_new_order( $order, false );
 
 		return $order;
+	}
+
+	/**
+	 * The rules a sale has to pass before it becomes an order.
+	 *
+	 * Refused outright: a line with no item, no quantity or no price.
+	 * Refused unless the manager overrides it with a reason: selling
+	 * more than the book holds (less what is sold and waiting to be
+	 * released), and selling below the latest purchase cost. A customer
+	 * on the app is simply told; only a manager at a desk can override.
+	 *
+	 * @return array|WP_Error [ 'lines', 'overrides', 'reason' ]
+	 */
+	public static function check_sale( $items, $source = 'app', $override = '' ) {
+		if ( ! is_array( $items ) || ! $items ) {
+			return self::err( 'ah_empty', 'Add at least one item to the sale', 400 );
+		}
+
+		// The same item on two lines counts as one, against the book.
+		$want = array();
+		foreach ( $items as $i => $line ) {
+			$product_id = isset( $line['productId'] ) ? (int) $line['productId'] : 0;
+			$qty        = isset( $line['quantity'] ) ? (int) $line['quantity'] : 0;
+			$product    = $product_id ? wc_get_product( $product_id ) : null;
+			if ( ! $product || 'trash' === $product->get_status() ) {
+				return self::err( 'ah_bad_product', 'Line ' . ( $i + 1 ) . ' has no item, or the item is no longer sold', 400 );
+			}
+			if ( $qty < 1 ) {
+				return self::err( 'ah_bad_qty', sprintf( 'Enter how many %s', $product->get_name() ), 400 );
+			}
+			if ( (int) round( (float) $product->get_price() ) <= 0 ) {
+				return self::err( 'ah_no_price', sprintf( '%s has no selling price yet. The manager sets it on Products.', $product->get_name() ), 400 );
+			}
+			if ( ! isset( $want[ $product_id ] ) ) {
+				$want[ $product_id ] = array( 'product' => $product, 'qty' => 0 );
+			}
+			$want[ $product_id ]['qty'] += $qty;
+		}
+
+		$problems = array();
+		$lines    = array();
+		foreach ( $want as $id => $w ) {
+			$product  = $w['product'];
+			$unit     = get_post_meta( $id, '_ah_unit', true ) ?: 'pc';
+			$book     = AH_Ledger::book( $id );
+			$reserved = AH_Ledger::reserved( $id );
+			$reserved = isset( $reserved[ $id ] ) ? $reserved[ $id ] : 0;
+			$price    = (int) round( (float) $product->get_price() );
+			$cost     = (int) get_post_meta( $id, '_ah_cost', true );
+
+			foreach ( AH_Stock_Math::sale_problems( $book, $reserved, $w['qty'], $price, $cost ) as $rule ) {
+				$free       = max( 0, $book - $reserved );
+				$problems[] = array(
+					'rule'      => $rule,
+					'productId' => $id,
+					'name'      => $product->get_name(),
+					'detail'    => 'negative_stock' === $rule
+						? sprintf( '%d %s wanted, %d in stock%s', $w['qty'], $unit, $free, $reserved ? " ({$reserved} more sold, waiting to be released)" : '' )
+						: sprintf( 'Price UGX %s is below the buy price UGX %s', number_format( $price ), number_format( $cost ) ),
+				);
+			}
+			$lines[] = array( 'product' => $product, 'qty' => $w['qty'], 'cost' => $cost );
+		}
+
+		if ( ! $problems ) {
+			return array( 'lines' => $lines, 'overrides' => array(), 'reason' => '' );
+		}
+
+		$is_manager = 'manager' === AH_Roles::desk_of( AH_Auth::current() );
+		if ( 'app' === $source || ! $is_manager || mb_strlen( $override ) < 5 ) {
+			$first = $problems[0];
+			$say   = 'negative_stock' === $first['rule']
+				? sprintf( 'Not enough %s in stock: %s.', $first['name'], $first['detail'] )
+				: sprintf( '%s would be sold below cost: %s.', $first['name'], $first['detail'] );
+			if ( 'app' !== $source ) {
+				$say .= $is_manager
+					? ' To sell anyway, give a reason for overriding.'
+					: ' Only the manager can override this.';
+			}
+			return new WP_Error( 'ah_sale_blocked', $say, array(
+				'status'      => 409,
+				'problems'    => 'app' === $source ? array() : $problems,
+				'canOverride' => $is_manager && 'app' !== $source,
+			) );
+		}
+
+		return array( 'lines' => $lines, 'overrides' => $problems, 'reason' => $override );
 	}
 
 	private static function delivery_note( $how, $where ) {

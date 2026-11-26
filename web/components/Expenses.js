@@ -62,7 +62,7 @@ function PaymentFields({ p, set, paid }) {
                 className={cn(
                   'min-h-11 rounded-sm border px-3 py-2 text-[13px] font-semibold leading-tight',
                   'transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-[.97]',
-                  on ? 'border-fill bg-fill text-white' : 'border-line-firm/80 bg-surface text-ink-2 hover:bg-surface-2'
+                  on ? 'border-fill bg-fill text-on-fill' : 'border-line-firm/80 bg-surface text-ink-2 hover:bg-surface-2'
                 )}
               >
                 {m.label}

@@ -74,9 +74,13 @@ const Color _hairline = Color(0xFFE2E8F2);
 const Color _tile = Color(0xFFF9FAFD);
 const Color _navy = Color(0xFF0E201A);
 const Color _navyDark = Color(0xFF081511);
-const Color _brand = Color(0xFF15803D);
-const Color _brandDark = Color(0xFF166534);
-const Color _brandPale = Color(0xFFECFDF3);
+// #92D050 is the shop's green. It is light, so what sits on it is dark
+// (_onLime); green words and marks on white use the deeper _brand.
+const Color _lime = Color(0xFF92D050);
+const Color _onLime = Color(0xFF102108);
+const Color _brand = Color(0xFF3F7A12);
+const Color _brandDark = Color(0xFF2F5E0C);
+const Color _brandPale = Color(0xFFF0F8E6);
 const Color _green = Color(0xFF0E7444);
 const Color _greenPale = Color(0xFFE6F6ED);
 const Color _blue = Color(0xFF0B658D);
@@ -96,7 +100,7 @@ const List<BoxShadow> _cardShadow = [];
 const LinearGradient _heroGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [_brand, _brand],
+  colors: [_lime, _lime],
 );
 
 double _ui = 1.0;
@@ -853,7 +857,7 @@ class _BottomBar extends StatelessWidget {
                                         gradient: _heroGradient,
                                         borderRadius: BorderRadius.circular(9),
                                         border:
-                                            Border.all(color: _white, width: 2),
+                                            Border.all(color: _onLime, width: 2),
                                       ),
                                       constraints:
                                           const BoxConstraints(minWidth: 19),
@@ -861,7 +865,7 @@ class _BottomBar extends StatelessWidget {
                                           textAlign: TextAlign.center,
                                           style: _txt(10,
                                               weight: FontWeight.w800,
-                                              color: _white)),
+                                              color: _onLime)),
                                     ),
                                   );
                                 },
@@ -902,7 +906,7 @@ class _Header extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [_brand, _brand],
+            colors: [_lime, _lime],
           ),
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
         ),
@@ -935,13 +939,13 @@ class _Header extends StatelessWidget {
                     height: 40,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: _white.withOpacity(0.16),
+                      color: _onLime.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: _white.withOpacity(0.24)),
+                      border: Border.all(color: _onLime.withOpacity(0.18)),
                     ),
                     child: Text('AH',
                         style: _title(14,
-                            weight: FontWeight.w800, color: _white)),
+                            weight: FontWeight.w800, color: _onLime)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -952,13 +956,13 @@ class _Header extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: _title(17,
-                                weight: FontWeight.w800, color: _white)),
+                                weight: FontWeight.w800, color: _onLime)),
                         const SizedBox(height: 2),
                         Text(subtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style:
-                                _txt(12.5, color: _white.withOpacity(0.92))),
+                                _txt(12.5, color: _onLime.withOpacity(0.92))),
                       ],
                     ),
                   ),
@@ -1032,10 +1036,10 @@ class _Empty extends StatelessWidget {
                     height: 46,
                     padding: const EdgeInsets.symmetric(horizontal: 22),
                     alignment: Alignment.center,
-                    decoration: _liquid(tint: _brand, radius: 23),
+                    decoration: _liquid(tint: _lime, radius: 23),
                     child: Text(action!,
                         style:
-                            _txt(15, weight: FontWeight.w600, color: _white)),
+                            _txt(15, weight: FontWeight.w600, color: _onLime)),
                   ),
                 ),
               ],
@@ -1223,7 +1227,7 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
                           height: 38,
                           decoration: _liquid(circle: true, onDark: true),
                           child: const Icon(Icons.refresh_rounded,
-                              size: 19, color: _white),
+                              size: 19, color: _onLime),
                         ),
                       ),
                     ],
@@ -1325,23 +1329,23 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
                                   color: _white.withOpacity(0.22)),
                             ),
                             child: const Icon(Icons.payments_outlined,
-                                size: 18, color: _white),
+                                size: 18, color: _onLime),
                           ),
                           const SizedBox(width: 10),
                           Text('Sales today',
                               style: _txt(13,
                                   weight: FontWeight.w600,
-                                  color: _white.withOpacity(0.85))),
+                                  color: _onLime.withOpacity(0.85))),
                         ],
                       ),
                       const SizedBox(height: 16),
                       Text(_ugx((d['salesToday'] as num?)?.toInt() ?? 0),
                           style: _title(31,
-                              weight: FontWeight.w800, color: _white)),
+                              weight: FontWeight.w800, color: _onLime)),
                       const SizedBox(height: 8),
                       Text('${d['ordersToday'] ?? 0} orders today',
                           style:
-                              _txt(13, color: _white.withOpacity(0.8))),
+                              _txt(13, color: _onLime.withOpacity(0.8))),
                     ],
                   ),
                 ),

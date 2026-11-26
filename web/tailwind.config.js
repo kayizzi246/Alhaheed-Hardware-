@@ -35,6 +35,7 @@ export default {
           DEFAULT: 'rgb(var(--fill) / <alpha-value>)',
           dark: 'rgb(var(--fill-dark) / <alpha-value>)',
         },
+        'on-fill': 'rgb(var(--on-fill) / <alpha-value>)',
         navy: {
           DEFAULT: 'rgb(var(--navy) / <alpha-value>)',
           deep: 'rgb(var(--navy-deep) / <alpha-value>)',

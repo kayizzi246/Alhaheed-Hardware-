@@ -73,13 +73,15 @@ export function clearSession() {
  * or `timeout`, not after `denied`.
  */
 export class ApiError extends Error {
-  constructor(message, { status = 0, kind = 'server', code = null, retryAfter = null } = {}) {
+  constructor(message, { status = 0, kind = 'server', code = null, retryAfter = null, data = null } = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.kind = kind;
     this.code = code;
     this.retryAfter = retryAfter;
+    // What the server sent with the refusal: a blocked sale lists its problems here.
+    this.data = data;
   }
 }
 
@@ -183,6 +185,7 @@ function fail(res, data) {
     kind: res.status === 403 ? 'denied' : res.status === 429 ? 'limited' : res.status >= 500 ? 'server' : 'refused',
     code: data && data.code,
     retryAfter: data && data.data && data.data.retryAfter,
+    data: data && data.data,
   });
 }
 

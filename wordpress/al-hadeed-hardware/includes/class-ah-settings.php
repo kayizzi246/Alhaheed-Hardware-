@@ -37,7 +37,20 @@ class AH_Settings {
 			'reply_email'   => '',
 			'otp_dev_mode'  => 'yes',
 			'cors_origins'  => '*',
+			// Selling prices and buy prices both include 18% VAT. Margins
+			// and zakat are worked out with it taken off.
+			'vat_included'  => 'yes',
 		);
+	}
+
+	/** One setting, or its default. */
+	public static function get( $key ) {
+		$all = get_option( self::OPTION, array() );
+		if ( is_array( $all ) && isset( $all[ $key ] ) && '' !== $all[ $key ] ) {
+			return $all[ $key ];
+		}
+		$d = self::defaults();
+		return isset( $d[ $key ] ) ? $d[ $key ] : null;
 	}
 
 	public static function init() {

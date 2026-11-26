@@ -31,8 +31,13 @@ export const NAV = {
     { href: '/manager', label: 'Dashboard', icon: 'home' },
     { href: '/manager/orders', label: 'All Orders', icon: 'queue' },
 
+    { group: 'Stock' },
+    { href: '/manager/stock', label: 'Stock control', icon: 'scales' },
+    { href: '/manager/products', label: 'Products & ledger', icon: 'box' },
+    { href: '/manager/stock-take', label: 'Stock-take', icon: 'check' },
+    { href: '/manager/margins', label: 'Margins & zakat', icon: 'chart' },
+
     { group: 'The shop' },
-    { href: '/manager/products', label: 'Products & stock', icon: 'box' },
     { href: '/manager/customers', label: 'Customers', icon: 'people' },
     { href: '/manager/workers', label: 'Workers & salaries', icon: 'people' },
     { href: '/manager/staff', label: 'Desk logins', icon: 'user' },

@@ -10,6 +10,7 @@ import {
   PageHead, Segmented,
 } from '@/components/ui';
 import ReceivePayment from '@/components/ReceivePayment';
+import SaleBlocked from '@/components/SaleBlocked';
 
 const HOW = [
   { value: 'pickup', label: 'They take it now' },
@@ -48,6 +49,7 @@ export default function CounterSale() {
 
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState('');
+  const [blocked, setBlocked] = useState(null); // a sale the stock rules stopped
   const [paying, setPaying] = useState(null); // the order, once made
   const [done, setDone] = useState(null);     // { orderNo, receiptNo } | { orderNo, waiting: true }
   const search = useRef(null);
@@ -123,6 +125,7 @@ export default function CounterSale() {
     setAddress('');
     setQ('');
     setProblem('');
+    setBlocked(null);
     search.current?.focus();
   }
 
@@ -134,15 +137,17 @@ export default function CounterSale() {
     (!isNew || name.trim().length >= 2) &&
     (how !== 'delivery' || address.trim().length > 0);
 
-  async function takePayment() {
+  async function takePayment(override) {
     if (!ready) return;
     setBusy(true);
     setProblem('');
+    setBlocked(null);
     try {
       const body = {
         items: basket.map((l) => ({ productId: l.product.id, quantity: l.qty })),
         fulfilment: how,
         address: how === 'delivery' ? address.trim() : '',
+        ...(typeof override === 'string' ? { override } : {}),
       };
       if (match && typeof match === 'object') body.customerId = match.id;
       else if (phone.trim()) { body.phone = phone.trim(); body.name = name.trim(); body.welcome = true; }
@@ -150,7 +155,8 @@ export default function CounterSale() {
       const r = await api('/api/cashier/orders', { method: 'POST', body });
       setPaying(r.order);
     } catch (e) {
-      setProblem(e.message);
+      if (e.code === 'ah_sale_blocked') setBlocked(e);
+      else setProblem(e.message);
     } finally {
       setBusy(false);
     }
@@ -251,7 +257,7 @@ export default function CounterSale() {
                       <span
                         className={cn(
                           'tnum grid h-7 min-w-7 shrink-0 place-items-center rounded-full px-2 text-xs font-bold',
-                          line ? 'bg-fill text-white' : 'border border-line text-ink-muted'
+                          line ? 'bg-fill text-on-fill' : 'border border-line text-ink-muted'
                         )}
                         aria-label={line ? `${line.qty} in the sale` : 'Add'}
                       >
@@ -350,13 +356,18 @@ export default function CounterSale() {
                 ))}
               </ul>
             )}
+            {blocked && (
+              <div className="border-t border-line p-4 sm:p-6">
+                <SaleBlocked error={blocked} busy={busy} onOverride={(why) => takePayment(why)} onCancel={() => setBlocked(null)} />
+              </div>
+            )}
             <div className="border-t border-line p-6 max-lg:hidden">
               <Alert>{problem}</Alert>
               <div className="mb-3 flex items-baseline justify-between">
                 <span className="text-sm font-semibold text-ink-muted">Total</span>
                 <span className="tnum text-[26px] font-extrabold text-ink">{money(total)}</span>
               </div>
-              <Button size="lg" block disabled={!ready} onClick={takePayment}>
+              <Button size="lg" block disabled={!ready} onClick={() => takePayment()}>
                 {busy ? 'Saving the sale…' : 'Take payment'}
               </Button>
               {basket.length > 0 && (
@@ -377,7 +388,7 @@ export default function CounterSale() {
             <span className="block text-xs text-ink-muted">{count} {count === 1 ? 'item' : 'items'}</span>
             <span className="tnum block text-[20px] font-extrabold leading-tight text-ink">{money(total)}</span>
           </a>
-          <Button size="lg" disabled={!ready} onClick={takePayment}>
+          <Button size="lg" disabled={!ready} onClick={() => takePayment()}>
             {busy ? 'Saving…' : 'Take payment'}
           </Button>
         </div>

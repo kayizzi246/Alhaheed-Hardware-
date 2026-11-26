@@ -12,7 +12,7 @@
  */
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 
-const BLUE = 'FF15803D'; // the shop's green
+const BLUE = 'FF3F7A12'; // the shop's green
 const NAVY = 'FF0E201A';
 const INK = 'FF0F1B33';
 const MUTED = 'FF55637D';

@@ -488,7 +488,7 @@ function OrderFlowArt() {
             <span
               className={[
                 'tnum grid size-7 shrink-0 place-items-center rounded-lg text-[11.5px] font-extrabold',
-                i === 0 ? 'bg-fill text-white' : 'bg-white/12 text-white/70',
+                i === 0 ? 'bg-fill text-on-fill' : 'bg-white/12 text-white/70',
               ].join(' ')}
             >
               {i + 1}

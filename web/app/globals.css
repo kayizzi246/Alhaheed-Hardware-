@@ -22,17 +22,21 @@
     --navy:        14 32 26;   /* the slab: a deep forest slate under the green */
     --navy-deep:   8 21 17;
     --navy-soft:   26 52 43;
-    --brand:      21 128 61;
-    --brand-dark: 22 101 52;
-    --brand-soft: 236 253 243;
-    --fill:       21 128 61;  /* a solid that carries white text */
-    --fill-dark:  20 83 45;
+    /* #92D050, the shop's green. Too light to carry white text, so it
+       carries dark text; a deeper shade of it is used for green words
+       and marks on white. */
+    --brand:      63 122 18;   /* #3F7A12: green text on white, 5.4:1 */
+    --brand-dark: 47 94 12;
+    --brand-soft: 240 248 230;
+    --fill:       146 208 80;  /* #92D050: buttons and highlights */
+    --fill-dark:  125 189 58;
+    --on-fill:    16 33 8;     /* the text that sits on it */
 
     /* The sign-in panel. A vivid blue in daylight; in the dark theme
        a deeper one, because a bright slab beside a dark form is a
        lamp pointed at the person reading it. */
-    --panel-from:  22 138 70;
-    --panel-to:    12 62 36;
+    --panel-from:  63 122 18;
+    --panel-to:    31 66 9;
 
     /* ── Surfaces ──────────────────────────────────────────────────── */
     --bg:          245 247 251;
@@ -61,7 +65,7 @@
     /* ── Charts ────────────────────────────────────────────────────── */
     /* Checked, not guessed: two warm hues an orange apart are the same
        colour to a protan reader, so the third leaves the family. */
-    --cat-a: #15803d;
+    --cat-a: #5a9a22;
     --cat-b: #e8862a;
     --cat-c: #b5179e;
 
@@ -88,11 +92,12 @@
       --navy:        10 24 20;
       --navy-deep:   5 15 12;
       --navy-soft:   22 44 36;
-      --brand:      74 222 128;
-      --brand-dark: 134 239 172;
-      --brand-soft: 18 48 32;
-    --fill:       22 128 64;  /* a solid that carries white text */
-    --fill-dark:  15 88 44;
+      --brand:      146 208 80;
+      --brand-dark: 183 228 135;
+      --brand-soft: 28 44 16;
+      --fill:       146 208 80;
+      --fill-dark:  125 189 58;
+      --on-fill:    16 33 8;
 
       --panel-from:  20 92 52;
       --panel-to:    8 34 21;

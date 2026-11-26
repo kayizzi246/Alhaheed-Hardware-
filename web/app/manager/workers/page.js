@@ -938,8 +938,8 @@ function printSlips(slips, period) {
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Payslips ${esc(period)}</title><style>
     body{font:14px/1.45 system-ui,sans-serif;color:#0e201a;margin:0}
     section{max-width:560px;margin:32px auto;padding:28px;border:1px solid #d6e2dc;border-radius:12px;page-break-after:always}
-    header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #15803d;padding-bottom:10px}
-    h1{font-size:18px;letter-spacing:.04em;margin:0;color:#15803d}header p{margin:0;color:#475569}
+    header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #3f7a12;padding-bottom:10px}
+    h1{font-size:18px;letter-spacing:.04em;margin:0;color:#3f7a12}header p{margin:0;color:#475569}
     .who{display:flex;justify-content:space-between;margin:16px 0}.who span{color:#475569}
     table{width:100%;border-collapse:collapse}td{padding:7px 0;border-bottom:1px solid #e6eeea}td:last-child{text-align:right;font-variant-numeric:tabular-nums}
     tr.b td{font-weight:600}tr.net td{font-weight:800;font-size:16px;border-bottom:0;padding-top:12px}

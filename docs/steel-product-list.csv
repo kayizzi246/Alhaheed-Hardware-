@@ -1,0 +1,204 @@
+code,name,category,unit
+5810,L 25 X 25 X 2.5 Par,Angle Line,length
+5812,L 25 X 25 X 3 Par,Angle Line,length
+5891,L 30 x 30 x 2.5 Par,Angle Line,length
+5813,L 30 X 30 X 3 Par,Angle Line,length
+5684,L 30 x 30 x 3mm,Angle Line,length
+5814,L 40 X 40 X 2.5 Par,Angle Line,length
+5603,L 40 x 40 x 2.5mm,Angle Line,length
+5815,L 40 X 40 X 3 Par,Angle Line,length
+5604,L 40 x 40 x 3mm,Angle Line,length
+5816,L 40 X 40 X 4 Par,Angle Line,length
+5605,L 40 x 40 x 4mm,Angle Line,length
+5817,L 40 X 40 X 5 Par,Angle Line,length
+5676,L 40 x 40 x 5mm,Angle Line,length
+5818,L 50 X 50 X 3 Par,Angle Line,length
+5606,L 50 x 50 x 3mm,Angle Line,length
+5819,L 50 X 50 X 4 Par,Angle Line,length
+5607,L 50 x 50 x 4mm,Angle Line,length
+5820,L 50 X 50 X 5 Par,Angle Line,length
+5608,L 50 x 50 x 5mm,Angle Line,length
+5892,L 50 X 50 X 6 Par,Angle Line,length
+5610,L 50 x 50 x 6mm,Angle Line,length
+5677,L 65 x 65 x 6mm,Angle Line,length
+5821,L 75 X 75 X 6 Par,Angle Line,length
+5611,L 75 x 75 x 6mm,Angle Line,length
+5822,L 75 X 75 X 8 Par,Angle Line,length
+5838,FlatBar 16 x 2mm,Flat Bars,length
+5805,FlatBar 20 x 2mm,Flat Bars,length
+5836,FlatBar 20 x 3mm,Flat Bars,length
+5806,FlatBar 25 x 2mm,Flat Bars,length
+5837,FlatBar 25 x 3mm,Flat Bars,length
+5893,FlatBar 25 x 4mm Par,Flat Bars,length
+5823,FlatBar 25 x 6mm Par,Flat Bars,length
+5807,FlatBar 40 x 3mm,Flat Bars,length
+5824,FlatBar 40 x 3mm Par,Flat Bars,length
+5825,FlatBar 40 x 6mm Par,Flat Bars,length
+5826,FlatBar 50 x 3mm Par,Flat Bars,length
+5827,FlatBar 50 x 4mm Par,Flat Bars,length
+5828,FlatBar 50 x 6mm Par,Flat Bars,length
+5875,Louver 8ft x 0.9mm,Flat Bars,pc
+5900,4.5 Metal Cutting Disc,Others,pc
+5904,4.5 Metal Grinding Disc,Others,pc
+5913,4in x 8ft Design Strip,Others,pc
+5899,5 Metal Cutting Disc,Others,pc
+5879,7 Metal cutting disc,Others,pc
+5901,7 Metal Cutting Disc 1802,Others,pc
+5903,7 Metal Grinding Disc,Others,pc
+5920,9 Metal Cutting Disc 2301,Others,pc
+5898,9 Metal Cutting Disc 2302,Others,pc
+5897,9 Metal Cutting Disc 2303,Others,pc
+5902,9 Metal Grinding Disc,Others,pc
+5761,GS Round 38mm x 1mm,Pipes,length
+5760,GS Round pipe 32 x 1mm,Pipes,length
+5762,GS Round pipe 50 x 1mm,Pipes,length
+5714,Hallow section 12 x 12 x 1mm,Pipes,length
+5632,Hallow section 16 x 16 x 1.2mm,Pipes,length
+5631,Hallow section 16 x 16 x 1mm,Pipes,length
+5561,Hallow Section 20 x 20 x 1 mm,Pipes,length
+5562,Hallow Section 20 x 20 x 1.2mm,Pipes,length
+5563,Hallow Section 20 x 20 x 1.5mm,Pipes,length
+5633,Hallow section 20 x20 x 2mm,Pipes,length
+5565,Hallow Section 25 x 25 x 1.2mm,Pipes,length
+5566,Hallow Section 25 x 25 x 1.5mm,Pipes,length
+5564,Hallow Section 25 x 25 x 1mm,Pipes,length
+5637,Hallow section 25 x 25 x 2mm,Pipes,length
+5717,Hallow section 30 x 20 x 1mm,Pipes,length
+5568,Hallow Section 30 x 30 x 1.2mm,Pipes,length
+5569,Hallow Section 30 x 30 x 1.5mm,Pipes,length
+5567,Hallow Section 30 x 30 x 1mm,Pipes,length
+5634,Hallow section 30 x 30 x 2mm,Pipes,length
+5581,Hallow Section 40 x 20 x 1.2mm,Pipes,length
+5582,Hallow Section 40 x 20 x 1.5mm,Pipes,length
+5580,Hallow Section 40 x 20 x 1mm,Pipes,length
+5627,Hallow Section 40 x 20 x 2mm,Pipes,length
+5584,Hallow Section 40 x 25 x 1.2mm,Pipes,length
+5585,Hallow Section 40 x 25 x 1.5mm,Pipes,length
+5583,Hallow Section 40 x 25 x 1mm,Pipes,length
+5628,Hallow Section 40 x 25 x 2mm,Pipes,length
+5571,Hallow Section 40 x 40 x 1.2mm,Pipes,length
+5572,Hallow Section 40 x 40 x 1.5mm,Pipes,length
+5570,Hallow Section 40 x 40 x 1mm,Pipes,length
+5573,Hallow Section 40 x 40 x 2mm,Pipes,length
+5647,Hallow section 40 x 40 x 3mm,Pipes,length
+5691,Hallow section 50 x 50 x 0.9mm,Pipes,length
+5635,Hallow section 50 x 50 x 1.2mm,Pipes,length
+5636,Hallow section 50 x 50 x 1.5mm,Pipes,length
+5578,Hallow Section 50 x 50 x 1mm,Pipes,length
+5579,Hallow Section 50 x 50 x 2mm,Pipes,length
+5648,Hallow section 50 x 50 x 3mm,Pipes,length
+5575,Hallow Section 60 x 40 x 1.2mm,Pipes,length
+5576,Hallow Section 60 x 40 x 1.5mm,Pipes,length
+5574,Hallow Section 60 x 40 x 1mm,Pipes,length
+5577,Hallow Section 60 x 40 x 2mm,Pipes,length
+5649,Hallow section 75 x 75 x 3mm,Pipes,length
+5558,Hallow Section 80 x 40 x 1.2mm,Pipes,length
+5559,Hallow Section 80 x 40 x 1.5mm,Pipes,length
+5557,Hallow Section 80 x 40 x 1mm,Pipes,length
+5560,Hallow Section 80 x 40 x 2mm,Pipes,length
+5856,Hollow section 16 x 16 x 1.5mm,Pipes,length
+5808,Hollow Section 16 x 16 x 1mm G,Pipes,length
+5792,Hollow Section 20 x 20 x 1mm G,Pipes,length
+5793,Hollow Section 25 x 25 x 1mm G,Pipes,length
+5794,Hollow section 30 x 20 x 1.2mm,Pipes,length
+5864,Hollow section 30 x 20 x 1.5mm,Pipes,length
+5795,Hollow Section 30 x 20 x 1mm G,Pipes,length
+5865,Hollow section 30 x 20 x 2mm,Pipes,length
+5809,Hollow Section 30 x 30 x 1mm G,Pipes,length
+5841,Hollow section 40 x 20 x 1mmG,Pipes,length
+5842,Hollow section 40 x 25 x 1mmG,Pipes,length
+5831,Hollow section 40 x 40 x 1mm G,Pipes,length
+5849,Hollow Section 50 x 25 x 1mm,Pipes,length
+5798,Hollow Section 60 x 40 x 1mm G,Pipes,length
+5940,Hollow Section 60 x 40x3mm,Pipes,length
+5853,Hollow Section 80 x 40 x 3mm,Pipes,length
+5860,Round pipe 16 x 1mm G,Pipes,length
+5587,Round Pipe 20 x 1.2mm,Pipes,length
+5854,Round pipe 20 x 1.5mm,Pipes,length
+5586,Round Pipe 20 x 1mm,Pipes,length
+5797,Round pipe 20 x 1mm G,Pipes,length
+5589,Round Pipe 25 x 1.2mm,Pipes,length
+5590,Round Pipe 25 x 1.5mm,Pipes,length
+5697,Round pipe 25 x 1mm,Pipes,length
+5829,Round pipe 25 x 1mm G,Pipes,length
+5622,Round pipe 25 x 2mm,Pipes,length
+5709,Round Pipe 32 x 0.9mm,Pipes,length
+5592,Round Pipe 32 x 1.2mm,Pipes,length
+5833,Round pipe 32 x 1.5mm,Pipes,length
+5591,Round Pipe 32 x 1mm,Pipes,length
+5695,Round Pipe 32 x 2mm,Pipes,length
+5655,Round pipe 38 x0.9mm,Pipes,length
+5657,Round pipe 42 x 0.9mm,Pipes,length
+5595,Round Pipe 42 x 1.2mm,Pipes,length
+5596,Round Pipe 42 x 1.5mm,Pipes,length
+5594,Round Pipe 42 x 1mm,Pipes,length
+5619,Round pipe 42 x 2mm,Pipes,length
+5917,Round Pipe 42 x 3mm,Pipes,length
+5658,Round pipe 50 x 0.9mm,Pipes,length
+5598,Round Pipe 50 x 1.2mm,Pipes,length
+5599,Round Pipe 50 x 1.5mm,Pipes,length
+5597,Round Pipe 50 x 1mm,Pipes,length
+5620,Round pipe 50 x 2mm,Pipes,length
+5852,Round pipe 50 x 3mm,Pipes,length
+5708,Round Pipe 63 x 0.9mm,Pipes,length
+5601,Round Pipe 63 x 1.2mm,Pipes,length
+5602,Round Pipe 63 x 1.5mm,Pipes,length
+5600,Round Pipe 63 x 1mm,Pipes,length
+5832,Round pipe 63 x 1mm G,Pipes,length
+5621,Round pipe 63 x 2mm,Pipes,length
+5888,Round Pipe 63 x 3mm,Pipes,length
+5850,Round pipe 76 x 1mm,Pipes,length
+5851,Round pipe 76 x 2mm,Pipes,length
+5855,Round pipe 76 x 3mm,Pipes,length
+5623,MS checkered plate 4ft x 8ft x 1.2mm,Plates,sheet
+5624,MS checkered plate 4ft x 8ft x 1mm,Plates,sheet
+5870,Ms Checkered plate 4ft x 8ft x 4mm,Plates,sheet
+5674,MS Chekered Plate 4ft x 8ft x 1.5mm,Plates,sheet
+5626,MS Chekered plate 4ft x 8ft x 2.8mm,Plates,sheet
+5625,MS Chekered plate 4ft x 8ft x 2mm,Plates,sheet
+5734,Ms plate 4ft x 3.2m x 1.2mm,Plates,sheet
+5687,MS Plate 4ft x 3.2m x 1.5mm,Plates,sheet
+5651,MS Plate 4ft x 3.2m x 2.8mm,Plates,sheet
+5555,MS Plate 4ft x 3.2m x 2mm,Plates,sheet
+5556,MS Plate 4ft x 3.2m x 4mm,Plates,sheet
+5881,Ms Plate 4ft x 3.2m x 5mm,Plates,sheet
+5863,Ms plate 4ft x 3.2m x 6mm,Plates,sheet
+5883,Ms Plate 4ft x 3.2m x 8mm,Plates,sheet
+5914,Ms plate 4ft x 3.3m x 2mm,Plates,sheet
+5550,MS Plate 4ft x 3m x 1.2mm,Plates,sheet
+5552,MS Plate 4ft x 3m x 1.5mm,Plates,sheet
+5553,MS Plate 4ft x 3m x 2.8mm,Plates,sheet
+5551,MS Plate 4ft x 3m x 2mm,Plates,sheet
+5554,MS Plate 4ft x 3m x 4mm,Plates,sheet
+5880,Ms Plate 4ft x 3m x 5mm,Plates,sheet
+5681,MS Plate 4ft x 3m x 6mm,Plates,sheet
+5882,Ms Plate 4ft x 3m x 8mm,Plates,sheet
+5707,MS Plate 4ft x 8ft x 0.7mm,Plates,sheet
+5535,MS Plate 4ft x 8ft x 0.8mm,Plates,sheet
+5537,MS Plate 4ft x 8ft x 0.9mm,Plates,sheet
+5539,MS Plate 4ft x 8ft x 1.2mm,Plates,sheet
+5540,MS Plate 4ft x 8ft x 1.5mm,Plates,sheet
+5548,MS Plate 4ft x 8ft x 10mm,Plates,sheet
+5609,MS Plate 4ft x 8ft x 12mm,Plates,sheet
+5614,MS Plate 4ft x 8ft x 15mm,Plates,sheet
+5538,MS Plate 4ft x 8ft x 1mm,Plates,sheet
+5938,MS Plate 4ft x 8ft x 1mm G,Plates,sheet
+5543,MS Plate 4ft x 8ft x 2.8mm,Plates,sheet
+5612,MS Plate 4ft x 8ft x 20mm,Plates,sheet
+5613,MS Plate 4ft x 8ft x 25mm,Plates,sheet
+5541,MS Plate 4ft x 8ft x 2mm,Plates,sheet
+5722,Ms Plate 4ft x 8ft x 30mm,Plates,sheet
+5723,Ms Plate 4ft x 8ft x 40mm,Plates,sheet
+5544,MS Plate 4ft x 8ft x 4mm,Plates,sheet
+5545,MS Plate 4ft x 8ft x 5mm,Plates,sheet
+5546,MS Plate 4ft x 8ft x 6mm,Plates,sheet
+5547,MS Plate 4ft x 8ft x 8mm,Plates,sheet
+5549,MS Plate 4ft x 9ft x 1.2mm,Plates,sheet
+5799,Ms plate 4ft x 9ft x 1.5mm,Plates,sheet
+5740,RF Ms plate 4ft x 8ft x 1.2mm,Plates,sheet
+5742,RF Ms plate 4ft x 8ft x 1.5mm,Plates,sheet
+5884,Welding Rod 2.5mm,Welding Rods,pkt
+5650,Welding Rod 3.2mm,Welding Rods,pkt
+5744,RF Wire Mesh G12,Wire Mesh,roll
+5803,Wire Mesh G10 R,Wire Mesh,roll
+5846,Wire Mesh G8 R,Wire Mesh,roll

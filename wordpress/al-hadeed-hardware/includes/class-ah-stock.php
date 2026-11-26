@@ -476,17 +476,45 @@ class AH_Stock {
 
 		$args = array( 'note' => $note );
 
+		// The day it happened, when that is not today: a delivery
+		// entered the morning after it came in belongs to the day before.
+		$date = (string) $req->get_param( 'date' );
+		if ( '' !== $date ) {
+			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) || $date > current_time( 'Y-m-d' ) ) {
+				return self::err( 'ah_bad_date', 'Enter the date it happened. It cannot be in the future.', 400 );
+			}
+			$args['moved_on'] = $date;
+		}
+
 		if ( 'received' === $kind ) {
+			// A purchase is only counted with its paperwork: who it came
+			// from, the delivery note number, the day and the price.
 			$cost     = (int) $req->get_param( 'unitCost' );
 			$supplier = trim( sanitize_text_field( (string) $req->get_param( 'supplier' ) ) );
-			$args['ref']      = trim( sanitize_text_field( (string) $req->get_param( 'ref' ) ) );
-			$args['supplier'] = $supplier;
-			if ( $cost > 0 ) {
-				// The buy price is what was last paid: what the shop
-				// would pay to put the same thing back on the shelf.
-				update_post_meta( $product->get_id(), '_ah_cost', $cost );
-				$args['unit_cost'] = $cost;
+			$fdn      = trim( sanitize_text_field( (string) $req->get_param( 'ref' ) ) );
+			$missing  = array();
+			if ( '' === $date ) {
+				$missing[] = 'the date';
 			}
+			if ( '' === $supplier ) {
+				$missing[] = 'the supplier';
+			}
+			if ( '' === $fdn ) {
+				$missing[] = 'the delivery note (FDN) number';
+			}
+			if ( $cost <= 0 ) {
+				$missing[] = 'the buy price';
+			}
+			if ( $missing ) {
+				return self::err( 'ah_purchase_incomplete', 'A purchase needs ' . self::listing( $missing ) . '.', 400 );
+			}
+			$args['ref']      = $fdn;
+			$args['supplier'] = $supplier;
+			// The buy price is what was last paid: what the shop would
+			// pay to put the same thing back on the shelf. Every sale
+			// after this takes its cost from here.
+			update_post_meta( $product->get_id(), '_ah_cost', $cost );
+			$args['unit_cost'] = $cost;
 			if ( $supplier && ! get_post_meta( $product->get_id(), '_ah_supplier', true ) ) {
 				update_post_meta( $product->get_id(), '_ah_supplier', $supplier );
 			}
@@ -535,8 +563,33 @@ class AH_Stock {
 			'note'         => isset( $args['note'] ) ? (string) $args['note'] : '',
 			'user_id'      => $user ? (int) $user->ID : 0,
 			'user_name'    => $user ? $user->display_name : 'The shop',
+			'moved_on'     => ! empty( $args['moved_on'] ) ? $args['moved_on'] : current_time( 'Y-m-d' ),
+			'count_id'     => isset( $args['count_id'] ) ? (int) $args['count_id'] : 0,
 			'created_at'   => current_time( 'mysql' ),
 		) );
+	}
+
+	/**
+	 * Move the count by a difference and write the line. The book is
+	 * the sum of the lines; the shop's own count is kept in step.
+	 */
+	public static function adjust( $product, $delta, $kind, $args = array() ) {
+		$before = AH_Ledger::book( $product->get_id() );
+		if ( ! $product->get_manage_stock() ) {
+			$product->set_manage_stock( true );
+			$product->save();
+		}
+		wc_update_product_stock( $product, abs( (int) $delta ), $delta >= 0 ? 'increase' : 'decrease' );
+		if ( empty( $args['unit_cost'] ) ) {
+			$args['unit_cost'] = (int) get_post_meta( $product->get_id(), '_ah_cost', true );
+		}
+		self::record( $product->get_id(), $kind, (int) $delta, $before, $before + (int) $delta, $args );
+	}
+
+	/** "a, b and c" */
+	private static function listing( array $bits ) {
+		$last = array_pop( $bits );
+		return $bits ? implode( ', ', $bits ) . ' and ' . $last : $last;
 	}
 
 	// -----------------------------------------------------------------
@@ -551,7 +604,8 @@ class AH_Stock {
 		$qty     = max( 1, (int) $item->get_quantity() );
 		self::record( $product->get_id(), 'sold', (int) $change['to'] - (int) $change['from'], (int) $change['from'], (int) $change['to'], array(
 			'order_id'   => $order->get_id(),
-			'unit_cost'  => (int) get_post_meta( $product->get_id(), '_ah_cost', true ),
+			// The latest purchase cost when the sale was made, never typed.
+			'unit_cost'  => (int) ( $item->get_meta( '_ah_unit_cost' ) ?: get_post_meta( $product->get_id(), '_ah_cost', true ) ),
 			'unit_price' => (int) round( (float) $item->get_total() / $qty ),
 			'ref'        => AH_Shape::order_no( $order ),
 		) );
@@ -562,9 +616,13 @@ class AH_Stock {
 		if ( ! $product ) {
 			return;
 		}
+		$qty = max( 1, (int) $item->get_quantity() );
 		self::record( $product->get_id(), 'restored', (int) $new_stock - (int) $old_stock, (int) $old_stock, (int) $new_stock, array(
 			'order_id'  => $order->get_id(),
-			'unit_cost' => (int) get_post_meta( $product->get_id(), '_ah_cost', true ),
+			// The cost and price it went out at, so a cancelled sale
+			// comes off the month's sales and cost of sales exactly.
+			'unit_cost'  => (int) ( $item->get_meta( '_ah_unit_cost' ) ?: get_post_meta( $product->get_id(), '_ah_cost', true ) ),
+			'unit_price' => (int) round( (float) $item->get_total() / $qty ),
 			'ref'       => AH_Shape::order_no( $order ),
 		) );
 	}

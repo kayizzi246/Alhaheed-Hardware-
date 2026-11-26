@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.6.0';
+	const DB_VERSION = '1.7.0';
 
 	public static function activate() {
 		self::tables();
@@ -205,9 +205,12 @@ class AH_Install {
 			note         TEXT            NULL,
 			user_id      BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			user_name    VARCHAR(191)    NULL,
+			moved_on     DATE            NULL,
+			count_id     BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			created_at   DATETIME        NOT NULL,
 			PRIMARY KEY (id),
 			KEY product_id (product_id),
+			KEY moved_on (moved_on),
 			KEY kind (kind),
 			KEY created_at (created_at)
 		) {$charset};";
@@ -272,6 +275,57 @@ class AH_Install {
 			KEY worker_id (worker_id)
 		) {$charset};";
 
+		// A stock-take: the manager counts the shelf on a date. Each line
+		// keeps the book figure as it stood at that moment, so the
+		// variance means the same thing after later sales.
+		$sql[] = "CREATE TABLE {$p}ah_stock_counts (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			count_date   DATE            NOT NULL,
+			status       VARCHAR(16)     NOT NULL DEFAULT 'draft',
+			note         TEXT            NULL,
+			created_by   BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			created_name VARCHAR(191)    NULL,
+			approved_by  BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			approved_name VARCHAR(191)   NULL,
+			approved_at  DATETIME        NULL,
+			created_at   DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			KEY status (status)
+		) {$charset};";
+
+		$sql[] = "CREATE TABLE {$p}ah_stock_count_lines (
+			id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			count_id       BIGINT UNSIGNED NOT NULL,
+			product_id     BIGINT UNSIGNED NOT NULL,
+			product_name   VARCHAR(191)    NOT NULL,
+			book_qty       INT             NOT NULL DEFAULT 0,
+			counted_qty    INT             NOT NULL DEFAULT 0,
+			variance       INT             NOT NULL DEFAULT 0,
+			unit_cost      BIGINT          NOT NULL DEFAULT 0,
+			variance_value BIGINT          NOT NULL DEFAULT 0,
+			counted_by     BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			counted_at     DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY count_product (count_id, product_id)
+		) {$charset};";
+
+		// A rule bent by the manager: a sale below cost, stock taken
+		// below zero. Who did it, why, and on what.
+		$sql[] = "CREATE TABLE {$p}ah_overrides (
+			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			rule         VARCHAR(32)     NOT NULL,
+			product_id   BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			order_id     BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			detail       VARCHAR(255)    NULL,
+			reason       TEXT            NOT NULL,
+			user_id      BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			user_name    VARCHAR(191)    NULL,
+			created_at   DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			KEY rule (rule),
+			KEY order_id (order_id)
+		) {$charset};";
+
 		// One-time codes for phone login, for customers who order on the
 		// app rather than through the website checkout.
 		$sql[] = "CREATE TABLE {$p}ah_otp (
@@ -297,7 +351,52 @@ class AH_Install {
 		}
 		self::tables();
 		AH_Roles::add();
+		self::open_the_books();
 		update_option( 'ah_db_version', self::DB_VERSION );
+	}
+
+	/**
+	 * Start the stock book where the shelf stands.
+	 *
+	 * Stock is now the sum of the book's lines. A product whose count was
+	 * set before the book existed, or by hand in the shop's back office,
+	 * would sum to the wrong figure, so each one gets a single opening
+	 * line for the difference. Nothing already written is changed.
+	 */
+	public static function open_the_books() {
+		global $wpdb;
+		if ( get_option( 'ah_books_opened' ) ) {
+			return;
+		}
+		$moves = self::table( 'stock_moves' );
+		$sums  = array();
+		foreach ( (array) $wpdb->get_results( "SELECT product_id, COALESCE(SUM(qty),0) AS q FROM {$moves} GROUP BY product_id", ARRAY_A ) as $r ) {
+			$sums[ (int) $r['product_id'] ] = (int) $r['q'];
+		}
+		$ids = get_posts( array( 'post_type' => 'product', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids' ) );
+		foreach ( $ids as $id ) {
+			if ( 'yes' !== get_post_meta( $id, '_manage_stock', true ) ) {
+				continue;
+			}
+			$shelf = (int) get_post_meta( $id, '_stock', true );
+			$book  = isset( $sums[ $id ] ) ? $sums[ $id ] : 0;
+			if ( $shelf === $book ) {
+				continue;
+			}
+			$wpdb->insert( $moves, array(
+				'product_id'   => (int) $id,
+				'kind'         => 'opening',
+				'qty'          => $shelf - $book,
+				'stock_before' => $book,
+				'stock_after'  => $shelf,
+				'unit_cost'    => (int) get_post_meta( $id, '_ah_cost', true ),
+				'note'         => 'Opening balance: the stock book starts at the shelf count',
+				'user_name'    => 'The shop',
+				'moved_on'     => current_time( 'Y-m-d' ),
+				'created_at'   => current_time( 'mysql' ),
+			) );
+		}
+		update_option( 'ah_books_opened', current_time( 'mysql' ) );
 	}
 
 	public static function table( $name ) {

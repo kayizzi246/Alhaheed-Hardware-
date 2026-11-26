@@ -40,7 +40,7 @@ const buttonVariants = cva(
         // A light edge along the top and a coloured glow beneath: the
         // button reads as something to press, not a painted rectangle.
         primary:
-          'bg-[linear-gradient(180deg,rgb(var(--fill)/0.94),rgb(var(--fill)))] text-white ' +
+          'bg-[linear-gradient(180deg,rgb(var(--fill)/0.94),rgb(var(--fill)))] text-on-fill ' +
           'hover:brightness-[1.07]',
         outline:
           'border border-line bg-surface text-ink-2 hover:border-line-firm hover:bg-surface-2 hover:text-ink',
@@ -325,7 +325,7 @@ export function Checkbox({ label, className, ...props }) {
         <svg
           aria-hidden="true"
           viewBox="0 0 24 24"
-          className="pointer-events-none absolute size-3 scale-50 text-white opacity-0 transition-[opacity,transform] duration-150 ease-out peer-checked:scale-100 peer-checked:opacity-100"
+          className="pointer-events-none absolute size-3 scale-50 text-on-fill opacity-0 transition-[opacity,transform] duration-150 ease-out peer-checked:scale-100 peer-checked:opacity-100"
           fill="none"
           stroke="currentColor"
           strokeWidth="3.5"
@@ -528,7 +528,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
         'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-xl p-4 [container-type:inline-size] sm:p-5',
         'transition-[transform,border-color,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
         big
-          ? 'bg-[linear-gradient(135deg,rgb(var(--fill))_0%,rgb(var(--fill-dark))_100%)] text-white'
+          ? 'bg-[linear-gradient(135deg,rgb(var(--fill))_0%,rgb(var(--fill-dark))_100%)] text-on-fill'
           : 'border border-line bg-surface',
         href && (big
           ? 'hover:brightness-[1.06] active:scale-[0.985]'
@@ -547,7 +547,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
           <span
             className={cn(
               'grid size-9 shrink-0 place-items-center rounded-xl [&>svg]:size-[18px]',
-              big ? 'bg-white/15 text-white ring-1 ring-inset ring-white/20' : STAT_TONES[tone] || STAT_TONES.brand
+              big ? 'bg-black/10 text-on-fill ring-1 ring-inset ring-black/10' : STAT_TONES[tone] || STAT_TONES.brand
             )}
           >
             {icon}
@@ -557,7 +557,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
           className={cn(
             'min-w-0 flex-1 text-[13px] font-semibold leading-tight [overflow-wrap:anywhere]',
             
-            big ? 'text-white/90' : 'text-ink-muted'
+            big ? 'text-on-fill/80' : 'text-ink-muted'
           )}
         >
           {label}
@@ -569,7 +569,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
             className={cn(
               'size-4 shrink-0 -translate-x-1 opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100',
               
-              big ? 'text-white/90' : 'text-ink-faint'
+              big ? 'text-on-fill/80' : 'text-ink-faint'
             )}
           >
             <path d="M5 11l6-6M6 5h5v5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -582,19 +582,19 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
           'tnum block font-display font-extrabold leading-none tracking-[-0.03em]',
           icon ? 'mt-4' : 'mt-3',
           String(value ?? '').length > 11 ? 'text-[clamp(18px,10.5cqi,30px)]' : 'text-[clamp(24px,15cqi,32px)]',
-          big ? 'text-white' : !icon && tone === 'ok' ? 'text-ok' : !icon && tone === 'bad' ? 'text-bad' : 'text-ink'
+          big ? 'text-on-fill' : !icon && tone === 'ok' ? 'text-ok' : !icon && tone === 'bad' ? 'text-bad' : 'text-ink'
         )}
       >
         {value}
       </strong>
 
       {(note || (delta !== null && delta !== undefined)) && (
-        <span className={cn('mt-3 flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px] leading-snug', big ? 'text-white/90' : 'text-ink-muted')}>
+        <span className={cn('mt-3 flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px] leading-snug', big ? 'text-on-fill/80' : 'text-ink-muted')}>
           {delta !== null && delta !== undefined && (
             <span
               className={cn(
                 'tnum inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11.5px] font-bold',
-                big ? 'bg-white/20 text-white' : delta >= 0 ? 'bg-ok-bg text-ok' : 'bg-bad-bg text-bad'
+                big ? 'bg-black/10 text-on-fill' : delta >= 0 ? 'bg-ok-bg text-ok' : 'bg-bad-bg text-bad'
               )}
             >
               <svg viewBox="0 0 12 12" aria-hidden="true" className={cn('size-3', delta < 0 && 'rotate-180')}>

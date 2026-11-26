@@ -440,12 +440,10 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
         unit: f.unit.trim() || 'pc',
         price,
         cost,
-        reorderLevel: int(f.reorderLevel),
-        reorderQty: int(f.reorderQty),
+        ...(editing ? { reorderLevel: int(f.reorderLevel) } : {}),
         supplier: f.supplier.trim(),
         shelf: f.shelf.trim(),
         description: f.description.trim(),
-        ...(editing ? {} : { stockAvailable: int(f.stock) }),
       };
       await api(editing ? `/api/manager/products/${product.id}` : '/api/manager/products', { method: 'POST', body });
       onDone(
@@ -465,7 +463,7 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
     <Modal
       wide
       title={editing ? product.name : 'Add a product'}
-      description={editing ? `${product.code}. Change the count with Stock, so it goes in the stock book.` : 'For a long list, use Import instead.'}
+      description={editing ? `${product.code}. Stock changes with a purchase, a count or Stock, so it goes in the stock book.` : 'Stock is added with Receive once it is saved. For a long list, use Import instead.'}
       onClose={onClose}
       footer={
         <>
@@ -545,20 +543,17 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
           </div>
         </Section>
 
-        <Section title="Stock">
-          <div className={cn('grid gap-4', editing ? 'sm:grid-cols-2' : 'sm:grid-cols-3')}>
-            {!editing && (
-              <Field label="Opening stock" hint="How many are on the shelf now.">
-                <Input type="number" inputMode="numeric" min="0" value={f.stock} onChange={set('stock')} className="tnum" />
-              </Field>
-            )}
-            <Field label="Reorder level" hint="At or below this, it shows as low.">
-              <Input type="number" inputMode="numeric" min="0" value={f.reorderLevel} onChange={set('reorderLevel')} className="tnum" />
+        {/* No stock here: stock comes in as a purchase, with its supplier,
+            delivery note and date, so every unit in the book has a source. */}
+        <Section title={editing ? 'Supplier, shelf and target stock' : 'Supplier and shelf'}>
+          {editing && (
+            <Field
+              label="Target stock (minimum level)"
+              hint="Below this it goes on the reorder list, and the suggested order tops it back up."
+            >
+              <Input type="number" inputMode="numeric" min="0" value={f.reorderLevel} onChange={set('reorderLevel')} className="tnum sm:max-w-[220px]" />
             </Field>
-            <Field label="Order quantity" hint="How many to ask the supplier for.">
-              <Input type="number" inputMode="numeric" min="0" value={f.reorderQty} onChange={set('reorderQty')} className="tnum" />
-            </Field>
-          </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Supplier">
               {suppliers.length ? (
@@ -597,7 +592,6 @@ const Section = ({ title, children }) => (
 
 const MOVES = [
   { value: 'received', label: 'Received', sign: 1, about: 'Goods in from a supplier.' },
-  { value: 'count', label: 'Stock count', sign: 0, about: 'Counted the shelf. The book is set to what is really there.' },
   { value: 'damaged', label: 'Damaged or lost', sign: -1, about: 'Broken, spoilt, stolen or missing.' },
   { value: 'own_use', label: 'Used by the shop', sign: -1, about: 'Taken off the shelf for the shop itself.' },
   { value: 'returned', label: 'Customer return', sign: 1, about: 'A customer brought it back and it can be sold again.' },
@@ -611,6 +605,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
   const [supplier, setSupplier] = useState(product.supplier || '');
   const [ref, setRef] = useState('');
   const [note, setNote] = useState('');
+  const [date, setDate] = useState(today());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -619,8 +614,10 @@ function StockMove({ product, suppliers, onClose, onDone }) {
   const n = int(qty);
   const after = kind === 'count' ? n : kind === 'correction' ? now + n : now + move.sign * n;
   const needsNote = ['damaged', 'own_use', 'correction'].includes(kind);
-  const ok = !busy && qty !== '' && after >= 0 &&
-    (kind === 'count' ? n >= 0 : kind === 'correction' ? n !== 0 : n > 0) &&
+  // A purchase only counts with its paperwork.
+  const purchaseOk = kind !== 'received' || (supplier.trim() && ref.trim() && int(cost) > 0);
+  const ok = !busy && qty !== '' && after >= 0 && !!date && !!purchaseOk &&
+    (kind === 'correction' ? n !== 0 : n > 0) &&
     (!needsNote || note.trim().length >= 3);
 
   async function save() {
@@ -633,6 +630,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
           kind,
           qty: n,
           note: note.trim(),
+          date,
           ...(kind === 'received' ? { unitCost: int(cost), supplier: supplier.trim(), ref: ref.trim() } : {}),
         },
       });
@@ -652,6 +650,9 @@ function StockMove({ product, suppliers, onClose, onDone }) {
         <>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button disabled={!ok} onClick={save}>{busy ? 'Saving…' : 'Save to the stock book'}</Button>
+          {kind === 'received' && !purchaseOk && (
+            <span className="order-first mr-auto self-center text-[12.5px] text-ink-muted">Needs the supplier, FDN number and buy price.</span>
+          )}
         </>
       }
     >
@@ -678,26 +679,29 @@ function StockMove({ product, suppliers, onClose, onDone }) {
           <p className="mt-2 text-[12.5px] text-ink-muted">{move.about}</p>
         </div>
 
-        <Field
-          label={kind === 'count' ? `How many ${product.unit} are on the shelf?` : kind === 'correction' ? `${product.unit} to add, or minus to take off` : `How many ${product.unit}?`}
-        >
-          <Input type="number" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum text-lg font-semibold" autoFocus />
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={kind === 'correction' ? `${product.unit} to add, or minus to take off` : `How many ${product.unit}?`}>
+            <Input type="number" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum text-lg font-semibold" autoFocus />
+          </Field>
+          <Field label={kind === 'received' ? 'Delivery date' : 'Date'}>
+            <Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
+          </Field>
+        </div>
 
         {kind === 'received' && (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Buy price for one (UGX)" hint="Becomes the product's buy price.">
+              <Field label="Buy price for one (UGX)" hint="Becomes the cost of every sale after this.">
                 <Input type="number" inputMode="numeric" min="0" value={cost} onChange={(e) => setCost(e.target.value)} className="tnum" />
               </Field>
-              <Field label="Invoice or delivery note no.">
-                <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Optional" />
+              <Field label="Delivery note (FDN) no.">
+                <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="FDN 10422" />
               </Field>
             </div>
             <Field label="Supplier">
               {suppliers.length ? (
                 <Select value={supplier} onChange={(e) => setSupplier(e.target.value)}>
-                  <option value="">Not said</option>
+                  <option value="">Choose the supplier</option>
                   {[...new Set([...suppliers, supplier].filter(Boolean))].map((x) => <option key={x} value={x}>{x}</option>)}
                 </Select>
               ) : (
@@ -728,28 +732,47 @@ function StockMove({ product, suppliers, onClose, onDone }) {
   );
 }
 
-/* ── One product's history ───────────────────────────────────────── */
+/* ── One product's ledger ─────────────────────────────────────────── */
 
+/**
+ * One product's statement: every purchase, sale, count and adjustment,
+ * with what came in (debit), what went out (credit) and the balance
+ * after each, worked out from the stock book itself.
+ */
 function History({ product, onClose, onStock, onEdit }) {
-  const [moves, setMoves] = useState(null);
+  const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [kind, setKind] = useState('');
 
-  useEffect(() => {
-    api(`/api/manager/products/${product.id}/moves`)
-      .then((r) => setMoves(list(r.moves)))
+  const load = useCallback(() => {
+    setError('');
+    api(`/api/manager/products/${product.id}/ledger`)
+      .then(setData)
       .catch((e) => setError(e.message));
   }, [product.id]);
+  useEffect(load, [load]);
+
+  const s = data?.stock;
+  const t = data?.totals;
+  const lines = list(data?.lines).filter((l) =>
+    !kind ? true : kind === 'sales' ? ['sold', 'restored'].includes(l.kind) : kind === 'purchases' ? l.kind === 'received' : !['sold', 'restored', 'received'].includes(l.kind)
+  );
+  const days = s?.daysOfStock;
 
   const facts = [
-    ['In stock', product.tracked ? `${product.stock_available} ${product.unit}` : 'Not counted'],
+    ['Book stock', t ? `${t.book} ${product.unit}` : '…', t && t.book < 0 ? 'text-bad' : ''],
+    ['Purchased', t ? `${t.purchased} ${product.unit}` : '…'],
+    ['Sold', t ? `${t.sold} ${product.unit}` : '…'],
+    ['Adjusted', t ? `${t.adjusted > 0 ? '+' : ''}${t.adjusted} ${product.unit}` : '…'],
+    ['Stock value', s ? money(s.value) : '…'],
     ['Buy price', product.cost ? money(product.cost) : 'Not set'],
-    ['Sale price', money(product.price)],
-    ['Margin', product.margin === null ? '' : `${product.margin}%`],
-    ['Stock value', product.cost ? money(product.stock_value) : ''],
-    ['Reorder at', product.reorder_level ? `${product.reorder_level}, order ${product.reorder_qty || 'some'}` : 'Not set'],
-    ['Supplier', product.supplier || ''],
-    ['Shelf', product.shelf || ''],
-  ].filter(([, v]) => v);
+    ['Sale price', product.price ? money(product.price) : 'Not set', !product.price ? 'text-bad' : ''],
+    ['Sells a day', s ? (s.avgDaily ? `${s.avgDaily} (90 days)` : 'None in 90 days') : '…'],
+    ['Days of stock', s ? (days === null ? 'Not selling' : days > 365 ? 'Over a year' : `${days} days`) : '…', s && days !== null && days < 15 ? 'text-bad' : ''],
+    ['Last sale', s ? (s.lastSale ? s.lastSale : 'Never') : '…'],
+    ['Target stock', product.reorder_level ? `${product.reorder_level} ${product.unit}` : 'Not set'],
+    ['Supplier', product.supplier || '—'],
+  ];
 
   return (
     <Modal
@@ -760,28 +783,87 @@ function History({ product, onClose, onStock, onEdit }) {
       footer={
         <>
           <Button variant="outline" onClick={onEdit}>Edit</Button>
-          <Button onClick={onStock}>Stock</Button>
+          <Button onClick={onStock}>Receive or adjust</Button>
         </>
       }
     >
+      {s?.reorder && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-warn/30 bg-warn-bg px-3 py-2.5 text-[13.5px] text-warn">
+          <span><b>Reorder now.</b> {s.suggestedQty > 0 ? `Order ${s.suggestedQty} ${product.unit} to reach the target.` : 'Under 15 days of stock left.'}</span>
+          {s.suggestedQty > 0 && s.cost > 0 && <span className="tnum font-semibold">{money(s.suggestedQty * s.cost)}</span>}
+        </div>
+      )}
+      {s?.shelfMismatch !== null && s?.shelfMismatch !== undefined && (
+        <p className="mb-4 rounded-sm border border-bad/25 bg-bad-bg px-3 py-2 text-[13px] text-bad">
+          The shop&rsquo;s own count says {s.shelfMismatch}, the stock book says {t?.book}. Count it to settle which is right.
+        </p>
+      )}
+
       <dl className="mb-5 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
-        {facts.map(([k, v]) => (
-          <div key={k}>
+        {facts.map(([k, v, c]) => (
+          <div key={k} className="min-w-0">
             <dt className="text-[12px] text-ink-muted">{k}</dt>
-            <dd className="tnum text-[14px] font-semibold text-ink">{v}</dd>
+            <dd className={cn('tnum truncate text-[14px] font-semibold text-ink', c)}>{v}</dd>
           </div>
         ))}
       </dl>
 
-      <h3 className="mb-2 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-muted">Stock book</h3>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-[12px] font-bold uppercase tracking-[0.06em] text-ink-muted">Stock ledger</h3>
+        <Segmented
+          label="Show"
+          value={kind}
+          onChange={setKind}
+          options={[
+            { value: '', label: 'Everything' },
+            { value: 'purchases', label: 'Purchases' },
+            { value: 'sales', label: 'Sales' },
+            { value: 'other', label: 'Counts and adjustments' },
+          ]}
+        />
+      </div>
       {error ? (
-        <Alert>{error}</Alert>
-      ) : !moves ? (
+        <LoadFailed onRetry={load}>{error}</LoadFailed>
+      ) : !data ? (
         <Loading>Reading the stock book…</Loading>
-      ) : moves.length === 0 ? (
-        <p className="py-6 text-center text-[13.5px] text-ink-muted">Nothing recorded yet. Changes from now on show here.</p>
+      ) : lines.length === 0 ? (
+        <p className="py-6 text-center text-[13.5px] text-ink-muted">Nothing here yet. Purchases, sales and counts show here.</p>
       ) : (
-        <MovesTable moves={moves} />
+        <TableWrap className="rounded-xl border border-line">
+          <Table className="text-[13px]">
+            <thead>
+              <tr>
+                <Th>Date</Th>
+                <Th>What</Th>
+                <Th>From or to</Th>
+                <Th num>In (debit)</Th>
+                <Th num>Out (credit)</Th>
+                <Th num>Balance</Th>
+                <Th num>Cost</Th>
+                <Th num>Price</Th>
+                <Th>By</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((l) => (
+                <Tr key={l.id}>
+                  <Td className="tnum whitespace-nowrap text-ink-muted">{l.date}</Td>
+                  <Td>
+                    <span className="whitespace-nowrap font-semibold text-ink">{l.kindLabel}</span>
+                    {(l.ref || l.note) && <span className="block text-[12px] text-ink-muted">{[l.ref, l.note].filter(Boolean).join(' · ')}</span>}
+                  </Td>
+                  <Td className="text-ink-2">{l.party}</Td>
+                  <Td num className="font-bold text-ok">{l.in || ''}</Td>
+                  <Td num className="font-bold text-bad">{l.out || ''}</Td>
+                  <Td num className={cn('font-bold', l.balance < 0 ? 'text-bad' : 'text-ink')}>{l.balance}</Td>
+                  <Td num className="text-ink-2">{l.unitCost ? money(l.unitCost) : ''}</Td>
+                  <Td num className={cn(l.unitPrice && l.unitCost && l.unitPrice < l.unitCost ? 'font-semibold text-bad' : 'text-ink-2')}>{l.unitPrice ? money(l.unitPrice) : ''}</Td>
+                  <Td className="whitespace-nowrap text-ink-muted">{l.by}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableWrap>
       )}
     </Modal>
   );

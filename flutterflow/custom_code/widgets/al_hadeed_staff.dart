@@ -74,9 +74,13 @@ const Color _hairline = Color(0xFFE2E8F2);
 const Color _tile = Color(0xFFF9FAFD);
 const Color _navy = Color(0xFF0E201A);
 const Color _navyDark = Color(0xFF081511);
-const Color _brand = Color(0xFF15803D);
-const Color _brandDark = Color(0xFF166534);
-const Color _brandPale = Color(0xFFECFDF3);
+// #92D050 is the shop's green. It is light, so what sits on it is dark
+// (_onLime); green words and marks on white use the deeper _brand.
+const Color _lime = Color(0xFF92D050);
+const Color _onLime = Color(0xFF102108);
+const Color _brand = Color(0xFF3F7A12);
+const Color _brandDark = Color(0xFF2F5E0C);
+const Color _brandPale = Color(0xFFF0F8E6);
 const Color _green = Color(0xFF0E7444);
 const Color _greenPale = Color(0xFFE6F6ED);
 const Color _blue = Color(0xFF0B658D);
@@ -96,7 +100,7 @@ const List<BoxShadow> _cardShadow = [];
 const LinearGradient _heroGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [_brand, _brand],
+  colors: [_lime, _lime],
 );
 
 double _ui = 1.0;
@@ -853,7 +857,7 @@ class _BottomBar extends StatelessWidget {
                                         gradient: _heroGradient,
                                         borderRadius: BorderRadius.circular(9),
                                         border:
-                                            Border.all(color: _white, width: 2),
+                                            Border.all(color: _onLime, width: 2),
                                       ),
                                       constraints:
                                           const BoxConstraints(minWidth: 19),
@@ -861,7 +865,7 @@ class _BottomBar extends StatelessWidget {
                                           textAlign: TextAlign.center,
                                           style: _txt(10,
                                               weight: FontWeight.w800,
-                                              color: _white)),
+                                              color: _onLime)),
                                     ),
                                   );
                                 },
@@ -902,7 +906,7 @@ class _Header extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [_brand, _brand],
+            colors: [_lime, _lime],
           ),
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
         ),
@@ -935,13 +939,13 @@ class _Header extends StatelessWidget {
                     height: 40,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: _white.withOpacity(0.16),
+                      color: _onLime.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: _white.withOpacity(0.24)),
+                      border: Border.all(color: _onLime.withOpacity(0.18)),
                     ),
                     child: Text('AH',
                         style: _title(14,
-                            weight: FontWeight.w800, color: _white)),
+                            weight: FontWeight.w800, color: _onLime)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -952,13 +956,13 @@ class _Header extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: _title(17,
-                                weight: FontWeight.w800, color: _white)),
+                                weight: FontWeight.w800, color: _onLime)),
                         const SizedBox(height: 2),
                         Text(subtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style:
-                                _txt(12.5, color: _white.withOpacity(0.92))),
+                                _txt(12.5, color: _onLime.withOpacity(0.92))),
                       ],
                     ),
                   ),
@@ -1032,10 +1036,10 @@ class _Empty extends StatelessWidget {
                     height: 46,
                     padding: const EdgeInsets.symmetric(horizontal: 22),
                     alignment: Alignment.center,
-                    decoration: _liquid(tint: _brand, radius: 23),
+                    decoration: _liquid(tint: _lime, radius: 23),
                     child: Text(action!,
                         style:
-                            _txt(15, weight: FontWeight.w600, color: _white)),
+                            _txt(15, weight: FontWeight.w600, color: _onLime)),
                   ),
                 ),
               ],
@@ -1506,7 +1510,7 @@ class _ListTabState extends State<_ListTab> {
               height: 38,
               decoration: _liquid(circle: true, onDark: true),
               child:
-                  const Icon(Icons.refresh_rounded, size: 19, color: _white),
+                  const Icon(Icons.refresh_rounded, size: 19, color: _onLime),
             ),
           ),
         ),
@@ -1597,9 +1601,9 @@ class _SmallButton extends StatelessWidget {
           height: 38,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           alignment: Alignment.center,
-          decoration: _liquid(tint: _brand, radius: 19),
+          decoration: _liquid(tint: _lime, radius: 19),
           child: Text(label,
-              style: _txt(13, weight: FontWeight.w700, color: _white)),
+              style: _txt(13, weight: FontWeight.w700, color: _onLime)),
         ),
       );
 }
@@ -1607,7 +1611,7 @@ class _SmallButton extends StatelessWidget {
 /// The wide button at the foot of a sheet.
 class _BigButton extends StatelessWidget {
   const _BigButton(this.label, this.onTap,
-      {this.busy = false, this.tint = _brand, this.soft = false});
+      {this.busy = false, this.tint = _lime, this.soft = false});
   final String label;
   final VoidCallback? onTap;
   final bool busy;
@@ -1638,11 +1642,11 @@ class _BigButton extends StatelessWidget {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: soft ? tint : _white))
+                        strokeWidth: 2, color: soft ? tint : tint == _lime ? _onLime : _white))
                 : Text(label,
                     style: _txt(15,
                         weight: FontWeight.w600,
-                        color: soft ? tint : _white)),
+                        color: soft ? tint : tint == _lime ? _onLime : _white)),
           ),
         ),
       );
@@ -2634,7 +2638,7 @@ class _StockTabState extends State<_StockTab> {
               width: 38,
               height: 38,
               decoration: _liquid(circle: true, onDark: true),
-              child: const Icon(Icons.add_rounded, size: 21, color: _white),
+              child: const Icon(Icons.add_rounded, size: 21, color: _onLime),
             ),
           ),
         ),
@@ -2674,18 +2678,18 @@ class _StockTabState extends State<_StockTab> {
                                 Text('Stock value at buy price',
                                     style: _txt(12.5,
                                         weight: FontWeight.w600,
-                                        color: _white.withOpacity(0.9))),
+                                        color: _onLime.withOpacity(0.9))),
                                 const SizedBox(height: 4),
                                 Text(_ugx(_int(s?['stockValue'])),
                                     style: _title(26,
                                         weight: FontWeight.w800,
-                                        color: _white)),
+                                        color: _onLime)),
                                 const SizedBox(height: 10),
                                 Text(
                                     'Sells for ${_shortUgx(_int(s?['retailValue']))}'
                                     ' · ${toOrder == 0 ? 'nothing to order' : '$toOrder to order'}',
                                     style: _txt(12.5,
-                                        color: _white.withOpacity(0.92))),
+                                        color: _onLime.withOpacity(0.92))),
                               ],
                             ),
                           ),
@@ -2815,12 +2819,17 @@ class _MoveSheetState extends State<_MoveSheet> {
   late final _cost = TextEditingController(
       text: _int(widget.p['cost']) > 0 ? '${_int(widget.p['cost'])}' : '');
   final _note = TextEditingController();
+  late final _supplier = TextEditingController(
+      text: '${widget.p['supplier'] ?? ''}');
+  final _fdn = TextEditingController();
+  DateTime _day = DateTime.now();
   bool _busy = false;
   String? _error;
 
+  // Counting the shelf is a stock-take on the web panel, where the
+  // manager approves it before the book changes.
   static const _kinds = [
     ('received', 'Received', 1),
-    ('count', 'Stock count', 0),
     ('damaged', 'Damaged or lost', -1),
     ('own_use', 'Used by the shop', -1),
     ('returned', 'Customer return', 1),
@@ -2832,8 +2841,20 @@ class _MoveSheetState extends State<_MoveSheet> {
     _qty.dispose();
     _cost.dispose();
     _note.dispose();
+    _supplier.dispose();
+    _fdn.dispose();
     super.dispose();
   }
+
+  String get _dayText =>
+      '${_day.year}-${_day.month.toString().padLeft(2, '0')}-${_day.day.toString().padLeft(2, '0')}';
+
+  /// A purchase only counts with its paperwork.
+  bool get _paperwork =>
+      _kind != 'received' ||
+      (_supplier.text.trim().isNotEmpty &&
+          _fdn.text.trim().isNotEmpty &&
+          _int(_cost.text.replaceAll(RegExp(r'[^0-9]'), '')) > 0);
 
   int get _now => _int(widget.p['stock_available']);
   int get _n => int.tryParse(_qty.text.trim()) ?? 0;
@@ -2848,6 +2869,7 @@ class _MoveSheetState extends State<_MoveSheet> {
 
   bool get _ok =>
       !_busy &&
+      _paperwork &&
       _qty.text.trim().isNotEmpty &&
       _after >= 0 &&
       (_kind == 'count'
@@ -2868,8 +2890,12 @@ class _MoveSheetState extends State<_MoveSheet> {
         'kind': _kind,
         'qty': _n,
         'note': _note.text.trim(),
-        if (_kind == 'received')
+        'date': _dayText,
+        if (_kind == 'received') ...{
           'unitCost': _int(_cost.text.replaceAll(RegExp(r'[^0-9]'), '')),
+          'supplier': _supplier.text.trim(),
+          'ref': _fdn.text.trim(),
+        },
       });
       HapticFeedback.mediumImpact();
       navigator.pop('${widget.p['name']}: $_after ${widget.p['unit']} in stock');
@@ -2964,12 +2990,58 @@ class _MoveSheetState extends State<_MoveSheet> {
               keyboardType: const TextInputType.numberWithOptions(signed: true),
               onChanged: (_) => setState(() {}),
             ),
+            const SizedBox(height: 10),
+            _Pressable(
+              scale: 0.98,
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _day,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                );
+                if (picked != null) setState(() => _day = picked);
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: _tile,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _hairline),
+                ),
+                child: Row(children: [
+                  Text(_kind == 'received' ? 'Delivery date' : 'Date',
+                      style: _txt(14, color: _mid)),
+                  const Spacer(),
+                  Text(_dayText,
+                      style: _txt(14.5, weight: FontWeight.w600, color: _ink)),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.calendar_today_rounded,
+                      size: 16, color: _mid),
+                ]),
+              ),
+            ),
             if (_kind == 'received') ...[
               const SizedBox(height: 10),
               _Field(
                 controller: _cost,
                 hint: 'Buy price for one (UGX)',
                 keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 10),
+              _Field(
+                controller: _supplier,
+                hint: 'Supplier',
+                capitalisation: TextCapitalization.words,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 10),
+              _Field(
+                controller: _fdn,
+                hint: 'Delivery note (FDN) number',
+                capitalisation: TextCapitalization.characters,
                 onChanged: (_) => setState(() {}),
               ),
             ],
@@ -3474,7 +3546,7 @@ class _WorkersTabState extends State<_WorkersTab> {
               height: 38,
               decoration: _liquid(circle: true, onDark: true),
               child: const Icon(Icons.person_add_alt_rounded,
-                  size: 19, color: _white),
+                  size: 19, color: _onLime),
             ),
           ),
         ),
@@ -3514,18 +3586,18 @@ class _WorkersTabState extends State<_WorkersTab> {
                                 Text('Monthly wage bill',
                                     style: _txt(12.5,
                                         weight: FontWeight.w600,
-                                        color: _white.withOpacity(0.9))),
+                                        color: _onLime.withOpacity(0.9))),
                                 const SizedBox(height: 4),
                                 Text(_ugx(_int(s?['wageBill'])),
                                     style: _title(26,
                                         weight: FontWeight.w800,
-                                        color: _white)),
+                                        color: _onLime)),
                                 const SizedBox(height: 10),
                                 Text(
                                     '${_int(s?['active'])} working'
                                     ' · ${_int(s?['advancesOwed']) == 0 ? 'no advances owed' : '${_shortUgx(_int(s?['advancesOwed']))} in advances owed'}',
                                     style: _txt(12.5,
-                                        color: _white.withOpacity(0.92))),
+                                        color: _onLime.withOpacity(0.92))),
                               ],
                             ),
                           ),
@@ -4358,7 +4430,7 @@ class _AccountTab extends StatelessWidget {
                         s.fullName.isEmpty
                             ? '?'
                             : s.fullName.substring(0, 1).toUpperCase(),
-                        style: _title(28, color: _white)),
+                        style: _title(28, color: _onLime)),
                   ),
                   const SizedBox(height: 14),
                   Text(s.fullName, style: _title(20)),

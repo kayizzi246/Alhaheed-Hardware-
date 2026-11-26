@@ -9,6 +9,7 @@ import {
   Segmented, Stat, Stats, StatusChip, Table, TableWrap, Td, Textarea, Th, Tr, LoadFailed } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import ReceivePayment from '@/components/ReceivePayment';
+import SaleBlocked from '@/components/SaleBlocked';
 
 const ACCOUNT_LABEL = (c) => {
   if (c.accountType === 'company_owner') return 'Company owner';
@@ -292,6 +293,9 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
   const [error, setError] = useState('');
   const [existing, setExisting] = useState(null);
   const [more, setMore] = useState(false);
+  const [blocked, setBlocked] = useState(null);
+  // Once the customer is saved, a retry sells to them rather than adding them twice.
+  const made = useRef(null);
   const search = useRef(null);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -343,10 +347,11 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
   const ready = !busy && detailsOk && addressOk && (known ? basket.length > 0 : true);
 
   // The basket becomes an ordinary counter sale for this customer.
-  async function sell(customer) {
+  async function sell(customer, override) {
     const r = await api('/api/cashier/orders', {
       method: 'POST',
       body: {
+        ...(override ? { override } : {}),
         customerId: customer.id,
         items: basket.map((l) => ({ productId: l.product.id, quantity: l.qty })),
         fulfilment: how,
@@ -361,8 +366,13 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
     if (!ready) return;
     setBusy(true);
     setError('');
+    setBlocked(null);
     setExisting(null);
     try {
+      if (made.current) {
+        if (basket.length) await sell(made.current);
+        return;
+      }
       if (known) {
         await sell(known);
         return;
@@ -372,6 +382,7 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
       const res = await api('/api/customers', { method: 'POST', body: form, raw: true });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
+        made.current = data.customer;
         if (basket.length) await sell(data.customer);
         else onAdded(data.customer, data.smsSent, false);
         return;
@@ -379,9 +390,24 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
       if (data.data && data.data.customer) setExisting(data.data.customer);
       setError(data.error || data.message || `Could not add them (${res.status})`);
     } catch (err) {
-      setError(err.message);
+      if (err.code === 'ah_sale_blocked') setBlocked(err);
+      else setError(err.message);
     }
     setBusy(false);
+  }
+
+  async function overrideSale(reason) {
+    const who = known || made.current || existing;
+    if (!who) return;
+    setBusy(true);
+    setError('');
+    try {
+      await sell(who, reason);
+    } catch (err) {
+      if (err.code === 'ah_sale_blocked') setBlocked(err);
+      else setError(err.message);
+      setBusy(false);
+    }
   }
 
   async function useExisting() {
@@ -391,7 +417,8 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
     try {
       await sell(existing);
     } catch (err) {
-      setError(err.message);
+      if (err.code === 'ah_sale_blocked') setBlocked(err);
+      else setError(err.message);
       setBusy(false);
     }
   }
@@ -421,6 +448,7 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
     >
       <form id="counter-sale" onSubmit={save} className="space-y-5">
         <Alert>{error}</Alert>
+        {blocked && <SaleBlocked error={blocked} busy={busy} onOverride={overrideSale} onCancel={() => setBlocked(null)} />}
         {existing && (
           <div className="-mt-2 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[13.5px]">
             <span>
@@ -541,7 +569,7 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
                           <span
                             className={cn(
                               'tnum grid h-6 min-w-6 shrink-0 place-items-center rounded-full px-1.5 text-xs font-bold',
-                              l ? 'bg-fill text-white' : 'border border-line text-ink-muted'
+                              l ? 'bg-fill text-on-fill' : 'border border-line text-ink-muted'
                             )}
                             aria-label={l ? `${l.qty} in the sale` : 'Add'}
                           >

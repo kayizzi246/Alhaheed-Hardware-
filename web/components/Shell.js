@@ -300,7 +300,7 @@ function Alerts({ unread, home, onSeen }) {
         {unread > 0 && (
           <b
             aria-hidden="true"
-            className="tnum absolute right-[3px] top-[4px] grid h-[17px] min-w-[17px] place-items-center rounded-full border-2 border-surface bg-fill px-1 text-[10px] font-bold text-white"
+            className="tnum absolute right-[3px] top-[4px] grid h-[17px] min-w-[17px] place-items-center rounded-full border-2 border-surface bg-fill px-1 text-[10px] font-bold text-on-fill"
           >
             {unread}
           </b>
