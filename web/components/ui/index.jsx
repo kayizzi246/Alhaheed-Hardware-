@@ -648,6 +648,8 @@ export const DialogContent = React.forwardRef(
         ref={ref}
         className={cn(
           'fixed left-1/2 top-1/2 z-50 w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2',
+          // Centred on the page, beside the menu, not on the whole window.
+          'lg:left-[calc(50%+var(--sidebar-w)/2)] lg:max-w-[calc(100vw-var(--sidebar-w)-3rem)]',
           // Tall content scrolls inside the dialog rather than pushing
           // its buttons off the bottom of a laptop screen.
           'max-h-[min(88vh,840px)] overflow-y-auto',

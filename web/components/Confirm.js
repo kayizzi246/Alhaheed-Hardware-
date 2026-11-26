@@ -59,26 +59,29 @@ export function ConfirmHost() {
   return (
     <DialogPrimitive.Root open={!!ask} onOpenChange={(v) => !v && finish(false)}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-[60] bg-navy-deep/45 backdrop-blur-[6px] data-[state=open]:animate-pop-in" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[60] bg-navy-deep/40 backdrop-blur-[6px] data-[state=open]:animate-pop-in" />
         <DialogPrimitive.Content
           onOpenAutoFocus={(e) => { e.preventDefault(); cancelRef.current?.focus(); }}
           className={cn(
-            'fixed left-1/2 top-1/2 z-[60] w-[min(440px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2',
-            'rounded-2xl border border-line/80 bg-surface p-6 text-center shadow-[0_24px_64px_-16px_rgb(15_27_51/0.35)]',
-            'data-[state=open]:animate-pop-in'
+            'fixed left-1/2 top-1/2 z-[60] w-[min(420px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2',
+            // Centred on the page, beside the menu, like every other pop-up.
+            'lg:left-[calc(50%+var(--sidebar-w)/2)]',
+            'rounded-2xl border border-line/80 bg-surface px-6 pb-6 pt-7 text-center',
+            'shadow-[0_24px_64px_-16px_rgb(15_27_51/0.35),0_4px_12px_-4px_rgb(15_27_51/0.12)]',
+            'data-[state=open]:animate-dialog-in'
           )}
         >
           {ask && (
             <>
-              <span className={cn('mx-auto grid size-14 place-items-center rounded-full', danger ? 'bg-bad-bg text-bad' : 'bg-brand-soft text-brand')}>
+              <span className={cn('mx-auto grid size-12 place-items-center rounded-full', danger ? 'bg-bad-bg text-bad' : 'bg-brand-soft text-brand')}>
                 {danger ? <Bin /> : <Question />}
               </span>
-              <DialogPrimitive.Title className="mt-4 text-[19px] font-extrabold leading-snug text-ink">{ask.title}</DialogPrimitive.Title>
+              <DialogPrimitive.Title className="mt-4 text-[17px] font-bold leading-snug text-ink">{ask.title}</DialogPrimitive.Title>
               {ask.body && (
-                <DialogPrimitive.Description className="mt-2 text-[14px] leading-relaxed text-ink-2">{ask.body}</DialogPrimitive.Description>
+                <DialogPrimitive.Description className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">{ask.body}</DialogPrimitive.Description>
               )}
               {ask.points?.length > 0 && (
-                <ul className="mx-auto mt-3 max-w-[340px] space-y-1.5 text-left text-[13.5px] text-ink-2">
+                <ul className="mx-auto mt-4 max-w-[320px] space-y-1.5 rounded-xl bg-surface-2 px-4 py-3 text-left text-[13px] text-ink-2">
                   {ask.points.map((p, i) => (
                     <li key={i} className="flex gap-2">
                       <span aria-hidden="true" className={cn('mt-[7px] size-1.5 shrink-0 rounded-full', danger ? 'bg-bad' : 'bg-brand')} />
@@ -88,9 +91,8 @@ export function ConfirmHost() {
                 </ul>
               )}
               <div className="mt-6 grid grid-cols-2 gap-3">
-                <Button ref={cancelRef} variant="outline" size="lg" onClick={() => finish(false)}>{ask.cancel}</Button>
+                <Button ref={cancelRef} variant="outline" onClick={() => finish(false)}>{ask.cancel}</Button>
                 <Button
-                  size="lg"
                   onClick={() => finish(true)}
                   // A solid red that reads the same in both themes: this is the one that cannot be undone.
                   className={danger ? 'border-transparent bg-[#b42318] text-white hover:bg-[#99190f] [background-image:none]' : undefined}

@@ -943,7 +943,7 @@ function printSlips(slips, period) {
     .who{display:flex;justify-content:space-between;margin:16px 0}.who span{color:#475569}
     table{width:100%;border-collapse:collapse}td{padding:7px 0;border-bottom:1px solid #e6eeea}td:last-child{text-align:right;font-variant-numeric:tabular-nums}
     tr.b td{font-weight:600}tr.net td{font-weight:800;font-size:16px;border-bottom:0;padding-top:12px}
-    .note{color:#475569}.st{color:#166534;font-weight:600}
+    .note{color:#475569}.st{color:#3f7a12;font-weight:600}
     footer{display:flex;justify-content:space-between;margin-top:48px;color:#475569}footer span{border-top:1px solid #94a3b8;padding-top:6px;width:40%}
   </style></head><body>${pages}<script>onload=()=>print()</script></body></html>`);
   w.document.close();
