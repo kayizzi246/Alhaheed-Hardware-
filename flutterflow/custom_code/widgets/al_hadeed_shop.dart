@@ -776,7 +776,9 @@ class _ProductPicture extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = product['picture'] as String?;
+    // The small copy for the grid: quick on a slow line.
+    final url = (product['picture_small'] as String?) ??
+        (product['picture'] as String?);
 
     if (url == null || url.isEmpty) return _fallback();
 
@@ -792,31 +794,22 @@ class _ProductPicture extends StatelessWidget {
     );
   }
 
-  Widget _fallback({bool dim = false}) => DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.lerp(colour, _white, dim ? 0.3 : 0.0)!,
-              Color.lerp(colour, _white, dim ? 0.3 : 0.0)!,
-            ],
-          ),
-        ),
+  /// No photo yet: a plain picture placeholder, so every product still
+  /// shows on the shelf.
+  Widget _fallback({bool dim = false}) => ColoredBox(
+        color: const Color(0xFFF1F4F8),
         child: dim
             ? null
             : Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Text(
-                    (product['category_name'] as String? ?? 'ITEM')
-                        .toUpperCase(),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        _title(12.5, weight: FontWeight.w800, color: _white),
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.image_outlined,
+                        size: 34, color: _light.withOpacity(0.55)),
+                    const SizedBox(height: 4),
+                    Text('No photo yet',
+                        style: _txt(10.5, color: _light.withOpacity(0.8))),
+                  ],
                 ),
               ),
       );
@@ -1424,7 +1417,7 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
         physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics()),
         slivers: [
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
           if (shown.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -1447,14 +1440,14 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+              padding: const EdgeInsets.fromLTRB(10, 2, 10, 16),
               sliver: SliverGrid(
                 gridDelegate:
                     const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.70,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 0.74,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (_, i) => _productTile(shown[i]),
@@ -1651,7 +1644,9 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
   }
 
   Widget _productTile(Map<String, dynamic> p) {
-    final stock = (p['stock_available'] as num?)?.toInt() ?? 0;
+    final priced = ((p['price'] as num?) ?? 0) > 0;
+    // No price yet: shown, but nothing to add.
+    final stock = priced ? (p['stock_available'] as num?)?.toInt() ?? 0 : 0;
     final inCart = _CartStore().quantityOf((p['id'] as num).toInt());
     final colour = _categoryColour(p['category_name'] as String?);
 
@@ -1661,7 +1656,7 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
       child: Container(
         decoration: BoxDecoration(
           color: _white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _hairline.withOpacity(0.7)),
         ),
         clipBehavior: Clip.antiAlias,
@@ -1673,7 +1668,14 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
                 fit: StackFit.expand,
                 children: [
                   _ProductPicture(product: p, colour: colour),
-                  if (stock <= 0)
+                  if (!priced)
+                    Positioned(
+                      left: 6,
+                      top: 6,
+                      child: _Chip('Ask for the price',
+                          bg: _white.withOpacity(0.92), fg: _blue),
+                    )
+                  else if (stock <= 0)
                     Positioned(
                       left: 8,
                       top: 8,
@@ -1698,28 +1700,38 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(11, 10, 8, 10),
+              padding: const EdgeInsets.fromLTRB(9, 7, 6, 7),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(p['name'] as String? ?? '',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: _txt(13.5,
-                          weight: FontWeight.w600, color: _ink, height: 1.25)),
-                  const SizedBox(height: 2),
-                  Text('per ${p['unit'] ?? 'unit'}',
-                      style: _txt(11.5, color: _light)),
-                  const SizedBox(height: 7),
+                      style: _txt(12.5,
+                          weight: FontWeight.w600, color: _ink, height: 1.2)),
+                  const SizedBox(height: 1),
+                  Text(
+                      [
+                        'per ${p['unit'] ?? 'unit'}',
+                        if (priced && stock > 0) '$stock left',
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _txt(10.5, color: _light)),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Expanded(
                         child: Text(
-                          _ugx((p['price'] as num).toInt()),
+                          priced
+                              ? _ugx((p['price'] as num).toInt())
+                              : 'Ask for the price',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: _title(14.5,
-                              weight: FontWeight.w800, color: _brandDark),
+                          style: priced
+                              ? _title(13.5,
+                                  weight: FontWeight.w800, color: _brandDark)
+                              : _txt(12, weight: FontWeight.w600, color: _blue),
                         ),
                       ),
                       _Pressable(
@@ -1735,8 +1747,8 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
                         // Round, in the brand's gradient, with a glow
                         // beneath it — the one thing on the card to press.
                         child: Container(
-                          width: 34,
-                          height: 34,
+                          width: 30,
+                          height: 30,
                           decoration: stock <= 0
                               ? const BoxDecoration(
                                   color: _tile, shape: BoxShape.circle)
@@ -2090,8 +2102,32 @@ class _ProductSheet extends StatefulWidget {
 class _ProductSheetState extends State<_ProductSheet> {
   int _qty = 1;
 
-  int get _stock => (widget.product['stock_available'] as num?)?.toInt() ?? 0;
-  int get _price => (widget.product['price'] as num).toInt();
+  bool get _priced => _price > 0;
+  int get _stock => _priced
+      ? (widget.product['stock_available'] as num?)?.toInt() ?? 0
+      : 0;
+  int get _price => ((widget.product['price'] as num?) ?? 0).toInt();
+
+  String _n(num v) => v == v.roundToDouble() ? '${v.toInt()}' : '$v';
+
+  /// What a builder asks before buying: size, thickness, weight.
+  List<(String, String)> get _details {
+    final p = widget.product;
+    final s = (p['size'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final w = s['width_ft'] as num?, l = s['length_ft'] as num?;
+    return [
+      if ((p['code'] as String?)?.isNotEmpty == true) ('Code', '${p['code']}'),
+      if ((p['category_name'] as String?)?.isNotEmpty == true)
+        ('Category', '${p['category_name']}'),
+      ('Sold by', '${p['unit'] ?? 'unit'}'),
+      if (w != null && l != null) ('Size', '${_n(w)} ft x ${_n(l)} ft'),
+      if (s['thickness_mm'] != null)
+        ('Thickness', '${_n(s['thickness_mm'] as num)} mm'),
+      if (s['weight_kg'] != null)
+        ('Weight of one', '${_n(s['weight_kg'] as num)} kg'),
+      if (_priced) ('In stock', _stock > 0 ? '$_stock ${p['unit'] ?? ''}' : 'None now'),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2107,65 +2143,71 @@ class _ProductSheetState extends State<_ProductSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: (p['picture'] as String?)?.isNotEmpty == true
-                        ? Image.network(
-                            p['picture'] as String,
-                            fit: BoxFit.cover,
-                            cacheWidth: 200,
-                            errorBuilder: (_, __, ___) =>
-                                _initialTile(p, colour),
-                            loadingBuilder: (_, child, progress) =>
-                                progress == null
-                                    ? child
-                                    : ColoredBox(
-                                        color: Color.lerp(
-                                            colour, _white, 0.3)!),
-                          )
-                        : _initialTile(p, colour),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(p['name'] as String? ?? '', style: _title(18)),
-                      const SizedBox(height: 4),
-                      Text('${p['category_name'] ?? ''} · ${p['code'] ?? ''}',
-                          style: _txt(12.5, color: _mid)),
-                      const SizedBox(height: 6),
-                      if (_stock <= 0)
-                        const _Chip('Out of stock', bg: _emberPale, fg: _ember)
-                      else
-                        _Chip(
-                          low
-                              ? 'Only $_stock left'
-                              : '$_stock ${p['unit'] ?? 'unit'} in stock',
-                          bg: low ? _amberPale : _greenPale,
-                          fg: low ? _amber : _green,
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+            // The photo, big enough to see what it is.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: SizedBox(
+                height: 190,
+                width: double.infinity,
+                child: _ProductPicture(
+                    product: {...p, 'picture_small': p['picture']},
+                    colour: colour),
+              ),
             ),
-            const SizedBox(height: 18),
-            Text(_ugx(_price), style: _title(26, weight: FontWeight.w800)),
-            Text('per ${p['unit'] ?? 'unit'}', style: _txt(13, color: _mid)),
+            const SizedBox(height: 14),
+            Text(p['name'] as String? ?? '', style: _title(18)),
+            const SizedBox(height: 6),
+            if (!_priced)
+              const _Chip('Ask for the price', bg: _bluePale, fg: _blue)
+            else if (_stock <= 0)
+              const _Chip('Out of stock', bg: _emberPale, fg: _ember)
+            else
+              _Chip(
+                low
+                    ? 'Only $_stock left'
+                    : '$_stock ${p['unit'] ?? 'unit'} in stock',
+                bg: low ? _amberPale : _greenPale,
+                fg: low ? _amber : _green,
+              ),
+            const SizedBox(height: 12),
+            if (_priced) ...[
+              Text(_ugx(_price), style: _title(24, weight: FontWeight.w800)),
+              Text('per ${p['unit'] ?? 'unit'}', style: _txt(12.5, color: _mid)),
+            ] else
+              Text(
+                  'This item has no price on the app yet. Call or visit the '
+                  'shop and we will tell you the price.',
+                  style: _txt(13, color: _inkSoft, height: 1.45)),
+            const SizedBox(height: 12),
+            // The details, one per line.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: _tile,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _hairline),
+              ),
+              child: Column(children: [
+                for (final (k, v) in _details)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(children: [
+                      Text(k, style: _txt(12.5, color: _mid)),
+                      const Spacer(),
+                      Text(v,
+                          style: _txt(12.5,
+                              weight: FontWeight.w600, color: _ink)),
+                    ]),
+                  ),
+              ]),
+            ),
             if ((p['description'] as String?)?.isNotEmpty == true) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(p['description'] as String,
-                  style: _txt(14, color: _inkSoft, height: 1.5)),
+                  style: _txt(13.5, color: _inkSoft, height: 1.5)),
             ],
-            const SizedBox(height: 20),
+            if (_stock > 0) ...[
+            const SizedBox(height: 16),
             Row(
               children: [
                 Text('Quantity',
@@ -2202,6 +2244,7 @@ class _ProductSheetState extends State<_ProductSheet> {
                 ],
               ),
             ),
+            ],
             const SizedBox(height: 18),
 
             // "Order now" is the primary action, not "Buy": no money
@@ -2229,7 +2272,11 @@ class _ProductSheetState extends State<_ProductSheet> {
                         size: 18, color: _stock <= 0 ? _light : _onLime),
                     const SizedBox(width: 8),
                     Text(
-                      _stock <= 0 ? 'Out of stock' : 'Proceed to order',
+                      !_priced
+                          ? 'Ask the shop for the price'
+                          : _stock <= 0
+                              ? 'Out of stock'
+                              : 'Proceed to order',
                       style: _txt(15,
                           weight: FontWeight.w600,
                           color: _stock <= 0 ? _light : _onLime),
@@ -2317,63 +2364,218 @@ class _ProductSheetState extends State<_ProductSheet> {
 //  SHEET — WHO AM I (and sign out)
 // ═══════════════════════════════════════════════════════════════
 
-class _ProfileSheet extends StatelessWidget {
+/// Who is signed in, in full: contact, account, and what they have
+/// bought from the shop.
+class _ProfileSheet extends StatefulWidget {
   const _ProfileSheet();
+
+  @override
+  State<_ProfileSheet> createState() => _ProfileSheetState();
+}
+
+class _ProfileSheetState extends State<_ProfileSheet> {
+  Map<String, dynamic>? _me;
+  List<Map<String, dynamic>>? _orders;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final me = await _apiGet('/api/auth/me');
+      final o = await _apiGet('/api/orders/mine');
+      if (!mounted) return;
+      setState(() {
+        _me = (me['user'] as Map?)?.cast<String, dynamic>();
+        _orders = ((o['orders'] as List?) ?? const [])
+            .map((x) => (x as Map).cast<String, dynamic>())
+            .toList();
+      });
+    } on _ApiError {
+      if (mounted) setState(() => _orders = const []);
+    }
+  }
+
+  String _day(String? iso) {
+    if (iso == null || iso.length < 10) return '';
+    const m = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final mo = int.tryParse(iso.substring(5, 7)) ?? 1;
+    return '${int.tryParse(iso.substring(8, 10)) ?? ''} ${m[mo - 1]} ${iso.substring(0, 4)}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = _Session();
     final mq = MediaQuery.of(context);
+    final me = _me ?? s.user ?? const {};
+    final name = '${me['fullName'] ?? s.fullName}';
+    final orders = _orders;
+    final live = (orders ?? const [])
+        .where((o) => !const ['cancelled', 'rejected', 'refunded']
+            .contains('${o['status']}'))
+        .toList();
+    final spent = live.fold<int>(
+        0, (n, o) => n + ((o['total'] as num?)?.toInt() ?? 0));
+    final open = live.where((o) => '${o['status']}' != 'released').length;
+    final last = (orders != null && orders.isNotEmpty) ? orders.first : null;
+
+    Widget stat(String label, String value) => Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              color: _tile,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _hairline),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: _txt(11, color: _mid)),
+                const SizedBox(height: 2),
+                Text(value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _title(14.5, weight: FontWeight.w800)),
+              ],
+            ),
+          ),
+        );
 
     return _Sheet(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: const BoxDecoration(
-                      color: _brandPale, shape: BoxShape.circle),
-                  alignment: Alignment.center,
-                  child: Text(
-                    s.fullName.isEmpty
-                        ? '?'
-                        : s.fullName.characters.first.toUpperCase(),
-                    style:
-                        _title(22, weight: FontWeight.w800, color: _brandDark),
+            // Who it is.
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _brandPale,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _lime.withOpacity(0.6)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                        color: _lime, shape: BoxShape.circle),
+                    child: Text(
+                      name.trim().isEmpty
+                          ? '?'
+                          : name
+                              .trim()
+                              .split(RegExp(r'\s+'))
+                              .take(2)
+                              .map((w) => w.characters.first.toUpperCase())
+                              .join(),
+                      style: _title(18, weight: FontWeight.w800, color: _onLime),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(s.fullName, style: _title(18)),
-                      const SizedBox(height: 3),
-                      Text(s.phone, style: _txt(13, color: _mid)),
-                    ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name, style: _title(17)),
+                        const SizedBox(height: 2),
+                        Text(
+                            switch (s.accountType) {
+                              'company_owner' => 'Company owner',
+                              'company_staff' => 'Company buyer',
+                              _ => 'Customer',
+                            },
+                            style: _txt(12.5,
+                                weight: FontWeight.w600, color: _brandDark)),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            _row(
-                'Account',
-                switch (s.accountType) {
-                  'company_owner' => 'Company owner',
-                  'company_staff' => 'Company staff',
-                  _ => 'Individual',
-                }),
-            if (s.isCompany) _row('Company', s.companyName),
-            if (s.staffRole != null) _row('Role at the company', s.staffRole!),
-            if (s.spendingLimit != null)
-              _row('Spending limit per order', _ugx(s.spendingLimit!)),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+
+            // What they have bought.
+            if (orders == null)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Center(
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: _brand)),
+              )
+            else
+              Row(children: [
+                stat('Orders', '${orders.length}'),
+                const SizedBox(width: 8),
+                stat('Spent', _shortUgx(spent)),
+                const SizedBox(width: 8),
+                stat('Open now', '$open'),
+              ]),
+            if (last != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                  'Last order ${last['order_no'] ?? ''} on ${_day('${last['created_at']}')} · '
+                  '${_statusLabel('${last['status']}')}',
+                  style: _txt(12, color: _mid)),
+            ],
+            const SizedBox(height: 14),
+
+            // The details, one per line.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: _white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _hairline),
+              ),
+              child: Column(children: [
+                _row(Icons.phone_iphone_rounded, 'Phone',
+                    '${me['phone'] ?? s.phone}'),
+                if ((me['email'] as String?)?.isNotEmpty == true &&
+                    !'${me['email']}'.endsWith('.invalid'))
+                  _row(Icons.mail_outline_rounded, 'Email', '${me['email']}'),
+                if (s.isCompany)
+                  _row(Icons.business_rounded, 'Company', s.companyName),
+                if (s.staffRole != null)
+                  _row(Icons.badge_outlined, 'Role at the company', s.staffRole!),
+                if (s.spendingLimit != null)
+                  _row(Icons.account_balance_wallet_outlined,
+                      'Limit per order', _ugx(s.spendingLimit!)),
+                if ((me['memberSince'] as String?)?.isNotEmpty == true)
+                  _row(Icons.event_available_rounded, 'With us since',
+                      _day('${me['memberSince']}')),
+              ]),
+            ),
+            const SizedBox(height: 16),
+            _Pressable(
+              scale: 0.98,
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                navigator.pushReplacement(PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const AlHadeedOrders(),
+                  transitionDuration: Duration.zero,
+                ));
+              },
+              child: Container(
+                height: 48,
+                alignment: Alignment.center,
+                decoration: _liquid(tint: _lime, radius: 24),
+                child: Text('See my orders',
+                    style: _txt(14.5, weight: FontWeight.w600, color: _onLime)),
+              ),
+            ),
+            const SizedBox(height: 8),
             _Pressable(
               scale: 0.98,
               onTap: () async {
@@ -2383,15 +2585,14 @@ class _ProfileSheet extends StatelessWidget {
                 navigator.pop();
               },
               child: Container(
-                height: 50,
-                width: double.infinity,
+                height: 46,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: _emberPale,
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(23),
                 ),
                 child: Text('Sign out',
-                    style: _txt(15, weight: FontWeight.w600, color: _ember)),
+                    style: _txt(14.5, weight: FontWeight.w600, color: _ember)),
               ),
             ),
             SizedBox(height: mq.padding.bottom + 4),
@@ -2401,17 +2602,20 @@ class _ProfileSheet extends StatelessWidget {
     );
   }
 
-  Widget _row(String k, String v) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+  Widget _row(IconData icon, String k, String v) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: Text(k, style: _txt(14, color: _mid))),
+            Icon(icon, size: 17, color: _mid),
+            const SizedBox(width: 10),
+            Text(k, style: _txt(13, color: _mid)),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(v,
+              child: Text(v.isEmpty ? '-' : v,
                   textAlign: TextAlign.right,
-                  style: _txt(14, weight: FontWeight.w600, color: _ink)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _txt(13, weight: FontWeight.w600, color: _ink)),
             ),
           ],
         ),

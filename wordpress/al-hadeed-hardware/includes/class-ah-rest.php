@@ -432,6 +432,7 @@ class AH_Rest {
 		AH_Customers::routes();
 		AH_Order_Delete::routes();
 		AH_Tracker::routes();
+		AH_Push::routes();
 
 		// Writing to suppliers from inside the shop, instead of the
 		// cashier opening a mail app and typing it out again.
@@ -748,13 +749,25 @@ class AH_Rest {
 		$products = wc_get_products( $args );
 		$out      = array();
 		foreach ( $products as $p ) {
-			// Not for sale until the manager gives it a price: an imported
-			// list arrives without prices, and UGX 0 is not a price.
-			if ( (float) $p->get_price() <= 0 ) {
-				continue;
-			}
+			// Every product shows. One with no price yet reads "Ask for the
+			// price" in the app and cannot go in the cart; ordering refuses
+			// it as well (ah_no_price).
 			$row = AH_Shape::product( $p );
 			if ( $row ) {
+				// The shop's own business stays in the shop.
+				$row['supplier']      = null;
+				$row['reorder_level'] = 0;
+				$row['has_price']     = $row['price'] > 0;
+				$id                   = $p->get_id();
+				$img                  = $p->get_image_id();
+				$small                = $img ? wp_get_attachment_image_src( $img, 'woocommerce_thumbnail' ) : null;
+				$row['picture_small'] = $small ? $small[0] : $row['picture'];
+				$row['size']          = array_filter( array(
+					'width_ft'     => (float) get_post_meta( $id, '_ah_width_ft', true ),
+					'length_ft'    => (float) get_post_meta( $id, '_ah_length_ft', true ),
+					'thickness_mm' => (float) get_post_meta( $id, '_ah_thickness_mm', true ),
+					'weight_kg'    => (float) get_post_meta( $id, '_ah_weight_kg', true ),
+				) ) ?: null;
 				$out[] = $row;
 			}
 		}

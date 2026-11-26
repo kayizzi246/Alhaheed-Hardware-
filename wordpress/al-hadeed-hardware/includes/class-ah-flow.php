@@ -71,6 +71,7 @@ class AH_Flow {
 			null,
 			$order->get_item_count() . ' item(s)'
 		);
+		do_action( 'ah_order_placed', $order );
 
 		$phone = $order->get_billing_phone();
 		if ( $phone && $notify ) {

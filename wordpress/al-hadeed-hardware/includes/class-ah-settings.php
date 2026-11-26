@@ -40,6 +40,9 @@ class AH_Settings {
 			// Selling prices and buy prices both include 18% VAT. Margins
 			// and zakat are worked out with it taken off.
 			'vat_included'  => 'yes',
+			// Push notifications to phones, through OneSignal.
+			'onesignal_app_id'  => '',
+			'onesignal_api_key' => '',
 		);
 	}
 
@@ -140,7 +143,7 @@ class AH_Settings {
 			// sanitize_text_field() strips characters that are perfectly
 			// legal in a mail password, and a password silently altered
 			// on save is an afternoon lost to "but I typed it right".
-			$out[ $key ] = in_array( $key, array( 'smtp_pass', 'sms_api_key' ), true ) ? (string) $value : sanitize_text_field( $value );
+			$out[ $key ] = in_array( $key, array( 'smtp_pass', 'sms_api_key', 'onesignal_api_key' ), true ) ? (string) $value : sanitize_text_field( $value );
 		}
 
 		// An unticked box is not sent at all, so "missing" means "off".
@@ -276,6 +279,30 @@ class AH_Settings {
 							<td><input id="ah_sms_url" class="regular-text" type="url"
 								name="<?php echo esc_attr( self::OPTION ); ?>[sms_url]"
 								value="<?php echo esc_attr( $o['sms_url'] ); ?>"></td>
+						</tr>
+					</table>
+				</div>
+
+				<div class="ah-card">
+					<h2 style="margin-top:0">Push notifications (OneSignal)</h2>
+					<p class="description" style="margin-bottom:12px">
+						Messages on the phone, even when the app is closed: sales to the manager,
+						work waiting to each desk, and order news to customers. Both are on
+						onesignal.com, in your app under Settings &rsaquo; Keys &amp; IDs.
+					</p>
+					<table class="form-table">
+						<tr>
+							<th><label for="ah_onesignal_app_id">OneSignal App ID</label></th>
+							<td><input id="ah_onesignal_app_id" class="regular-text" type="text"
+								name="<?php echo esc_attr( self::OPTION ); ?>[onesignal_app_id]"
+								value="<?php echo esc_attr( $o['onesignal_app_id'] ); ?>"
+								placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></td>
+						</tr>
+						<tr>
+							<th><label for="ah_onesignal_api_key">REST API key</label></th>
+							<td><input id="ah_onesignal_api_key" class="regular-text" type="password"
+								name="<?php echo esc_attr( self::OPTION ); ?>[onesignal_api_key]"
+								value="<?php echo esc_attr( $o['onesignal_api_key'] ); ?>"></td>
 						</tr>
 					</table>
 				</div>

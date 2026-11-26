@@ -138,6 +138,7 @@ class AH_Shape {
 				? (int) get_user_meta( $user->ID, 'ah_spending_limit', true )
 				: null,
 			'status'        => get_user_meta( $user->ID, 'ah_status', true ) ?: 'active',
+			'memberSince'   => substr( (string) $user->user_registered, 0, 10 ),
 			// Where a customer came from: added at the counter, or by
 			// ordering on the app. Staff accounts leave these empty.
 			'source'        => $desk ? null : ( get_user_meta( $user->ID, 'ah_source', true ) ?: 'app' ),
