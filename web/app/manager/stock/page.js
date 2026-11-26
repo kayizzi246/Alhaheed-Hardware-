@@ -11,6 +11,7 @@ import {
 import { Icon } from '@/components/icons';
 import { useDismissed } from '@/lib/dismissed';
 import { RemoveLine } from '@/components/RemoveLine';
+import { TrackerExport } from '@/components/TrackerExport';
 
 const monthName = (m) => {
   if (!m) return '';
@@ -64,7 +65,9 @@ export default function StockControl() {
 
   return (
     <div className="space-y-5">
-      <PageHead title="Stock" sub="Your stock, what to buy, and what is lost." />
+      <PageHead title="Stock" sub="Your stock, what to buy, and what is lost.">
+        <TrackerExport />
+      </PageHead>
       <Alert>{error}</Alert>
 
       <Card>

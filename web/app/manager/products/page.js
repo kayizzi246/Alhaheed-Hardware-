@@ -281,7 +281,10 @@ export default function ManagerProducts() {
                           </span>
                         </button>
                       </Td>
-                      <Td num className={p.cost ? 'text-ink-2' : 'text-ink-faint'}>{p.cost ? money(p.cost) : 'Not set'}</Td>
+                      <Td num className={p.cost ? 'text-ink-2' : 'text-ink-faint'}>
+                        {p.cost ? money(p.cost) : 'Not set'}
+                        {p.last_buy?.supplier && <span className="block max-w-[140px] truncate text-[11.5px] text-ink-muted" title={`Last bought from ${p.last_buy.supplier}`}>{p.last_buy.supplier}</span>}
+                      </Td>
                       <Td num className="font-semibold text-ink">{money(p.price)}</Td>
                       <Td num className={p.margin === null ? 'text-ink-faint' : p.margin < 0 ? 'font-semibold text-bad' : 'text-ink-2'}>
                         {p.margin === null ? '' : `${p.margin}%`}
@@ -429,6 +432,13 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
     supplier: product?.supplier || '',
     shelf: product?.shelf || '',
     description: product?.description || '',
+    itemShort: product?.item_short || '',
+    widthFt: product?.width_ft != null ? String(product.width_ft) : '',
+    lengthFt: product?.length_ft != null ? String(product.length_ft) : '',
+    thicknessMm: product?.thickness_mm != null ? String(product.thickness_mm) : '',
+    weightKg: product?.weight_kg != null ? String(product.weight_kg) : '',
+    expectedCost: product?.expected_cost != null ? String(product.expected_cost) : '',
+    expectedPrice: product?.expected_price != null ? String(product.expected_price) : '',
   }));
   const [newCategory, setNewCategory] = useState(false);
   // Main categories with their sub-categories, for a grouped list.
@@ -459,6 +469,13 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
         supplier: f.supplier.trim(),
         shelf: f.shelf.trim(),
         description: f.description.trim(),
+        itemShort: f.itemShort.trim(),
+        widthFt: f.widthFt.trim(),
+        lengthFt: f.lengthFt.trim(),
+        thicknessMm: f.thicknessMm.trim(),
+        weightKg: f.weightKg.trim(),
+        expectedCost: f.expectedCost.trim(),
+        expectedPrice: f.expectedPrice.trim(),
       };
       await api(editing ? `/api/manager/products/${product.id}` : '/api/manager/products', { method: 'POST', body });
       onDone(
@@ -565,6 +582,52 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
               )}
             </div>
           </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Next buy price (UGX)" hint="What you expect to pay next time.">
+              <Input type="number" inputMode="numeric" min="0" value={f.expectedCost} onChange={set('expectedCost')} className="tnum" />
+            </Field>
+            <Field label="Next sale price (UGX)" hint="What you plan to sell at.">
+              <Input type="number" inputMode="numeric" min="0" value={f.expectedPrice} onChange={set('expectedPrice')} className="tnum" />
+            </Field>
+            {editing && product.last_buy ? (
+              <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
+                <p className="text-[12px] font-semibold text-ink-muted">Last bought</p>
+                <p className="tnum mt-1 text-[14px] font-bold text-ink">{money(product.last_buy.cost)}</p>
+                <p className="text-[12px] text-ink-muted">
+                  {[product.last_buy.supplier, product.last_buy.fdn && `FDN ${product.last_buy.fdn}`, product.last_buy.date].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+            ) : <div />}
+          </div>
+        </Section>
+
+        <Section title="Size and weight">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+            <Field label="Short name" hint="PL, PIPE, ANG">
+              <Input value={f.itemShort} onChange={set('itemShort')} placeholder="PL" />
+            </Field>
+            <Field label="Width (ft)">
+              <Input type="number" inputMode="decimal" min="0" step="any" value={f.widthFt} onChange={set('widthFt')} className="tnum" placeholder="4" />
+            </Field>
+            <Field label="Length (ft)">
+              <Input type="number" inputMode="decimal" min="0" step="any" value={f.lengthFt} onChange={set('lengthFt')} className="tnum" placeholder="8" />
+            </Field>
+            <Field label="Thickness (mm)">
+              <Input type="number" inputMode="decimal" min="0" step="any" value={f.thicknessMm} onChange={set('thicknessMm')} className="tnum" placeholder="1.5" />
+            </Field>
+            <Field label="Weight of one (kg)">
+              <Input type="number" inputMode="decimal" min="0" step="any" value={f.weightKg} onChange={set('weightKg')} className="tnum" placeholder="35.05" />
+            </Field>
+          </div>
+          {f.widthFt && f.lengthFt && f.thicknessMm && (
+            <button
+              type="button"
+              className="text-[12.5px] font-semibold text-brand hover:underline"
+              onClick={() => setF({ ...f, weightKg: String(Math.round((Number(f.widthFt) / 3.281) * (Number(f.lengthFt) / 3.281) * 7850 * (Number(f.thicknessMm) / 1000) * 100) / 100) })}
+            >
+              Work out the weight for steel plate ({Math.round((Number(f.widthFt) / 3.281) * (Number(f.lengthFt) / 3.281) * 7850 * (Number(f.thicknessMm) / 1000) * 100) / 100} kg)
+            </button>
+          )}
         </Section>
 
         {/* No stock here: stock comes in as a purchase, with its supplier,
@@ -791,6 +854,9 @@ function History({ product, onClose, onStock, onEdit, onDelete }) {
     ['Adjusted', t ? `${t.adjusted > 0 ? '+' : ''}${t.adjusted} ${product.unit}` : '…'],
     ['Stock value', s ? money(s.value) : '…'],
     ['Buy price', product.cost ? money(product.cost) : 'Not set'],
+    ['Last bought from', product.last_buy ? [product.last_buy.supplier, product.last_buy.fdn && `FDN ${product.last_buy.fdn}`].filter(Boolean).join(' · ') : 'Not yet'],
+    ['Size', [product.width_ft && `${product.width_ft} ft`, product.length_ft && `${product.length_ft} ft`, product.thickness_mm && `${product.thickness_mm} mm`].filter(Boolean).join(' x ') || 'Not set'],
+    ['Weight of one', product.weight_kg ? `${product.weight_kg} kg` : 'Not set'],
     ['Sale price', product.price ? money(product.price) : 'Not set', !product.price ? 'text-bad' : ''],
     ['Sells a day', s ? (s.avgDaily ? `${s.avgDaily} (90 days)` : 'None in 90 days') : '…'],
     ['Days of stock', s ? (days === null ? 'Not selling' : days > 365 ? 'Over a year' : `${days} days`) : '…', s && days !== null && days < 15 ? 'text-bad' : ''],

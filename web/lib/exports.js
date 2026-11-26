@@ -158,3 +158,13 @@ export async function exportProducts() {
   await saveBook(buildCatalogue(products, d.shop), `${slug(d.shop)}-products-${today()}.xlsx`);
   return products.length;
 }
+
+/** The ALH Tracker file: Purchase, Sell Detail, stock balance and Code. */
+export async function exportTracker({ from, to }) {
+  const qs = new URLSearchParams({ from, to });
+  const d = await api(`/api/manager/stock/tracker?${qs}`);
+  const { buildTracker } = await import('@/lib/workbook');
+  const name = `ALH-Tracker-${d.from}-to-${d.to}.xlsx`;
+  await saveBook(buildTracker(d), name);
+  return name;
+}

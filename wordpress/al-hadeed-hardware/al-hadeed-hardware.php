@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Al Hadeed Hardware — Ordering & Cash Booking
  * Description:       The shop's order flow inside WordPress: a website order goes Cashier → Accounts → Store Manager, with receipts, a cash book, stock and an audit trail. Runs on the hosting you already pay for.
- * Version:           1.19.2
+ * Version:           1.19.3
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Author:            Kayizzi Badru
@@ -70,7 +70,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AH_VERSION', '1.19.2' );
+define( 'AH_VERSION', '1.19.3' );
 define( 'AH_FILE', __FILE__ );
 define( 'AH_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AH_URL', plugin_dir_url( __FILE__ ) );
@@ -103,6 +103,7 @@ require_once AH_PATH . 'includes/class-ah-suppliers.php';
 require_once AH_PATH . 'includes/class-ah-proofs.php';
 require_once AH_PATH . 'includes/class-ah-customers.php';
 require_once AH_PATH . 'includes/class-ah-order-delete.php';
+require_once AH_PATH . 'includes/class-ah-tracker.php';
 require_once AH_PATH . 'includes/class-ah-limits.php';
 require_once AH_PATH . 'includes/class-ah-settings.php';
 require_once AH_PATH . 'includes/class-ah-import.php';

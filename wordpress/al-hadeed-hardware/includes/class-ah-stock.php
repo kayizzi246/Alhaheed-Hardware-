@@ -207,6 +207,16 @@ class AH_Stock {
 			'reorder_qty'     => (int) get_post_meta( $id, '_ah_reorder_qty', true ),
 			'shelf'           => (string) get_post_meta( $id, '_ah_shelf', true ),
 			'supplier'        => AH_Shape::text( (string) get_post_meta( $id, '_ah_supplier', true ) ),
+			// Size and weight, the way the tracker keeps them.
+			'item_short'      => (string) get_post_meta( $id, '_ah_item_short', true ),
+			'width_ft'        => self::num_meta( $id, '_ah_width_ft' ),
+			'length_ft'       => self::num_meta( $id, '_ah_length_ft' ),
+			'thickness_mm'    => self::num_meta( $id, '_ah_thickness_mm' ),
+			'weight_kg'       => self::num_meta( $id, '_ah_weight_kg' ),
+			'expected_cost'   => self::num_meta( $id, '_ah_expected_cost' ),
+			'expected_price'  => self::num_meta( $id, '_ah_expected_price' ),
+			// The last delivery: what it cost and which company sent it.
+			'last_buy'        => self::last_buy( $id ),
 			// At the average cost of what is on the shelf, the same figure
 			// Stock control shows, so the two pages always agree.
 			'stock_value'     => (int) round( $on_hand * self::cost_of( $id ) ),
@@ -222,6 +232,38 @@ class AH_Stock {
 				'untracked' => 'Not counted',
 			)[ $state ],
 		) );
+	}
+
+	private static function num_meta( $id, $key ) {
+		$v = get_post_meta( $id, $key, true );
+		return '' === $v || null === $v ? null : (float) $v;
+	}
+
+	/**
+	 * The latest delivery of each product: price, company, date and
+	 * delivery note. Read once for the whole list.
+	 */
+	public static function last_buy( $id ) {
+		static $all = null;
+		if ( null === $all ) {
+			global $wpdb;
+			$t   = AH_Install::table( 'stock_moves' );
+			$all = array();
+			$rows = $wpdb->get_results(
+				"SELECT m.product_id, m.unit_cost, m.supplier, m.ref, m.moved_on FROM {$t} m
+				 JOIN ( SELECT product_id, MAX(id) AS id FROM {$t} WHERE kind = 'received' AND qty > 0 GROUP BY product_id ) l ON l.id = m.id",
+				ARRAY_A
+			);
+			foreach ( (array) $rows as $r ) {
+				$all[ (int) $r['product_id'] ] = array(
+					'cost'     => (int) $r['unit_cost'],
+					'supplier' => (string) $r['supplier'],
+					'fdn'      => (string) $r['ref'],
+					'date'     => (string) $r['moved_on'],
+				);
+			}
+		}
+		return $all[ (int) $id ] ?? null;
 	}
 
 	/** Units sold per product since a time, from the stock book. */
@@ -421,7 +463,21 @@ class AH_Stock {
 				update_post_meta( $id, $key, max( 0, (int) $req->get_param( $param ) ) );
 			}
 		}
-		$texts = array( 'unit' => '_ah_unit', 'supplier' => '_ah_supplier', 'shelf' => '_ah_shelf' );
+		// Size and weight, as the steel tracker keeps them.
+		$floats = array( 'widthFt' => '_ah_width_ft', 'lengthFt' => '_ah_length_ft', 'thicknessMm' => '_ah_thickness_mm', 'weightKg' => '_ah_weight_kg' );
+		foreach ( $floats as $param => $key ) {
+			if ( null !== $req->get_param( $param ) ) {
+				$v = $req->get_param( $param );
+				'' === $v ? delete_post_meta( $id, $key ) : update_post_meta( $id, $key, max( 0, round( (float) $v, 4 ) ) );
+			}
+		}
+		foreach ( array( 'expectedCost' => '_ah_expected_cost', 'expectedPrice' => '_ah_expected_price' ) as $param => $key ) {
+			if ( null !== $req->get_param( $param ) ) {
+				$v = $req->get_param( $param );
+				'' === $v ? delete_post_meta( $id, $key ) : update_post_meta( $id, $key, max( 0, (int) $v ) );
+			}
+		}
+		$texts = array( 'unit' => '_ah_unit', 'supplier' => '_ah_supplier', 'shelf' => '_ah_shelf', 'itemShort' => '_ah_item_short' );
 		foreach ( $texts as $param => $key ) {
 			if ( null !== $req->get_param( $param ) ) {
 				$v = trim( sanitize_text_field( (string) $req->get_param( $param ) ) );
