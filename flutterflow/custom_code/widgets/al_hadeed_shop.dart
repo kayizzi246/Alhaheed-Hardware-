@@ -9,6 +9,7 @@ import 'package:flutter/material.dart' hide RepeatMode;
 
 // ╔═══════════════════════════════════════════════════════════════╗
 // ║  NAME THIS CUSTOM WIDGET:   AlHadeedShop                      ║
+// ║  DEPENDENCY:                onesignal_flutter: ^5.2.0         ║
 // ╚═══════════════════════════════════════════════════════════════╝
 //
 // FlutterFlow looks for a class with exactly the name typed in the
@@ -32,6 +33,7 @@ import 'package:flutter/material.dart' hide RepeatMode;
 // warning, not an error, and silencing it keeps real warnings visible.
 // ignore_for_file: unused_element
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -39,6 +41,7 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ═══════════════════════════════════════════════════════════════
@@ -1177,6 +1180,68 @@ void _toast(BuildContext context, String message, {bool bad = false}) =>
     );
 
 // ═══════════════════════════════════════════════════════════════
+//  PUSH NOTIFICATIONS (OneSignal)
+//
+//  Needs the dependency  onesignal_flutter: ^5.2.0  on this widget.
+//  It asks the phone for permission, then keeps OneSignal told who is
+//  signed in ("ah-<user id>"). The shop sends to that name: sales to
+//  the manager, waiting work to each desk, order news to the customer.
+//  The App ID comes from the shop's Settings.
+// ═══════════════════════════════════════════════════════════════
+
+bool _pushStarted = false;
+String? _pushWho;
+
+Future<void> _startPush() async {
+  // Push needs a phone: the web preview has none.
+  if (kIsWeb || _pushStarted) return;
+  _pushStarted = true;
+
+  String appId = '';
+  try {
+    final r = await _apiGet('/api/push/config');
+    appId = r['appId']?.toString() ?? '';
+  } on _ApiError {
+    _pushStarted = false; // No connection now: try again next open.
+    return;
+  }
+  if (appId.isEmpty) {
+    _pushStarted = false; // Not set up in Settings yet.
+    return;
+  }
+
+  try {
+    OneSignal.initialize(appId);
+    await OneSignal.Notifications.requestPermission(true);
+  } catch (_) {
+    return;
+  }
+
+  // Follow whoever signs in or out on this phone, from any screen.
+  Future<void> follow() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? who;
+    final raw = prefs.getString('alhadeed.user');
+    if (raw != null && prefs.getString('alhadeed.token') != null) {
+      try {
+        final id = (jsonDecode(raw) as Map)['id'];
+        if (id != null) who = 'ah-$id';
+      } catch (_) {}
+    }
+    if (who == _pushWho) return;
+    _pushWho = who;
+    if (who == null) {
+      OneSignal.logout();
+    } else {
+      OneSignal.login(who);
+    }
+  }
+
+  await follow();
+  Timer.periodic(const Duration(seconds: 5), (_) => follow());
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  SCREEN 1 OF 4 — THE SHOP
 // ═══════════════════════════════════════════════════════════════
 
@@ -1227,6 +1292,9 @@ class _AlHadeedShopState extends State<AlHadeedShop> {
   Future<void> _boot() async {
     await _Session().load();
     if (!mounted) return;
+    // Push notifications start here, for customers and staff alike:
+    // this is the first screen the app opens.
+    unawaited(_startPush());
     setState(() => _sessionRead = true);
     if (_Session().isStaff) return;
     await _CartStore().load();
