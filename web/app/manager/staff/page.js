@@ -63,7 +63,7 @@ export default function ManagerStaff() {
   return (
     <>
       <PageHead
-        title="Desk logins"
+        title="Staff logins"
         sub="Everyone with a desk, and what each one can reach."
       >
         <Button onClick={() => setHiring(true)}>Hire someone</Button>
