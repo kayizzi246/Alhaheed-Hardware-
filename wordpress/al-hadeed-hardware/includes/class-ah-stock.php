@@ -40,6 +40,7 @@ class AH_Stock {
 		'count'      => 'Stock count',
 		'correction' => 'Correction',
 		'supplier_return' => 'Returned to supplier',
+		'count_undone'    => 'Count deleted',
 	);
 
 	/** What a person may record by hand, and which way it moves the count. */

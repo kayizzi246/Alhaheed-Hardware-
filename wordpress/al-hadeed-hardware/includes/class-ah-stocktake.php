@@ -286,7 +286,7 @@ class AH_Stocktake {
 			if ( ! $product ) {
 				continue;
 			}
-			AH_Stock::adjust( $product, -$var, 'count', array(
+			AH_Stock::adjust( $product, -$var, 'count_undone', array(
 				'note'      => 'Count deleted: stock put back',
 				'ref'       => 'Count #' . $h['id'],
 				'count_id'  => (int) $h['id'],

@@ -218,7 +218,7 @@ class AH_Till {
 		}
 		foreach ( (array) $wpdb->get_results( $wpdb->prepare(
 			'SELECT user_id, user_name, COUNT(*) AS n, SUM(-qty * unit_cost) AS v FROM ' . AH_Install::table( 'stock_moves' ) . "
-			  WHERE ( kind IN ('damaged','own_use') OR ( kind IN ('count','correction') AND qty < 0 ) )
+			  WHERE ( kind IN ('damaged','own_use') OR ( kind IN ('count','correction') AND qty < 0 AND COALESCE(note,'') NOT LIKE 'Count deleted%' ) )
 			    AND COALESCE(moved_on, DATE(created_at)) BETWEEN %s AND %s
 			  GROUP BY user_id, user_name",
 			$from, $to

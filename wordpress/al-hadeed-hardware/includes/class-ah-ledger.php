@@ -159,6 +159,12 @@ class AH_Ledger {
 		foreach ( (array) $wpdb->get_results( "SELECT product_id, MAX({$day}) AS d FROM {$t} WHERE kind = 'sold' GROUP BY product_id", ARRAY_A ) as $r ) {
 			$last[ (int) $r['product_id'] ] = $r['d'];
 		}
+		// When each item first went into the book: one stocked last week
+		// has not had the chance to sell, so it is not "not selling" yet.
+		$first = array();
+		foreach ( (array) $wpdb->get_results( "SELECT product_id, MIN({$day}) AS d FROM {$t} GROUP BY product_id", ARRAY_A ) as $r ) {
+			$first[ (int) $r['product_id'] ] = $r['d'];
+		}
 		$cats = array();
 		foreach ( (array) $wpdb->get_results(
 			"SELECT tr.object_id, t.name FROM {$wpdb->term_relationships} tr
@@ -183,6 +189,8 @@ class AH_Ledger {
 			$days  = AH_Stock_Math::days_of_stock( $b, $avg );
 			$ls    = $last[ $id ] ?? null;
 			$since_sale = $ls ? (int) floor( ( $today - strtotime( $ls ) ) / DAY_IN_SECONDS ) : null;
+			// Never sold: count from the day it came in.
+			$idle = null !== $since_sale ? $since_sale : ( isset( $first[ $id ] ) ? (int) floor( ( $today - strtotime( $first[ $id ] ) ) / DAY_IN_SECONDS ) : 0 );
 			$shelf = 'yes' === ( $m['_manage_stock'] ?? '' ) ? (int) ( $m['_stock'] ?? 0 ) : null;
 
 			$out[] = array(
@@ -207,7 +215,7 @@ class AH_Ledger {
 				'daysSinceSale'  => $since_sale,
 				'reorder'        => AH_Stock_Math::needs_reorder( $b, $min, $days ),
 				'suggestedQty'   => AH_Stock_Math::suggested_order( $b, $min ),
-				'dead'           => AH_Stock_Math::is_dead( $b, $since_sale ),
+				'dead'           => AH_Stock_Math::is_dead( $b, $idle ),
 				'slow'           => AH_Stock_Math::is_slow( $days ),
 				// The shop's own running count, when it has drifted from the book.
 				'shelfMismatch'  => null !== $shelf && $shelf !== $b ? $shelf : null,
@@ -353,7 +361,8 @@ class AH_Ledger {
 		$day   = self::day_sql();
 		$since = gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' -90 days' ) );
 		$month = current_time( 'Y-m' );
-		$where = "( kind IN ('damaged','own_use') OR ( kind IN ('count','correction') AND qty < 0 ) )";
+		// Putting stock back after a count is deleted is not a loss.
+		$where = "( kind IN ('damaged','own_use') OR ( kind IN ('count','correction') AND qty < 0 AND COALESCE(note,'') NOT LIKE 'Count deleted%' ) )";
 		$rows  = $wpdb->get_results( $wpdb->prepare(
 			"SELECT id, product_id, kind, -qty AS qty, unit_cost, note, ref, user_name, {$day} AS day
 			   FROM {$t} WHERE {$where} AND {$day} >= %s ORDER BY day DESC, id DESC",
