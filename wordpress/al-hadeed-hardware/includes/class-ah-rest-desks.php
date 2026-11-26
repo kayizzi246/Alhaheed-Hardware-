@@ -59,6 +59,7 @@ class AH_Rest_Desks {
 		// ── Notifications ─────────────────────────────────────────────
 		$route( '/notifications', $get, AH_Rest::class . '::signed_in', array( __CLASS__, 'notifications' ) );
 		$route( '/notifications/read-all', $post, AH_Rest::class . '::signed_in', array( __CLASS__, 'read_all' ) );
+		$route( '/notifications/delete', $post, AH_Rest::class . '::signed_in', array( __CLASS__, 'delete_alerts' ) );
 
 		// ── The order register, and the manager's lists ───────────────
 		$route( '/orders', $get, $any_desk, array( __CLASS__, 'register' ) );
@@ -513,9 +514,15 @@ class AH_Rest_Desks {
 		$desk = AH_Roles::desk_of( $user );
 		$t    = AH_Install::table( 'events' );
 
+		// What this person has deleted from their alerts. Only their list:
+		// the audit trail keeps every record.
+		$cleared = (int) get_user_meta( $user->ID, 'ah_alerts_cleared', true );
+		$hidden  = array_map( 'intval', (array) get_user_meta( $user->ID, 'ah_alerts_hidden', true ) );
+		$not_in  = $hidden ? ' AND id NOT IN (' . implode( ',', $hidden ) . ')' : '';
+
 		if ( $desk ) {
 			$rows   = $wpdb->get_results(
-				"SELECT * FROM {$t} ORDER BY id DESC LIMIT 40",
+				$wpdb->prepare( "SELECT * FROM {$t} WHERE id > %d{$not_in} ORDER BY id DESC LIMIT 100", $cleared ),
 				ARRAY_A
 			);
 			$unread = count( AH_Flow::queue_for( 'manager' === $desk ? 'cashier' : $desk, 200 ) );
@@ -545,6 +552,9 @@ class AH_Rest_Desks {
 		$seen = (int) get_user_meta( $user->ID, 'ah_notifications_seen', true );
 		$out  = array();
 		foreach ( $rows as $r ) {
+			if ( (int) $r['id'] <= $cleared || in_array( (int) $r['id'], $hidden, true ) ) {
+				continue;
+			}
 			$order = wc_get_order( (int) $r['order_id'] );
 			$out[] = array(
 				'id'         => (int) $r['id'],
@@ -560,8 +570,68 @@ class AH_Rest_Desks {
 		return array( 'notifications' => $out, 'unread' => $unread );
 	}
 
+	/**
+	 * Delete alerts from this person's list: some, or all of them. The
+	 * record stays in the audit trail, so nothing that happened can be
+	 * made to disappear by deleting its alert.
+	 */
+	public static function delete_alerts( $req ) {
+		global $wpdb;
+		$user = AH_Auth::current();
+		if ( $req->get_param( 'all' ) ) {
+			$max = (int) $wpdb->get_var( 'SELECT COALESCE(MAX(id),0) FROM ' . AH_Install::table( 'events' ) );
+			update_user_meta( $user->ID, 'ah_alerts_cleared', $max );
+			update_user_meta( $user->ID, 'ah_notifications_seen', max( $max, (int) get_user_meta( $user->ID, 'ah_notifications_seen', true ) ) );
+			delete_user_meta( $user->ID, 'ah_alerts_hidden' );
+			return array( 'ok' => true, 'deleted' => 'all' );
+		}
+		$ids = array_filter( array_map( 'intval', (array) $req->get_param( 'ids' ) ) );
+		if ( ! $ids ) {
+			return new WP_Error( 'ah_nothing_chosen', 'Choose the alerts to delete', array( 'status' => 400 ) );
+		}
+		$cleared = (int) get_user_meta( $user->ID, 'ah_alerts_cleared', true );
+		$hidden  = array_map( 'intval', (array) get_user_meta( $user->ID, 'ah_alerts_hidden', true ) );
+		// Anything already below the "all cleared" line need not be kept.
+		$hidden = array_values( array_filter( array_unique( array_merge( $hidden, $ids ) ), function ( $id ) use ( $cleared ) { return $id > $cleared; } ) );
+		update_user_meta( $user->ID, 'ah_alerts_hidden', array_slice( $hidden, -2000 ) );
+		return array( 'ok' => true, 'deleted' => count( $ids ) );
+	}
+
+	/** What happened, in words; an order number only when there is one. */
 	private static function event_title( $event, $order ) {
-		$no = $order ? AH_Shape::order_no( $order ) : 'an order';
+		$no    = $order ? AH_Shape::order_no( $order ) : 'an order';
+		$plain = array(
+			'products_deleted'     => 'Products deleted',
+			'customers_deleted'    => 'Customers deleted',
+			'customer_added'       => 'Customer added',
+			'price_changed'        => 'Price changed',
+			'stock_count_approved' => 'Stock count approved',
+			'till_closed'          => 'Till closed',
+			'po_created'           => 'Purchase order made',
+			'po_received'          => 'Goods received from a supplier',
+			'po_closed'            => 'Purchase order closed',
+			'po_cancelled'         => 'Purchase order cancelled',
+			'po_deleted'           => 'Purchase order deleted',
+			'bill_added'           => 'Supplier bill recorded',
+			'bill_paid'            => 'Supplier paid',
+			'bill_deleted'         => 'Supplier bill deleted',
+			'supplier_return'      => 'Goods sent back to a supplier',
+			'staff_deleted'        => 'Desk login deleted',
+			'staff_suspended'      => 'Desk login suspended',
+			'staff_restored'       => 'Desk login let back in',
+			'staff_moved'          => 'Moved to another desk',
+			'worker_added'         => 'Worker added',
+			'worker_updated'       => 'Worker changed',
+			'workers_deleted'      => 'Workers deleted',
+			'payroll_started'      => 'Payroll drafted',
+			'payroll_approved'     => 'Payroll approved',
+			'data_exported'        => 'Data exported',
+			'part_released'        => $order ? "Part of {$no} delivered" : 'Part delivered',
+			'looked_up'            => $order ? "{$no} opened at the store" : 'Order opened at the store',
+		);
+		if ( isset( $plain[ $event['action'] ] ) ) {
+			return $plain[ $event['action'] ];
+		}
 		switch ( $event['action'] ) {
 			case 'placed':
 				return "New order {$no}";
@@ -576,7 +646,8 @@ class AH_Rest_Desks {
 			case 'cancelled':
 				return "{$no} cancelled";
 			default:
-				return ucfirst( str_replace( '_', ' ', $event['action'] ) ) . " · {$no}";
+				$what = ucfirst( str_replace( '_', ' ', $event['action'] ) );
+				return $order ? "{$what} · {$no}" : $what;
 		}
 	}
 
