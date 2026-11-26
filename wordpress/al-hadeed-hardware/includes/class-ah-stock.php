@@ -41,7 +41,15 @@ class AH_Stock {
 		'correction' => 'Correction',
 		'supplier_return' => 'Returned to supplier',
 		'count_undone'    => 'Count deleted',
+		'product_deleted' => 'Product deleted',
+		'order_deleted'   => 'Order deleted',
 	);
+
+	/** 4.5 → "4.5", 4.0 → "4". */
+	public static function qty_text( $q ) {
+		$q = round( (float) $q, 2 );
+		return floor( $q ) == $q ? (string) (int) $q : rtrim( rtrim( number_format( $q, 2, '.', '' ), '0' ), '.' );
+	}
 
 	/** What a person may record by hand, and which way it moves the count. */
 	const MANUAL = array(
@@ -425,12 +433,23 @@ class AH_Stock {
 		}
 	}
 
+	private static function code_in_bin( $code ) {
+		global $wpdb;
+		return (bool) $wpdb->get_var( $wpdb->prepare(
+			"SELECT 1 FROM {$wpdb->wc_product_meta_lookup} WHERE sku = %s
+			 UNION SELECT 1 FROM {$wpdb->postmeta} WHERE meta_key = '_sku' AND meta_value = %s LIMIT 1",
+			$code, $code
+		) );
+	}
+
 	/** "AH-CEM-004": the first letters of the name and the next free number. */
 	private static function next_code( $name ) {
 		$stem = strtoupper( substr( preg_replace( '/[^A-Za-z]/', '', $name ), 0, 3 ) ) ?: 'PRD';
 		for ( $i = 1; $i < 10000; $i++ ) {
 			$code = sprintf( 'AH-%s-%03d', $stem, $i );
-			if ( ! wc_get_product_id_by_sku( $code ) ) {
+			// Deleted products in the bin still hold their code, and
+			// WooCommerce refuses to give it out twice, so they count too.
+			if ( ! wc_get_product_id_by_sku( $code ) && ! self::code_in_bin( $code ) ) {
 				return $code;
 			}
 		}
@@ -457,18 +476,21 @@ class AH_Stock {
 		$names = array();
 		foreach ( $ids as $id ) {
 			$product = wc_get_product( $id );
-			if ( $product && 'trash' !== $product->get_status() ) {
-				// Units on the shelf cannot be deleted away: count it or write
-				// it off first, so the stock book says where they went.
-				$left = AH_Ledger::book( $product->get_id() );
-				if ( 0 !== $left ) {
-					return self::err( 'ah_has_stock', sprintf( '%s still has %d in the stock book. Count it or write it off to zero first, so every unit is accounted for.', $product->get_name(), $left ), 409 );
-				}
-			}
 			if ( ! $product || 'trash' === $product->get_status() ) {
 				continue;
 			}
-			$names[] = $product->get_name();
+			// The manager may delete a product that still has stock. The
+			// stock book is taken to zero with one line that says so, so
+			// the units do not just vanish from the figures.
+			$left = AH_Ledger::book( $product->get_id() );
+			if ( abs( $left ) >= 0.005 ) {
+				self::adjust( $product, -$left, 'product_deleted', array(
+					'note' => sprintf( 'Product deleted with %s in stock', self::qty_text( $left ) ),
+				) );
+				$names[] = sprintf( '%s (%s in stock)', $product->get_name(), self::qty_text( $left ) );
+			} else {
+				$names[] = $product->get_name();
+			}
 			$product->delete( false );
 		}
 		if ( ! $names ) {

@@ -400,9 +400,14 @@ function DeleteProducts({ products, onClose, onDone }) {
             </li>
           ))}
         </ul>
+        {products.some((p) => Number(p.stock_available) > 0) && (
+          <p className="rounded-xl bg-bad-bg px-4 py-3 text-bad">
+            Some still have stock. That stock goes to <b>0</b> and leaves the stock value.
+          </p>
+        )}
         <p>
-          Past orders and receipts keep {one ? 'its' : 'their'} name and price, and the stock book keeps {one ? 'its' : 'their'} history.
-          If you may sell {one ? 'it' : 'them'} again, <b>Retire</b> instead: that takes {one ? 'it' : 'them'} off sale but keeps {one ? 'it' : 'them'} here.
+          Old receipts keep the name and price. History keeps one line saying you deleted {one ? 'it' : 'them'}.
+          To stop selling but keep {one ? 'it' : 'them'}, use <b>Retire</b>.
         </p>
       </div>
     </Modal>

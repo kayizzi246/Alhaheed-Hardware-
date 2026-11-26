@@ -8,6 +8,7 @@ import { money, dateTime, statusLabel, methodLabel, list } from '@/lib/format';
 import {
   Alert, Button, Card, Empty, Input, Loading, Modal, PageHead, Select,
   StatusChip, Table, TableWrap, Td, Th, Tr, LoadFailed } from '@/components/ui';
+import { confirmAction } from '@/components/Confirm';
 
 const STATUSES = [
   ['all', 'All'],
@@ -50,6 +51,39 @@ function ManagerOrders() {
   });
   const [openId, setOpenId] = useState(null);
   const [error, setError] = useState('');
+  const [picked, setPicked] = useState([]);
+  const [note, setNote] = useState('');
+
+  const toggle = (id) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const allPicked = !!orders?.length && orders.every((o) => picked.includes(o.id));
+  const pickAll = () => setPicked(allPicked ? [] : list(orders).map((o) => o.id));
+
+  async function removeOrders(ids) {
+    const chosen = list(orders).filter((o) => ids.includes(o.id));
+    const one = ids.length === 1;
+    const paid = chosen.some((o) => !['pending_payment', 'cancelled', 'rejected'].includes(o.status));
+    const ok = await confirmAction({
+      title: one ? `Delete order ${chosen[0]?.order_no || ''}?` : `Delete ${ids.length} orders?`,
+      body: 'It goes from everywhere. You cannot get it back.',
+      points: [
+        'Goods taken from stock go back to stock.',
+        ...(paid ? ['The money comes off the sales and the cash book.'] : []),
+        'History keeps one line: who deleted it.',
+      ],
+      confirm: one ? 'Delete order' : `Delete ${ids.length}`,
+    });
+    if (!ok) return;
+    try {
+      const r = await api('/api/manager/orders/delete', { method: 'POST', body: { ids } });
+      setPicked((p) => p.filter((x) => !ids.includes(x)));
+      setOpenId(null);
+      setNote(r.deleted === 1 ? 'Order deleted.' : `${r.deleted} orders deleted.`);
+      setError('');
+      load();
+    } catch (e) {
+      setError(/no route/i.test(e.message) ? 'Deleting orders needs the new plugin. Upload the zip to the website first.' : e.message);
+    }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -92,6 +126,17 @@ function ManagerOrders() {
       </PageHead>
 
       <Alert>{error}</Alert>
+      {note && <Alert kind="ok" onDone={() => setNote("")}>{note}</Alert>}
+
+      {picked.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface px-4 py-2.5">
+          <span className="text-[14px] font-semibold text-ink">{picked.length} chosen</span>
+          <Button variant="outline" size="sm" onClick={() => setPicked([])}>Clear</Button>
+          <Button variant="danger" size="sm" className="ml-auto" onClick={() => removeOrders(picked)}>
+            Delete {picked.length === 1 ? 'order' : `${picked.length} orders`}
+          </Button>
+        </div>
+      )}
 
       <Card>
         {!orders ? (
@@ -105,12 +150,19 @@ function ManagerOrders() {
           {/* On a phone: one tap-able row per order, everything that
               matters in view, no sideways scrolling to find "Open". */}
           <ul className="divide-y divide-line md:hidden">
+            <li className="flex items-center gap-3 bg-surface-2 px-4 py-2 text-[13px] font-semibold text-ink-2">
+              <input type="checkbox" className="size-5 cursor-pointer accent-[rgb(var(--brand))]" checked={allPicked} onChange={pickAll} aria-label="Choose all" />
+              Choose all
+            </li>
             {orders.map((o) => (
-              <li key={o.id}>
+              <li key={o.id} className="flex items-start">
+                <span className="pl-4 pt-3.5">
+                  <input type="checkbox" className="size-5 cursor-pointer accent-[rgb(var(--brand))]" checked={picked.includes(o.id)} onChange={() => toggle(o.id)} aria-label={`Choose ${o.order_no}`} />
+                </span>
                 <button
                   type="button"
                   onClick={() => setOpenId(o.id)}
-                  className="block w-full px-4 py-3 text-left active:bg-surface-2"
+                  className="block min-w-0 flex-1 px-3 py-3 pr-4 text-left active:bg-surface-2"
                 >
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="tnum text-[15px] font-bold text-ink">{o.order_no}</span>
@@ -131,6 +183,9 @@ function ManagerOrders() {
             <Table>
               <thead>
                 <tr>
+                  <Th className="w-10">
+                    <input type="checkbox" className="size-4 cursor-pointer accent-[rgb(var(--brand))]" checked={allPicked} onChange={pickAll} aria-label="Choose all" />
+                  </Th>
                   <Th>Order</Th><Th>Customer</Th><Th>Status</Th>
                   <Th num>Items</Th><Th num>Total</Th><Th>Placed</Th><Th />
                 </tr>
@@ -140,6 +195,9 @@ function ManagerOrders() {
                   // The whole row opens the order, not only the small
                   // button at the end of it.
                   <Tr key={o.id} onClick={() => setOpenId(o.id)} className="cursor-pointer">
+                    <Td onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" className="size-4 cursor-pointer accent-[rgb(var(--brand))]" checked={picked.includes(o.id)} onChange={() => toggle(o.id)} aria-label={`Choose ${o.order_no}`} />
+                    </Td>
 
                     <Td className="tnum font-bold text-ink">{o.order_no}</Td>
                     <Td className="font-medium text-ink">{o.company_name || o.ordered_by_name}</Td>
@@ -162,7 +220,7 @@ function ManagerOrders() {
       </Card>
 
       {openId && (
-        <OrderDialog id={openId} onClose={() => setOpenId(null)} onChanged={load} />
+        <OrderDialog id={openId} onClose={() => setOpenId(null)} onChanged={load} onDelete={() => removeOrders([openId])} />
       )}
     </>
   );
@@ -179,7 +237,7 @@ function ManagerOrders() {
  * The page still exists and still works: a link to an order from the
  * alerts panel or the audit trail has to land somewhere.
  */
-function OrderDialog({ id, onClose, onChanged }) {
+function OrderDialog({ id, onClose, onChanged, onDelete }) {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
 
@@ -200,6 +258,9 @@ function OrderDialog({ id, onClose, onChanged }) {
       onClose={onClose}
       footer={
         <>
+          {order && onDelete && (
+            <Button variant="danger" className="mr-auto" onClick={onDelete}>Delete</Button>
+          )}
           <Button variant="outline" onClick={onClose}>Close</Button>
           {order && (
             <Button asChild>

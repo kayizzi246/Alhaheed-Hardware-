@@ -196,11 +196,11 @@ class AH_Till {
 		$ev = AH_Install::table( 'events' );
 		foreach ( (array) $wpdb->get_results( $wpdb->prepare(
 			"SELECT handled_by, handler_name, action, COUNT(*) AS n FROM {$ev}
-			  WHERE created_at BETWEEN %s AND %s AND action IN ('cancelled','price_changed','products_deleted','part_released')
+			  WHERE created_at BETWEEN %s AND %s AND action IN ('cancelled','price_changed','products_deleted','orders_deleted','part_released')
 			  GROUP BY handled_by, handler_name, action",
 			$from, $end
 		), ARRAY_A ) as $r ) {
-			$key = array( 'cancelled' => 'cancelled', 'price_changed' => 'priceChanges', 'products_deleted' => 'deleted', 'part_released' => 'partReleases' )[ $r['action'] ];
+			$key = array( 'cancelled' => 'cancelled', 'price_changed' => 'priceChanges', 'products_deleted' => 'deleted', 'orders_deleted' => 'deleted', 'part_released' => 'partReleases' )[ $r['action'] ];
 			$add( $r['handled_by'], $r['handler_name'], $key, (int) $r['n'] );
 		}
 		// A rejected payment counts against the cashier who took it.

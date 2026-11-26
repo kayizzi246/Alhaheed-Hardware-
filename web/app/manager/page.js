@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { api, peek } from '@/lib/api';
 import { money, shortMoney, time, statusLabel, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
-import { Icon } from '@/components/icons';
 import {
   Alert, Button, Card, CardBody, CardHead, CardNote, CardTitle,
-  Fresh, Skeleton, StatusChip, Table, TableWrap, Td, Th, Tr, Stat } from '@/components/ui';
+  Fresh, Skeleton, StatusChip, Table, TableWrap, Td, Th, Tr } from '@/components/ui';
 import { usePoll } from '@/lib/live';
+import { useDismissed } from '@/lib/dismissed';
+import { RemoveLine } from '@/components/RemoveLine';
 
 /**
  * The manager's console.
@@ -45,6 +46,7 @@ export default function ManagerConsole() {
   });
   const [error, setError] = useState('');
   const [todo, setTodo] = useState(() => peek('/api/manager/stock/control')?.todo || null);
+  const { hide, visible } = useDismissed();
 
   const load = useCallback(async () => {
     const [dash, sellers, orders, stock] = await Promise.allSettled([
@@ -80,14 +82,14 @@ export default function ManagerConsole() {
   const waiting = (stage.cashier || 0) + (stage.accounts || 0) + (stage.store || 0);
   const avgOrder = d.ordersToday ? Math.round(d.salesToday / d.ordersToday) : 0;
   const low = list(d.lowStock);
+  const shown = visible(todo);
 
   return (
     <>
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[26px] leading-tight text-ink">The shop today</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Everything moving through the counter,{' '}
+          <h1 className="text-[20px] leading-tight text-ink">Today</h1>
+          <p className="text-[12.5px] text-ink-muted">
             {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
@@ -99,19 +101,23 @@ export default function ManagerConsole() {
       </header>
 
       {/* The owner's short list: what is wrong, in plain words. */}
-      {todo && todo.length > 0 && (
-        <section className="mb-5 rounded-xl border border-line bg-surface">
-          <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
-            <h2 className="text-[15px] font-bold text-ink">Check these</h2>
-            <Link href="/manager/stock" className="text-[13px] font-semibold text-brand hover:underline">See all</Link>
+      {shown.length > 0 && (
+        <section className="mb-3 rounded-xl border border-line bg-surface">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-3.5 py-2">
+            <h2 className="text-[13.5px] font-bold text-ink">Check these</h2>
+            <div className="flex items-center gap-4">
+              <button type="button" onClick={() => hide(shown.map((t) => t.text))} className="text-[13px] font-semibold text-ink-muted hover:text-bad hover:underline">Remove all</button>
+              <Link href="/manager/stock" className="text-[13px] font-semibold text-brand hover:underline">See all</Link>
+            </div>
           </div>
           <ul className="divide-y divide-line">
-            {todo.slice(0, 5).map((t, n) => (
-              <li key={n}>
-                <Link href={t.link.startsWith('#') ? `/manager/stock${t.link}` : t.link} className="flex items-start gap-3 px-4 py-2.5 text-[13.5px] text-ink hover:bg-surface-2 sm:px-5">
+            {shown.slice(0, 5).map((t) => (
+              <li key={t.text} className="flex items-stretch">
+                <Link href={t.link.startsWith('#') ? `/manager/stock${t.link}` : t.link} className="flex min-w-0 flex-1 items-start gap-2.5 px-3.5 py-1.5 text-[13px] text-ink hover:bg-surface-2">
                   <span aria-hidden="true" className={cn('mt-1.5 size-2 shrink-0 rounded-full', t.level === 'bad' ? 'bg-bad' : t.level === 'warn' ? 'bg-warn' : 'bg-info')} />
                   <span className="min-w-0 flex-1">{t.text}</span>
                 </Link>
+                <RemoveLine onClick={() => hide([t.text])} />
               </li>
             ))}
           </ul>
@@ -123,71 +129,36 @@ export default function ManagerConsole() {
       {/* ── The row of figures ─────────────────────────────────────── */}
       {/* Two across on a phone, the day's sales across the top. One per
           row put five tiles between the manager and everything else. */}
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-5">
-        <Stat
-          hero
-          label="Sales today"
-          value={money(d.salesToday)}
-          delta={delta}
-          note={delta === null ? (d.salesToday ? 'the first sales this week' : 'nothing taken yet today') : 'vs the daily average'}
-          icon={Icon.cash()}
-          href="/manager/reports"
-          className="col-span-2 sm:col-span-1"
-        />
-        <Stat
-          label="Orders today"
-          value={String(d.ordersToday)}
-          note={waiting ? `${waiting} still open` : 'all dealt with'}
-          icon={Icon.receipt()}
-          href="/manager/orders"
-        />
-        <Stat
-          label="Average order"
-          value={money(avgOrder)}
-          note="per order today"
-          icon={Icon.chart()}
-          tone="neutral"
-        />
-        <Stat
-          label="Waiting on a desk"
-          value={String(waiting)}
-          note={waiting ? 'at the cashier, accounts or store' : 'nothing waiting'}
-          icon={Icon.clock()}
-          tone={waiting ? 'warn' : 'ok'}
-          href="/manager/orders"
-        />
-        <Stat
-          label="Low on stock"
-          value={String(low.length)}
-          note={low.length ? 'at or below the reorder level' : 'everything is stocked'}
-          icon={Icon.box()}
-          tone={low.length ? 'bad' : 'ok'}
-          href="/manager/products"
-        />
+      <div className="mb-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
+        <Tile hero label="Sales today" value={money(d.salesToday)} note={delta === null ? (d.salesToday ? 'first sales this week' : 'nothing yet') : `${delta >= 0 ? '↑' : '↓'} ${Math.abs(delta)}% vs average`} href="/manager/reports" />
+        <Tile label="Orders today" value={String(d.ordersToday)} note={waiting ? `${waiting} still open` : 'all done'} href="/manager/orders" />
+        <Tile label="Average order" value={money(avgOrder)} note="today" />
+        <Tile label="Waiting" value={String(waiting)} note="cashier, accounts, store" tone={waiting ? 'warn' : 'ok'} href="/manager/orders" />
+        <Tile label="Low on stock" value={String(low.length)} note={low.length ? 'buy soon' : 'all stocked'} tone={low.length ? 'bad' : 'ok'} href="/manager/stock" />
       </div>
 
       {/* ── Trajectory and funnel ──────────────────────────────────── */}
-      <div className="mb-4 grid gap-4 xl:grid-cols-2">
+      <div className="mb-3 grid gap-3 xl:grid-cols-2">
         {/* Said plainly, because beside "Sales today" a chart reading
             UGX 0 for today looks like a fault: it only counts a payment
             once Accounts has checked it. */}
-        <Panel title="Checked takings, last 7 days" note="A payment counts here once Accounts has verified it">
+        <Panel title="Checked money, last 7 days">
 
           <Trajectory days={days} average={average} />
         </Panel>
 
-        <Panel title="Where orders are" note="Every open order, by desk">
+        <Panel title="Where orders are">
           <Funnel byStage={stage} />
         </Panel>
       </div>
 
       {/* ── Mix, sellers, and what just happened ───────────────────── */}
-      <div className="mb-4 grid gap-4 xl:grid-cols-3">
+      <div className="mb-3 grid gap-3 xl:grid-cols-3">
         <Panel title="How today was paid">
           <Mix byMethod={d.byMethod || {}} />
         </Panel>
 
-        <Panel title="Best sellers" note="This week, by revenue">
+        <Panel title="Best sellers this week">
           <Sellers rows={best} />
         </Panel>
 
@@ -229,14 +200,27 @@ export default function ManagerConsole() {
 
 /* ── Pieces ───────────────────────────────────────────────────────── */
 
+/** One small figure. Small on purpose: the whole day fits on one screen. */
+function Tile({ label, value, note, hero, tone, href }) {
+  const body = (
+    <>
+      <span className={cn('block text-[11.5px] font-semibold uppercase tracking-wide', hero ? 'text-[#102108]/75' : 'text-ink-muted')}>{label}</span>
+      <span className={cn('tnum mt-0.5 block truncate font-display text-[19px] font-extrabold leading-tight', hero ? 'text-[#102108]' : tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink')}>{value}</span>
+      {note && <span className={cn('mt-0.5 block truncate text-[11.5px]', hero ? 'text-[#102108]/75' : 'text-ink-muted')}>{note}</span>}
+    </>
+  );
+  const cls = cn('block rounded-xl border px-3.5 py-2.5 transition-colors', hero ? 'border-transparent bg-[#92D050] hover:bg-[#86c445]' : 'border-line bg-surface hover:bg-surface-2');
+  return href ? <Link href={href} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
+}
+
 
 function Panel({ title, note, link, flush, children }) {
   return (
     <Card>
-      <CardHead>
+      <CardHead className="items-center px-3.5 py-2 sm:px-3.5">
         <div className="min-w-0">
-          <CardTitle>{title}</CardTitle>
-          {note && <CardNote>{note}</CardNote>}
+          <CardTitle className="text-[13.5px]">{title}</CardTitle>
+          {note && <CardNote className="text-[11.5px]">{note}</CardNote>}
         </div>
         {link && (
           <Link
@@ -247,17 +231,17 @@ function Panel({ title, note, link, flush, children }) {
           </Link>
         )}
       </CardHead>
-      {flush ? children : <CardBody>{children}</CardBody>}
+      {flush ? children : <CardBody className="p-3.5 sm:p-3.5">{children}</CardBody>}
     </Card>
   );
 }
 
 const None = ({ children }) => (
-  <p className="py-8 text-center text-[13.5px] text-ink-muted">{children}</p>
+  <p className="py-4 text-center text-[13px] text-ink-muted">{children}</p>
 );
 
 /** How tall the tallest bar is. A definite height, so a % resolves. */
-const TRACK = 150;
+const TRACK = 90;
 
 /** Seven bars. One series, so no legend — the title names it. */
 function Trajectory({ days, average }) {
@@ -277,8 +261,8 @@ function Trajectory({ days, average }) {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <strong className="tnum font-display text-[25px] font-extrabold leading-none text-ink">
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <strong className="tnum font-display text-[18px] font-extrabold leading-none text-ink">
           {money(chosen.total)}
         </strong>
         <span className="text-[12.5px] text-ink-muted">
@@ -360,14 +344,13 @@ function Funnel({ byStage }) {
           <li key={s.key}>
             <Link
               href={`/manager/orders?status=${s.status}`}
-              className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors duration-150 hover:bg-surface-2"
+              className="flex items-center gap-2.5 rounded-lg px-1.5 py-1 transition-colors duration-150 hover:bg-surface-2"
             >
-              <span className={cn('tnum grid size-7 shrink-0 place-items-center rounded-lg text-[12px] font-bold', busy ? 'bg-brand-soft text-brand' : 'bg-surface-sunk text-ink-muted')}>
+              <span className={cn('tnum grid size-6 shrink-0 place-items-center rounded-lg text-[12px] font-bold', busy ? 'bg-brand-soft text-brand' : 'bg-surface-sunk text-ink-muted')}>
                 {i + 1}
               </span>
-              <span className="w-[128px] shrink-0">
-                <b className="block text-[13.5px] font-semibold text-ink">{s.label}</b>
-                <em className="block text-[11.5px] not-italic text-ink-muted">{s.hint}</em>
+              <span className="w-[104px] shrink-0">
+                <b className="block text-[13px] font-semibold text-ink">{s.label}</b>
               </span>
               <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-sunk">
                 <span
@@ -411,7 +394,7 @@ function Mix({ byMethod }) {
         ))}
       </div>
 
-      <ul className="mt-4 space-y-3">
+      <ul className="mt-2.5 space-y-1.5">
         {parts.map((p) => (
           <li key={p.key} className="flex items-center gap-2.5 text-[13.5px]">
             <span className="size-2.5 shrink-0 rounded-full ring-2 ring-surface" style={{ background: p.colour, boxShadow: `0 0 0 3px color-mix(in srgb, ${p.colour} 22%, transparent)` }} />
@@ -431,7 +414,7 @@ function Sellers({ rows }) {
   const max = Math.max(...rows.map((r) => r.revenue), 1);
 
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-1.5">
       {rows.map((r) => (
         <li key={r.product_id} className="flex items-center gap-2.5 text-[13px]">
           <span className="w-[116px] shrink-0 truncate text-ink-2" title={r.product_name}>
@@ -458,7 +441,7 @@ function Latest({ rows }) {
         <li key={o.id}>
           <Link
             href={`/manager/orders/${o.id}`}
-            className="flex items-center gap-2.5 rounded-sm px-2 py-2 text-[13px] transition-colors duration-150 hover:bg-surface-2"
+            className="flex items-center gap-2.5 rounded-sm px-1.5 py-1 text-[13px] transition-colors duration-150 hover:bg-surface-2"
           >
             {/* One line on a wide screen; on a phone the status drops
                 under the name, where it fits instead of pushing the row

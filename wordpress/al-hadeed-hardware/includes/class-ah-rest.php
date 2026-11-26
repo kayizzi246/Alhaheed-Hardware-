@@ -430,6 +430,7 @@ class AH_Rest {
 
 		// Customers who walk in, added at the counter.
 		AH_Customers::routes();
+		AH_Order_Delete::routes();
 
 		// Writing to suppliers from inside the shop, instead of the
 		// cashier opening a mail app and typing it out again.

@@ -9,6 +9,8 @@ import {
   Alert, Card, CardHead, CardTitle, Chip, Empty, Loading, LoadFailed, PageHead, Segmented,
   Stat, Stats, Table, TableWrap, Td, Th, Tr } from '@/components/ui';
 import { Icon } from '@/components/icons';
+import { useDismissed } from '@/lib/dismissed';
+import { RemoveLine } from '@/components/RemoveLine';
 
 const monthName = (m) => {
   if (!m) return '';
@@ -31,6 +33,7 @@ export default function StockControl() {
   const [error, setError] = useState('');
   const [slowShow, setSlowShow] = useState('all');
   const [slowAll, setSlowAll] = useState(false);
+  const { hide, visible } = useDismissed();
 
   const load = useCallback(async () => {
     try {
@@ -51,6 +54,7 @@ export default function StockControl() {
     );
   }
 
+  const todo = visible(list(data.todo));
   const s = data.summary;
   const m = data.margin;
   const slow = list(data.slow).filter((i) => slowShow === 'all' || (slowShow === 'dead' ? i.dead : i.slow && !i.dead));
@@ -66,19 +70,23 @@ export default function StockControl() {
       <Card>
         <CardHead>
           <CardTitle>Check these</CardTitle>
-          <span className="text-[12.5px] text-ink-muted">{list(data.todo).length ? `${list(data.todo).length} things` : 'all clear'}</span>
+          {todo.length ? (
+            <button type="button" onClick={() => hide(todo.map((t) => t.text))} className="text-[13px] font-semibold text-ink-muted hover:text-bad hover:underline">Remove all</button>
+          ) : (
+            <span className="text-[12.5px] text-ink-muted">all clear</span>
+          )}
         </CardHead>
-        {!list(data.todo).length ? (
-          <p className="px-4 py-5 text-[14px] text-ok sm:px-6">Nothing needs you. Every item is accounted for, nothing is below zero and the margin is on track.</p>
+        {!todo.length ? (
+          <p className="px-4 py-5 text-[14px] text-ok sm:px-6">Nothing needs you now.</p>
         ) : (
           <ul className="divide-y divide-line">
-            {list(data.todo).map((t, n) => (
-              <li key={n}>
-                <a href={t.link} className="flex items-start gap-3 px-4 py-3 text-[14px] text-ink hover:bg-surface-2 sm:px-6">
+            {todo.map((t) => (
+              <li key={t.text} className="flex items-stretch">
+                <a href={t.link} className="flex min-w-0 flex-1 items-start gap-3 px-4 py-3 text-[14px] text-ink hover:bg-surface-2 sm:px-6">
                   <span aria-hidden="true" className={cn('mt-1.5 size-2.5 shrink-0 rounded-full', t.level === 'bad' ? 'bg-bad' : t.level === 'warn' ? 'bg-warn' : 'bg-info')} />
                   <span className="min-w-0 flex-1">{t.text}</span>
-                  <span aria-hidden="true" className="text-ink-faint">›</span>
                 </a>
+                <RemoveLine onClick={() => hide([t.text])} />
               </li>
             ))}
           </ul>
