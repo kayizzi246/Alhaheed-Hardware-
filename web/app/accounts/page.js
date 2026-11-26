@@ -99,7 +99,7 @@ export default function VerifyPayments() {
       <Card className="mb-4">
         <CardHead>
           <CardTitle>Payments awaiting verification</CardTitle>
-          <span className="text-[12.5px] text-ink-muted">
+          <span className="text-[12px] text-ink-muted">
             {orders.length === 0 ? 'nothing waiting' : `${orders.length} to check`}
           </span>
         </CardHead>
@@ -116,19 +116,19 @@ export default function VerifyPayments() {
             {orders.map((o) => (
               <li key={o.id} className="px-4 py-3.5">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="tnum text-[15px] font-bold text-ink">{o.order_no}</span>
-                  <span className="tnum text-[15px] font-bold text-ink">{money(o.amount_paid)}</span>
+                  <span className="tnum text-[13.5px] font-bold text-ink">{o.order_no}</span>
+                  <span className="tnum text-[13.5px] font-bold text-ink">{money(o.amount_paid)}</span>
                 </div>
-                <p className="mt-0.5 text-[13.5px] font-medium text-ink">{o.company_name || o.ordered_by_name}</p>
-                <p className="mt-1 text-[12.5px] text-ink-muted">
+                <p className="mt-0.5 text-[12.5px] font-medium text-ink">{o.company_name || o.ordered_by_name}</p>
+                <p className="mt-1 text-[12px] text-ink-muted">
                   {methodLabel(o.method)}
                   {o.transaction_ref ? <> · <span className="tnum">{o.transaction_ref}</span></> : null}
                 </p>
-                <p className="text-[12.5px] text-ink-muted">
+                <p className="text-[12px] text-ink-muted">
                   <span className="tnum">{o.receipt_no}</span> · {o.cashier_name} · <span className="tnum">{time(o.created_at)}</span>
                 </p>
                 {o.has_proof && (
-                  <button type="button" onClick={() => setViewing(o)} className="mt-1.5 text-[13px] font-semibold text-brand">
+                  <button type="button" onClick={() => setViewing(o)} className="mt-1.5 text-[12px] font-semibold text-brand">
                     See the screenshot
                   </button>
                 )}
@@ -155,7 +155,7 @@ export default function VerifyPayments() {
                     <Td>
                       <span className="font-medium text-ink">{o.company_name || o.ordered_by_name}</span>
                       {o.company_name && (
-                        <span className="block text-xs text-ink-muted">Ordered by {o.ordered_by_name}</span>
+                        <span className="block text-[11.5px] text-ink-muted">Ordered by {o.ordered_by_name}</span>
                       )}
                     </Td>
                     <Td>{methodLabel(o.method)}</Td>
@@ -165,18 +165,18 @@ export default function VerifyPayments() {
                         <button
                           type="button"
                           onClick={() => setViewing(o)}
-                          className="mt-0.5 text-xs font-semibold text-brand hover:underline"
+                          className="mt-0.5 text-[11.5px] font-semibold text-brand hover:underline"
                         >
                           See the screenshot
                         </button>
                       ) : o.method !== 'cash' ? (
-                        <span className="mt-0.5 block text-xs text-ink-faint">no screenshot</span>
+                        <span className="mt-0.5 block text-[11.5px] text-ink-faint">no screenshot</span>
                       ) : null}
                     </Td>
                     <Td num className="font-semibold text-ink">{money(o.amount_paid)}</Td>
                     <Td>
                       {o.cashier_name}
-                      <span className="tnum block text-xs text-ink-muted">{time(o.created_at)}</span>
+                      <span className="tnum block text-[11.5px] text-ink-muted">{time(o.created_at)}</span>
                     </Td>
                     <Td>
                       <div className="flex justify-end gap-2">
@@ -308,7 +308,7 @@ function ProofModal({ order, onClose, onVerify, onReject }) {
         </>
       }
     >
-      <dl className="mb-3 grid grid-cols-3 gap-2 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[13px]">
+      <dl className="mb-3 grid grid-cols-3 gap-2 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[12px]">
         <div>
           <dt className="text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">Amount</dt>
           <dd className="tnum mt-0.5 font-semibold text-ink">{money(order.amount_paid)}</dd>

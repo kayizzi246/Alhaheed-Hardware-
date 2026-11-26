@@ -116,19 +116,19 @@ export default function Shell({ allow, children }) {
           menuOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'
         )}
       >
-        <div className="flex items-center h-16 shrink-0 gap-3 border-b border-white/10 px-5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-fill to-fill-dark text-[13px] font-extrabold text-white">
+        <div className="flex items-center h-14 shrink-0 gap-2.5 border-b border-white/10 px-4">
+          <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-gradient-to-br from-fill to-fill-dark text-[12px] font-extrabold text-white">
             AH
           </span>
-          <span className="font-display text-[15px] font-extrabold tracking-[.04em] text-white">AL HADEED</span>
+          <span className="font-display text-[13.5px] font-extrabold tracking-[.04em] text-white">AL HADEED</span>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3">
           {items.map((item, i) =>
             item.group ? (
               <p
                 key={`g${i}`}
-                className="mb-2 mt-6 px-3 font-display text-[10.5px] font-bold uppercase tracking-[.08em] text-white/60"
+                className="mb-1 mt-4 px-2.5 font-display text-[10.5px] font-bold uppercase tracking-[.08em] text-white/60"
               >
                 {item.group}
               </p>
@@ -138,17 +138,17 @@ export default function Shell({ allow, children }) {
                 href={item.href}
                 aria-current={item === current ? 'page' : undefined}
                 className={cn(
-                  'relative mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5',
-                  'font-display text-[14.5px] font-medium transition-colors duration-150 ease-out',
+                  'relative mb-px flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] [&_svg]:size-[17px]',
+                  'font-display text-[13.5px] font-medium transition-colors duration-150 ease-out',
                   item === current
-                    ? 'bg-[linear-gradient(90deg,rgb(var(--brand)/0.30),rgb(var(--brand)/0.06))] font-semibold text-white'
+                    ? 'bg-white/[.09] font-semibold text-white ring-1 ring-inset ring-white/[.06]'
                     : 'text-white/75 hover:bg-white/[.06] hover:text-white'
                 )}
               >
                 {/* A bar as well as a tint, so the current row is still
                     obvious to anyone who cannot pick the tint out. */}
                 {item === current && (
-                  <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-brand" />
+                  <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-r bg-[#92D050]" />
                 )}
                 <span className={cn('shrink-0 transition-colors duration-150', item === current ? 'text-white' : 'text-white/65')}>
                   {Icon[item.icon]?.()}
@@ -159,10 +159,10 @@ export default function Shell({ allow, children }) {
           )}
         </nav>
 
-        <div className="border-t border-white/10 px-6 py-4">
+        <div className="border-t border-white/10 px-5 py-3">
           <span
             title="These screens re-check the shop on their own"
-            className={cn('inline-flex items-center gap-2 text-xs', failing ? 'text-bad' : 'text-white/65')}
+            className={cn('inline-flex items-center gap-2 text-[11.5px]', failing ? 'text-bad' : 'text-white/65')}
           >
             <i className={cn('size-1.5 rounded-full', failing ? 'bg-bad' : 'bg-ok')} />
             {freshness(at, failing)}
@@ -171,12 +171,12 @@ export default function Shell({ allow, children }) {
       </aside>
 
       {/* ── The bar ───────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 flex items-center h-16 gap-3 border-b border-line/80 bg-surface/85 px-4 backdrop-blur-xl backdrop-saturate-150 lg:px-8">
+      <header className="sticky top-0 z-30 flex items-center h-14 gap-3 border-b border-line/80 bg-surface/85 px-4 backdrop-blur-xl backdrop-saturate-150 lg:px-8">
         <IconButton className="lg:hidden" onClick={() => setMenuOpen((m) => !m)} aria-label="Menu" aria-expanded={menuOpen}>
           {Icon.menu()}
         </IconButton>
 
-        <h1 className="min-w-0 flex-1 truncate font-display text-[18px] font-bold tracking-[-.015em] text-ink">{title}</h1>
+        <h1 className="min-w-0 flex-1 truncate font-display text-[16px] font-bold tracking-[-.015em] text-ink">{title}</h1>
 
         <div className="flex items-center gap-2">
           <Alerts unread={unread} home={HOME[user.role]} onSeen={() => setUnread(0)} />
@@ -195,7 +195,7 @@ export default function Shell({ allow, children }) {
                 {initials(user.fullName)}
               </span>
               <span className="hidden flex-col text-left leading-[1.25] sm:flex">
-                <b className="text-[13px] font-semibold text-ink">{user.fullName}</b>
+                <b className="text-[12px] font-semibold text-ink">{user.fullName}</b>
                 <em className="text-[11.5px] not-italic text-ink-muted">{DESK_LABEL[user.role]}</em>
               </span>
             </button>
@@ -206,8 +206,8 @@ export default function Shell({ allow, children }) {
                 className="absolute right-0 top-[calc(100%+8px)] z-30 w-56 origin-top-right animate-pop-in overflow-hidden rounded-lg border border-line bg-surface shadow-lg"
               >
                 <div className="border-b border-line px-4 py-3">
-                  <b className="block text-[13.5px] font-semibold text-ink">{user.fullName}</b>
-                  <span className="text-xs text-ink-muted">{user.phone || user.email}</span>
+                  <b className="block text-[12.5px] font-semibold text-ink">{user.fullName}</b>
+                  <span className="text-[11.5px] text-ink-muted">{user.phone || user.email}</span>
                 </div>
 
                 <ThemeChoice />
@@ -216,7 +216,7 @@ export default function Shell({ allow, children }) {
                   type="button"
                   role="menuitem"
                   onClick={signOut}
-                  className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-[13.5px] font-medium text-bad transition-colors hover:bg-surface-2"
+                  className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-[12.5px] font-medium text-bad transition-colors hover:bg-surface-2"
                 >
                   {Icon.logout()} Sign out
                 </button>
@@ -227,7 +227,7 @@ export default function Shell({ allow, children }) {
       </header>
 
       <Offline />
-      <main className="mx-auto max-w-[1800px] px-4 pb-12 pt-5 lg:px-6 lg:pt-6">{children}</main>
+      <main className="mx-auto max-w-[1600px] px-4 pb-10 pt-4 lg:px-6 lg:pt-5">{children}</main>
 
       {/* The veil only exists on a phone, where the rail slides over. */}
       {menuOpen && (
@@ -317,7 +317,7 @@ function Alerts({ unread, home, onSeen }) {
         >
           <div className="flex items-center justify-between border-b border-line bg-surface-2 py-3 pl-4 pr-2.5">
             <div>
-              <b className="font-display text-[14.5px] font-bold text-ink">Alerts</b>
+              <b className="font-display text-[13.5px] font-bold text-ink">Alerts</b>
               <span className="ml-2 text-[11.5px] text-ink-faint">
                 {rows === null ? '' : rows.length === 0 ? 'nothing new' : `last ${Math.min(rows.length, SHOWN)}`}
               </span>
@@ -338,8 +338,8 @@ function Alerts({ unread, home, onSeen }) {
 
             {failed && (
               <p className="px-6 py-8 text-center">
-                <b className="block text-sm font-semibold text-ink">Could not reach the shop.</b>
-                <span className="mt-1.5 block text-[12.5px] leading-relaxed text-ink-muted">
+                <b className="block text-[13px] font-semibold text-ink">Could not reach the shop.</b>
+                <span className="mt-1.5 block text-[12px] leading-relaxed text-ink-muted">
                   The alerts are still there. Try again in a moment.
                 </span>
               </p>
@@ -347,8 +347,8 @@ function Alerts({ unread, home, onSeen }) {
 
             {rows !== null && rows.length === 0 && (
               <p className="px-6 py-8 text-center">
-                <b className="block text-sm font-semibold text-ink">Nothing to catch up on.</b>
-                <span className="mt-1.5 block text-[12.5px] leading-relaxed text-ink-muted">
+                <b className="block text-[13px] font-semibold text-ink">Nothing to catch up on.</b>
+                <span className="mt-1.5 block text-[12px] leading-relaxed text-ink-muted">
                   When an order moves between desks, it shows up here.
                 </span>
               </p>
@@ -363,8 +363,8 @@ function Alerts({ unread, home, onSeen }) {
                   {items.map((n) => {
                     const body = (
                       <>
-                        <b className="block text-[13.5px] font-semibold leading-snug text-ink">{n.title}</b>
-                        {n.body && <span className="mt-0.5 block text-[12.5px] leading-relaxed text-ink-muted">{n.body}</span>}
+                        <b className="block text-[12.5px] font-semibold leading-snug text-ink">{n.title}</b>
+                        {n.body && <span className="mt-0.5 block text-[12px] leading-relaxed text-ink-muted">{n.body}</span>}
                         <em className="tnum mt-1 block text-[11.5px] not-italic text-ink-faint">
                           {n.order_no ? `${n.order_no} · ` : ''}
                           {time(n.created_at)}
@@ -490,7 +490,7 @@ function Offline() {
     <div
       role="status"
       className={cn(
-        'sticky top-16 z-20 px-4 py-2.5 text-center text-[13px] font-medium lg:px-8',
+        'sticky top-14 z-20 px-4 py-2.5 text-center text-[12px] font-medium lg:px-8',
         down ? 'bg-warn-bg text-warn' : 'bg-ok-bg text-ok'
       )}
     >

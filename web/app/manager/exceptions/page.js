@@ -51,7 +51,7 @@ export default function Exceptions() {
       <Alert>{error}</Alert>
 
       <Card>
-        <CardHead><CardTitle>By person</CardTitle><span className="text-[12.5px] text-ink-muted">most to look at first</span></CardHead>
+        <CardHead><CardTitle>By person</CardTitle><span className="text-[12px] text-ink-muted">most to look at first</span></CardHead>
         {!people ? (
           error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Adding it up…</Loading>
         ) : !people.length ? (
@@ -68,7 +68,7 @@ export default function Exceptions() {
               <tbody>
                 {people.map((p) => (
                   <Tr key={p.userId}>
-                    <Td><span className="block font-semibold text-ink">{p.name}</span><span className="block text-xs text-ink-muted">{DESK[p.desk] || ''}</span></Td>
+                    <Td><span className="block font-semibold text-ink">{p.name}</span><span className="block text-[11.5px] text-ink-muted">{DESK[p.desk] || ''}</span></Td>
                     {cell(p.cancelled)}
                     {cell(p.rejected, true)}
                     {cell(p.overrides, true)}
@@ -84,7 +84,7 @@ export default function Exceptions() {
             </Table>
           </TableWrap>
         )}
-        <p className="border-t border-line px-4 py-3 text-[12.5px] text-ink-muted sm:px-6">
+        <p className="border-t border-line px-4 py-3 text-[12px] text-ink-muted sm:px-6">
           Too much cash in the till is also a problem. It can mean a sale had no receipt.
         </p>
       </Card>
@@ -108,7 +108,7 @@ export default function Exceptions() {
       <Card>
         <CardHead>
           <CardTitle>Cash counts</CardTitle>
-          {tills && <span className="text-[12.5px] text-ink-muted">short {money(-tills.short)} · over {money(tills.over)}</span>}
+          {tills && <span className="text-[12px] text-ink-muted">short {money(-tills.short)} · over {money(tills.over)}</span>}
         </CardHead>
         {!tills ? (
           <Loading>Loading…</Loading>

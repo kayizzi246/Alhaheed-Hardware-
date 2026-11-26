@@ -89,8 +89,8 @@ export default function ManagerConsole() {
     <>
       <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[20px] leading-tight text-ink">Today</h1>
-          <p className="text-[12.5px] text-ink-muted">
+          <h1 className="text-[18px] leading-tight text-ink">Today</h1>
+          <p className="text-[12px] text-ink-muted">
             {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
@@ -105,19 +105,19 @@ export default function ManagerConsole() {
       {shown.length > 0 && (
         <section className="mb-3 overflow-hidden rounded-xl border border-line bg-surface">
           <div className="flex items-center justify-between gap-3 border-b border-line px-3.5 py-2">
-            <h2 className="flex items-center gap-2 text-[13.5px] font-bold text-ink">
+            <h2 className="flex items-center gap-2 text-[12.5px] font-bold text-ink">
               Check these
               <span className="tnum rounded-full bg-bad-bg px-2 py-px text-[11.5px] font-bold text-bad">{shown.length}</span>
             </h2>
             <div className="flex items-center gap-4">
-              <button type="button" onClick={() => hide(shown.map((t) => t.text))} className="text-[13px] font-semibold text-ink-muted hover:text-bad hover:underline">Remove all</button>
-              <Link href="/manager/stock" className="text-[13px] font-semibold text-brand hover:underline">See all</Link>
+              <button type="button" onClick={() => hide(shown.map((t) => t.text))} className="text-[12px] font-semibold text-ink-muted hover:text-bad hover:underline">Remove all</button>
+              <Link href="/manager/stock" className="text-[12px] font-semibold text-brand hover:underline">See all</Link>
             </div>
           </div>
           <ul className="divide-y divide-line">
             {shown.slice(0, 5).map((t) => (
               <li key={t.text} className="flex items-stretch">
-                <Link href={t.link.startsWith('#') ? `/manager/stock${t.link}` : t.link} className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-1.5 text-[13px] text-ink hover:bg-surface-2">
+                <Link href={t.link.startsWith('#') ? `/manager/stock${t.link}` : t.link} className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-1.5 text-[12px] text-ink hover:bg-surface-2">
                   <span aria-hidden="true" className={cn('grid size-5 shrink-0 place-items-center rounded-md text-[11px] font-extrabold', t.level === 'bad' ? 'bg-bad-bg text-bad' : t.level === 'warn' ? 'bg-warn-bg text-warn' : 'bg-info-bg text-info')}>
                     {t.level === 'bad' ? '!' : 'i'}
                   </span>
@@ -215,10 +215,10 @@ function Tile({ label, value, note, hero, tone, href, icon }) {
   const body = (
     <>
       <span className="flex items-center justify-between gap-2">
-        <span className={cn('text-[12px] font-semibold', hero ? 'text-[#102108]/80' : 'text-ink-muted')}>{label}</span>
+        <span className={cn('text-[11.5px] font-semibold', hero ? 'text-[#102108]/80' : 'text-ink-muted')}>{label}</span>
         {icon && <span className={cn('grid size-7 shrink-0 place-items-center rounded-lg [&>svg]:size-4', chip)}>{icon}</span>}
       </span>
-      <span className={cn('tnum mt-1 block truncate font-display text-[21px] font-extrabold leading-tight tracking-tight', hero ? 'text-[#102108]' : tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink')}>{value}</span>
+      <span className={cn('tnum mt-1 block truncate font-display text-[19px] font-extrabold leading-tight tracking-tight', hero ? 'text-[#102108]' : tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink')}>{value}</span>
       {note && <span className={cn('mt-0.5 block truncate text-[11.5px]', hero ? 'text-[#102108]/75' : 'text-ink-muted')}>{note}</span>}
     </>
   );
@@ -235,13 +235,13 @@ function Panel({ title, note, link, flush, children }) {
     <Card>
       <CardHead className="items-center px-3.5 py-2 sm:px-3.5">
         <div className="min-w-0">
-          <CardTitle className="text-[13.5px]">{title}</CardTitle>
+          <CardTitle className="text-[12.5px]">{title}</CardTitle>
           {note && <CardNote className="text-[11.5px]">{note}</CardNote>}
         </div>
         {link && (
           <Link
             href={link.href}
-            className="whitespace-nowrap text-[12.5px] font-semibold text-brand-dark underline-offset-2 hover:underline"
+            className="whitespace-nowrap text-[12px] font-semibold text-brand-dark underline-offset-2 hover:underline"
           >
             {link.label} →
           </Link>
@@ -253,7 +253,7 @@ function Panel({ title, note, link, flush, children }) {
 }
 
 const None = ({ children }) => (
-  <p className="py-4 text-center text-[13px] text-ink-muted">{children}</p>
+  <p className="py-4 text-center text-[12px] text-ink-muted">{children}</p>
 );
 
 /** How tall the tallest bar is. A definite height, so a % resolves. */
@@ -278,10 +278,10 @@ function Trajectory({ days, average }) {
   return (
     <>
       <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <strong className="tnum font-display text-[18px] font-extrabold leading-none text-ink">
+        <strong className="tnum font-display text-[16px] font-extrabold leading-none text-ink">
           {money(chosen.total)}
         </strong>
-        <span className="text-[12.5px] text-ink-muted">
+        <span className="text-[12px] text-ink-muted">
           {dayName(chosen.day)} {String(chosen.day).slice(5)} · {chosen.receipts} verified{' '}
           {chosen.receipts === 1 ? 'receipt' : 'receipts'}
         </span>
@@ -360,11 +360,11 @@ function Funnel({ byStage }) {
               href={`/manager/orders?status=${s.status}`}
               className="flex items-center gap-2.5 rounded-lg px-1.5 py-1 transition-colors duration-150 hover:bg-surface-2"
             >
-              <span className={cn('tnum grid size-6 shrink-0 place-items-center rounded-lg text-[12px] font-bold', busy ? 'bg-brand-soft text-brand' : 'bg-surface-sunk text-ink-muted')}>
+              <span className={cn('tnum grid size-6 shrink-0 place-items-center rounded-lg text-[11.5px] font-bold', busy ? 'bg-brand-soft text-brand' : 'bg-surface-sunk text-ink-muted')}>
                 {i + 1}
               </span>
               <span className="w-[104px] shrink-0">
-                <b className="block text-[13px] font-semibold text-ink">{s.label}</b>
+                <b className="block text-[12px] font-semibold text-ink">{s.label}</b>
               </span>
               <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-sunk">
                 <span
@@ -377,7 +377,7 @@ function Funnel({ byStage }) {
                   style={{ width: `${Math.max(3, (n / max) * 100)}%` }}
                 />
               </span>
-              <span className="tnum w-7 shrink-0 text-right text-sm font-bold text-ink">{n}</span>
+              <span className="tnum w-7 shrink-0 text-right text-[13px] font-bold text-ink">{n}</span>
             </Link>
           </li>
         );
@@ -410,7 +410,7 @@ function Mix({ byMethod }) {
 
       <ul className="mt-2.5 space-y-1.5">
         {parts.map((p) => (
-          <li key={p.key} className="flex items-center gap-2.5 text-[13.5px]">
+          <li key={p.key} className="flex items-center gap-2.5 text-[12.5px]">
             <span className="size-2.5 shrink-0 rounded-full ring-2 ring-surface" style={{ background: p.colour, boxShadow: `0 0 0 3px color-mix(in srgb, ${p.colour} 22%, transparent)` }} />
             <span className="flex-1 text-ink-2">{p.label}</span>
             <span className="tnum text-ink-muted">{Math.round((p.value / total) * 100)}%</span>
@@ -430,7 +430,7 @@ function Sellers({ rows }) {
   return (
     <ul className="space-y-1.5">
       {rows.map((r) => (
-        <li key={r.product_id} className="flex items-center gap-2.5 text-[13px]">
+        <li key={r.product_id} className="flex items-center gap-2.5 text-[12px]">
           <span className="w-[116px] shrink-0 truncate text-ink-2" title={r.product_name}>
             {r.product_name}
           </span>
@@ -455,14 +455,14 @@ function Latest({ rows }) {
         <li key={o.id}>
           <Link
             href={`/manager/orders/${o.id}`}
-            className="block rounded-lg px-2 py-1.5 text-[13px] transition-colors duration-150 hover:bg-surface-2"
+            className="block rounded-lg px-2 py-1.5 text-[12px] transition-colors duration-150 hover:bg-surface-2"
           >
             <span className="flex items-baseline justify-between gap-3">
               <span className="tnum font-bold text-ink">{o.order_no}</span>
               <span className="tnum font-semibold text-ink">{money(o.total)}</span>
             </span>
             <span className="mt-0.5 flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate text-[12px] text-ink-muted">
+              <span className="min-w-0 truncate text-[11.5px] text-ink-muted">
                 {o.company_name || o.ordered_by_name} · {time(o.created_at)}
               </span>
               <StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip>
@@ -477,7 +477,7 @@ function Latest({ rows }) {
 function ConsoleSkeleton() {
   return (
     <>
-      <h1 className="mb-5 text-[26px] text-ink">The shop today</h1>
+      <h1 className="mb-5 text-[22px] text-ink">The shop today</h1>
       <div className="mb-5 grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className={i === 0 ? 'col-span-2 h-[150px] rounded-2xl sm:col-span-1' : 'h-[150px] rounded-2xl'} />)}
       </div>

@@ -53,9 +53,9 @@ const buttonVariants = cva(
           'hover:brightness-110',
       },
       size: {
-        sm: 'h-8 px-3 text-[13px]',
-        md: 'h-10 px-4 text-sm',
-        lg: 'h-12 px-6 text-[15px]',
+        sm: 'h-8 px-2.5 text-[12px]',
+        md: 'h-9 px-3.5 text-[13px]',
+        lg: 'h-12 px-6 text-[13.5px]',
         icon: 'h-9 w-9',
       },
       block: { true: 'w-full' },
@@ -99,7 +99,7 @@ IconButton.displayName = 'IconButton';
 export const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('overflow-hidden rounded-xl border border-line bg-surface', className)}
+    className={cn('overflow-hidden rounded-xl border border-line bg-surface shadow-[0_1px_2px_rgb(15_27_51/0.04),0_1px_12px_-4px_rgb(15_27_51/0.05)]', className)}
     {...props}
   />
 ));
@@ -108,7 +108,7 @@ Card.displayName = 'Card';
 export const CardHead = ({ className, children, ...props }) => (
   <div
     className={cn(
-      'flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3 sm:px-5',
+      'flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-2.5',
       className
     )}
     {...props}
@@ -118,15 +118,15 @@ export const CardHead = ({ className, children, ...props }) => (
 );
 
 export const CardTitle = ({ className, ...props }) => (
-  <h2 className={cn('text-[15.5px] font-bold text-ink', className)} {...props} />
+  <h2 className={cn('text-[14px] font-bold text-ink', className)} {...props} />
 );
 
 export const CardNote = ({ className, ...props }) => (
-  <p className={cn('mt-0.5 text-[12.5px] text-ink-muted', className)} {...props} />
+  <p className={cn('mt-0.5 text-[12px] text-ink-muted', className)} {...props} />
 );
 
 export const CardBody = ({ className, ...props }) => (
-  <div className={cn('p-4 sm:p-5', className)} {...props} />
+  <div className={cn('p-4', className)} {...props} />
 );
 
 /* ── Chip ────────────────────────────────────────────────────────── */
@@ -179,13 +179,13 @@ export const StatusChip = ({ status, children }) => (
 // the layout sideways on every phone. 16px on a phone, back to 14px
 // from the small breakpoint up, where no browser does this.
 const fieldBase =
-  'w-full rounded-sm border border-line-firm/80 bg-surface px-3.5 text-base sm:text-sm text-ink ' +
+  'w-full rounded-lg border border-line-firm/80 bg-surface px-3 text-base sm:text-[13px] text-ink ' +
   'placeholder:text-ink-faint transition-[border-color,box-shadow] duration-150 ease-out ' +
   'focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/20 ' +
   'disabled:cursor-not-allowed disabled:opacity-60';
 
 export const Input = React.forwardRef(({ className, ...props }, ref) => (
-  <input ref={ref} className={cn(fieldBase, 'h-11', className)} {...props} />
+  <input ref={ref} className={cn(fieldBase, 'h-9', className)} {...props} />
 ));
 Input.displayName = 'Input';
 
@@ -228,7 +228,7 @@ export const Select = React.forwardRef(
           aria-label={rest['aria-label']}
           className={cn(
             fieldBase,
-            'group inline-flex h-11 items-center justify-between gap-2 text-left',
+            'group inline-flex h-9 items-center justify-between gap-2 text-left',
             'hover:border-line-firm data-[state=open]:border-brand data-[state=open]:ring-[3px] data-[state=open]:ring-brand/20',
             'data-[placeholder]:text-ink-faint [&>span]:min-w-0 [&>span]:truncate',
             className
@@ -266,7 +266,7 @@ export const Select = React.forwardRef(
                   value={enc(o.value)}
                   disabled={o.disabled}
                   className={cn(
-                    'relative flex min-h-10 cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-[14px] outline-none',
+                    'relative flex min-h-10 cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-[13px] outline-none',
                     'transition-colors duration-100',
                     'data-[highlighted]:bg-surface-2 data-[state=checked]:font-semibold data-[state=checked]:text-brand-dark',
                     'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-45'
@@ -295,22 +295,22 @@ export const Textarea = React.forwardRef(({ className, ...props }, ref) => (
 Textarea.displayName = 'Textarea';
 
 export const Label = ({ className, ...props }) => (
-  <label className={cn('mb-2 block text-[13px] font-semibold text-ink-2', className)} {...props} />
+  <label className={cn('mb-2 block text-[12px] font-semibold text-ink-2', className)} {...props} />
 );
 
 export const Field = ({ label, hint, error, children, className }) => (
   <div className={cn('min-w-0', className)}>
     {label && <Label>{label}</Label>}
     {children}
-    {hint && !error && <p className="mt-1.5 text-[12.5px] text-ink-muted">{hint}</p>}
-    {error && <p className="mt-1.5 text-[12.5px] font-medium text-bad">{error}</p>}
+    {hint && !error && <p className="mt-1.5 text-[12px] text-ink-muted">{hint}</p>}
+    {error && <p className="mt-1.5 text-[12px] font-medium text-bad">{error}</p>}
   </div>
 );
 
 /** A checkbox that looks the same in every browser. */
 export function Checkbox({ label, className, ...props }) {
   return (
-    <label className={cn('inline-flex cursor-pointer select-none items-center gap-2 text-[13.5px] text-ink-2', className)}>
+    <label className={cn('inline-flex cursor-pointer select-none items-center gap-2 text-[12.5px] text-ink-2', className)}>
       <span className="relative grid place-items-center">
         <input type="checkbox" className="peer sr-only" {...props} />
         <span
@@ -354,7 +354,7 @@ export function Segmented({ value, onChange, options, label }) {
             aria-checked={on}
             onClick={() => onChange(o.value)}
             className={cn(
-              'rounded-[7px] px-3.5 py-2 text-[13px] font-semibold transition-colors duration-150 ease-out',
+              'rounded-[7px] px-3.5 py-2 text-[12px] font-semibold transition-colors duration-150 ease-out',
               on ? 'bg-surface text-ink ring-1 ring-line' : 'text-ink-muted hover:text-ink'
             )}
           >
@@ -374,13 +374,13 @@ export const TableWrap = ({ className, ...props }) => (
 );
 
 export const Table = ({ className, ...props }) => (
-  <table className={cn('w-full border-collapse text-sm', className)} {...props} />
+  <table className={cn('w-full border-collapse text-[13px]', className)} {...props} />
 );
 
 export const Th = ({ className, num, ...props }) => (
   <th
     className={cn(
-      'whitespace-nowrap border-b border-line bg-surface-2 px-4 py-3 sm:first:pl-6 sm:last:pr-6',
+      'whitespace-nowrap border-b border-line bg-surface-2 px-3.5 py-2 sm:first:pl-5 sm:last:pr-5',
       'text-[11px] font-bold uppercase tracking-[.06em] text-ink-muted',
       num ? 'text-right' : 'text-left',
       className
@@ -391,7 +391,7 @@ export const Th = ({ className, num, ...props }) => (
 
 export const Td = ({ className, num, ...props }) => (
   <td
-    className={cn('border-b border-line px-4 py-3.5 align-middle sm:first:pl-6 sm:last:pr-6 text-ink-2', num && 'tnum text-right', className)}
+    className={cn('border-b border-line px-3.5 py-2.5 align-middle text-[13px] sm:first:pl-5 sm:last:pr-5 text-ink-2', num && 'tnum text-right', className)}
     {...props}
   />
 );
@@ -411,7 +411,7 @@ export const Empty = ({ title, children, action, icon }) => (
       {icon || Icon.queue()}
     </span>
     {title && <p className="text-base font-semibold text-ink">{title}</p>}
-    {children && <p className="mx-auto mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-ink-muted">{children}</p>}
+    {children && <p className="mx-auto mt-1.5 max-w-sm text-[12.5px] leading-relaxed text-ink-muted">{children}</p>}
     {action && <div className="mt-5">{action}</div>}
   </div>
 );
@@ -427,7 +427,7 @@ export const Empty = ({ title, children, action, icon }) => (
 export const LoadFailed = ({ children, onRetry, title = 'This could not be loaded' }) => (
   <div role="alert" className="px-6 py-12 text-center">
     <p className="text-base font-semibold text-ink">{title}</p>
-    <p className="mx-auto mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-ink-muted">
+    <p className="mx-auto mt-1.5 max-w-sm text-[12.5px] leading-relaxed text-ink-muted">
       {children || 'The shop could not be reached.'} Nothing has been changed.
     </p>
     {onRetry && (
@@ -457,7 +457,7 @@ export function Alert({ kind = 'bad', children, onDone }) {
     <div
       role={kind === 'bad' ? 'alert' : 'status'}
       className={cn(
-        'mb-6 animate-rise-in rounded-sm border px-4 py-3 text-[13.5px]',
+        'mb-6 animate-rise-in rounded-sm border px-4 py-3 text-[12.5px]',
         kind === 'bad' && 'border-bad/25 bg-bad-bg text-bad',
         kind === 'ok' && 'border-ok/25 bg-ok-bg text-ok'
       )}
@@ -468,7 +468,7 @@ export function Alert({ kind = 'bad', children, onDone }) {
 }
 
 export const Loading = ({ children = 'Loading…' }) => (
-  <div className="px-6 py-14 text-center text-[13.5px] text-ink-muted">{children}</div>
+  <div className="px-6 py-14 text-center text-[12.5px] text-ink-muted">{children}</div>
 );
 
 export const Spinner = ({ className }) => (
@@ -485,10 +485,10 @@ export const Spinner = ({ className }) => (
 /* ── Page furniture ──────────────────────────────────────────────── */
 
 export const PageHead = ({ title, sub, children }) => (
-  <header className="mb-5 flex flex-wrap items-end justify-between gap-4 lg:mb-6">
+  <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
     <div className="min-w-0">
-      <h1 className="text-[26px] leading-tight text-ink">{title}</h1>
-      {sub && <p className="mt-1 text-sm text-ink-muted">{sub}</p>}
+      <h1 className="text-[20px] leading-tight tracking-[-0.02em] text-ink">{title}</h1>
+      {sub && <p className="mt-1 text-[13px] text-ink-muted">{sub}</p>}
     </div>
     {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
   </header>
@@ -525,7 +525,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
     <Box
       {...(href ? { href } : {})}
       className={cn(
-        'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-xl p-4 [container-type:inline-size] sm:p-5',
+        'group relative isolate flex min-w-0 flex-col overflow-hidden rounded-xl p-3.5 [container-type:inline-size]',
         'transition-[transform,border-color,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
         big
           ? 'bg-[linear-gradient(135deg,rgb(var(--fill))_0%,rgb(var(--fill-dark))_100%)] text-on-fill'
@@ -542,11 +542,11 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
         <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 -z-10 size-56 rounded-full bg-white/15 blur-3xl" />
       )}
 
-      <div className="flex min-h-9 items-center gap-3">
+      <div className="flex min-h-7 items-center gap-2.5">
         {icon && (
           <span
             className={cn(
-              'grid size-9 shrink-0 place-items-center rounded-xl [&>svg]:size-[18px]',
+              'grid size-7 shrink-0 place-items-center rounded-lg [&>svg]:size-4',
               big ? 'bg-black/10 text-on-fill ring-1 ring-inset ring-black/10' : STAT_TONES[tone] || STAT_TONES.brand
             )}
           >
@@ -555,7 +555,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
         )}
         <span
           className={cn(
-            'min-w-0 flex-1 text-[13px] font-semibold leading-tight [overflow-wrap:anywhere]',
+            'min-w-0 flex-1 text-[12px] font-semibold leading-tight [overflow-wrap:anywhere]',
             
             big ? 'text-on-fill/80' : 'text-ink-muted'
           )}
@@ -580,8 +580,8 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
       <strong
         className={cn(
           'tnum block font-display font-extrabold leading-none tracking-[-0.03em]',
-          icon ? 'mt-4' : 'mt-3',
-          String(value ?? '').length > 11 ? 'text-[clamp(18px,10.5cqi,30px)]' : 'text-[clamp(24px,15cqi,32px)]',
+          icon ? 'mt-2.5' : 'mt-2',
+          String(value ?? '').length > 11 ? 'text-[clamp(16px,9cqi,21px)]' : 'text-[clamp(18px,12cqi,22px)]',
           big ? 'text-on-fill' : !icon && tone === 'ok' ? 'text-ok' : !icon && tone === 'bad' ? 'text-bad' : 'text-ink'
         )}
       >
@@ -589,7 +589,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
       </strong>
 
       {(note || (delta !== null && delta !== undefined)) && (
-        <span className={cn('mt-3 flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px] leading-snug', big ? 'text-on-fill/80' : 'text-ink-muted')}>
+        <span className={cn('mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[11.5px] leading-snug', big ? 'text-on-fill/80' : 'text-ink-muted')}>
           {delta !== null && delta !== undefined && (
             <span
               className={cn(
@@ -621,7 +621,7 @@ export const Fresh = ({ at, failing }) => (
   <span
     title="This screen re-checks the shop on its own"
     className={cn(
-      'inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 text-xs',
+      'inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 text-[11.5px]',
       failing ? 'border-bad/30 text-bad' : 'border-line text-ink-muted'
     )}
   >
@@ -667,7 +667,7 @@ export const DialogContent = React.forwardRef(
           <div className="min-w-0">
             <DialogPrimitive.Title className="text-base font-bold text-ink">{title}</DialogPrimitive.Title>
             {description && (
-              <DialogPrimitive.Description className="mt-1 text-[13px] leading-relaxed text-ink-muted">
+              <DialogPrimitive.Description className="mt-1 text-[12px] leading-relaxed text-ink-muted">
                 {description}
               </DialogPrimitive.Description>
             )}
@@ -728,7 +728,7 @@ export const TabsList = ({ className, ...props }) => (
 export const TabsTrigger = ({ className, ...props }) => (
   <TabsPrimitive.Trigger
     className={cn(
-      'rounded-[7px] px-3.5 py-1.5 text-[13px] font-semibold text-ink-muted transition-colors duration-150',
+      'rounded-[7px] px-3.5 py-1.5 text-[12px] font-semibold text-ink-muted transition-colors duration-150',
       'data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:ring-1 data-[state=active]:ring-line',
       className
     )}

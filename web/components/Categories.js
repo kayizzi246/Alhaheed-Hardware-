@@ -94,7 +94,7 @@ export default function Categories() {
               <Picture category={c} size="lg" onSaved={load} onError={setError} />
               <div className="min-w-[160px] flex-1">
                 <Name category={c} onSave={(name) => rename(c, name, c.parent)} big />
-                <p className="text-[12.5px] text-ink-muted">{c.products} {c.products === 1 ? 'product' : 'products'} directly · {c.children.length} sub-{c.children.length === 1 ? 'category' : 'categories'}</p>
+                <p className="text-[12px] text-ink-muted">{c.products} {c.products === 1 ? 'product' : 'products'} directly · {c.children.length} sub-{c.children.length === 1 ? 'category' : 'categories'}</p>
               </div>
               <Button variant="ghost" size="sm" className="text-bad hover:bg-bad-bg" onClick={() => remove(c)}>Delete</Button>
             </div>
@@ -104,9 +104,9 @@ export default function Categories() {
                   <Picture category={s} onSaved={load} onError={setError} />
                   <div className="min-w-0 flex-1">
                     <Name category={s} onSave={(name) => rename(s, name, c.id)} />
-                    <p className="text-[12px] text-ink-muted">{s.products} {s.products === 1 ? 'product' : 'products'}</p>
+                    <p className="text-[11.5px] text-ink-muted">{s.products} {s.products === 1 ? 'product' : 'products'}</p>
                   </div>
-                  <button type="button" onClick={() => remove(s)} className="text-[12.5px] font-semibold text-bad hover:underline">Delete</button>
+                  <button type="button" onClick={() => remove(s)} className="text-[12px] font-semibold text-bad hover:underline">Delete</button>
                 </div>
               ))}
               <AddSub onAdd={(name) => add(name, c.id)} parent={c.name} />
@@ -144,7 +144,7 @@ function Name({ category, onSave, big }) {
     );
   }
   return (
-    <button type="button" onClick={() => setEditing(true)} title="Rename" className={cn('text-left font-bold text-ink hover:text-brand', big ? 'text-[17px]' : 'text-[14px]')}>
+    <button type="button" onClick={() => setEditing(true)} title="Rename" className={cn('text-left font-bold text-ink hover:text-brand', big ? 'text-[15px]' : 'text-[13px]')}>
       {category.name}
     </button>
   );

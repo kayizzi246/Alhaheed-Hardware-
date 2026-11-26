@@ -51,7 +51,7 @@ export default function Margins() {
       <Alert>{error}</Alert>
 
       {a?.raised && (
-        <div className="rounded-sm border border-bad/25 bg-bad-bg px-4 py-3 text-[13.5px] text-bad">
+        <div className="rounded-sm border border-bad/25 bg-bad-bg px-4 py-3 text-[12.5px] text-bad">
           <b>This month&rsquo;s margin is {a.current}%</b>, two points or more under the six-month average of {a.average}%.
           Selling prices may not have gone up with buying prices.
         </div>
@@ -60,7 +60,7 @@ export default function Margins() {
       <Card>
         <CardHead>
           <CardTitle>Month by month</CardTitle>
-          <span className="text-[12.5px] text-ink-muted">zakat is 2.5% of each month&rsquo;s profit</span>
+          <span className="text-[12px] text-ink-muted">zakat is 2.5% of each month&rsquo;s profit</span>
         </CardHead>
         {!data ? (
           error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Adding up the months…</Loading>
@@ -130,7 +130,7 @@ function FragmentRows({ g, open, onToggle }) {
       <Tr onClick={onToggle} className="cursor-pointer">
         <Td>
           <span className="block font-semibold text-ink">{g.name}</span>
-          <span className="block text-xs text-ink-muted">{g.code} · {open ? 'hide the sales' : 'show the sales'}</span>
+          <span className="block text-[11.5px] text-ink-muted">{g.code} · {open ? 'hide the sales' : 'show the sales'}</span>
         </Td>
         <Td num>{g.lines}</Td>
         <Td num>{g.qty}</Td>
@@ -139,7 +139,7 @@ function FragmentRows({ g, open, onToggle }) {
         <Td num className="font-bold text-bad">{money(g.loss)}</Td>
       </Tr>
       {open && list(g.refs).map((r, i) => (
-        <tr key={i} className="bg-surface-2 text-[12.5px]">
+        <tr key={i} className="bg-surface-2 text-[12px]">
           <Td className="pl-8 text-ink-2">{r.ref} · {r.day}</Td>
           <Td num />
           <Td num>{r.qty}</Td>

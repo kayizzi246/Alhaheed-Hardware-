@@ -186,8 +186,8 @@
 
   body {
     @apply bg-bg text-ink font-sans;
-    font-size: 16px;
-    line-height: 1.55;
+    font-size: 14px;
+    line-height: 1.5;
     font-feature-settings: 'cv11', 'ss01';
   }
 

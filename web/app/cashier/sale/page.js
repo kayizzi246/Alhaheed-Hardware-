@@ -169,11 +169,11 @@ export default function CounterSale() {
         <PageHead title="New sale" />
         <Card className="mx-auto max-w-lg">
           <div className="px-6 py-10 text-center">
-            <p className="text-[12px] font-bold uppercase tracking-[.08em] text-ink-muted">
+            <p className="text-[11.5px] font-bold uppercase tracking-[.08em] text-ink-muted">
               {done.waiting ? 'Saved' : 'Paid'}
             </p>
-            <h2 className="tnum mt-2 text-[26px] font-extrabold text-ink">{done.orderNo}</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-muted">
+            <h2 className="tnum mt-2 text-[22px] font-extrabold text-ink">{done.orderNo}</h2>
+            <p className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-ink-muted">
               {done.waiting
                 ? 'The sale is saved and waiting in the payment queue. Take the money from there when they are ready.'
                 : <>Receipt <strong className="tnum text-ink">{done.receiptNo}</strong> is issued and the payment is with Accounts.</>}
@@ -182,7 +182,7 @@ export default function CounterSale() {
               <Button size="lg" onClick={() => { setDone(null); reset(); }}>Next sale</Button>
               <Link
                 href={done.waiting ? '/cashier' : '/cashier/receipts'}
-                className="inline-flex h-11 items-center rounded-sm border border-line px-5 text-sm font-semibold text-ink hover:bg-surface-2"
+                className="inline-flex h-11 items-center rounded-sm border border-line px-5 text-[13px] font-semibold text-ink hover:bg-surface-2"
               >
                 {done.waiting ? 'Payment queue' : 'Receipts'}
               </Link>
@@ -239,24 +239,24 @@ export default function CounterSale() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={p.picture} alt="" loading="lazy" className="size-10 shrink-0 rounded-md border border-line object-cover" />
                       ) : (
-                        <span className="grid size-10 shrink-0 place-items-center rounded-md bg-surface-sunk text-xs font-bold text-ink-muted">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-md bg-surface-sunk text-[11.5px] font-bold text-ink-muted">
                           {p.name.slice(0, 2).toUpperCase()}
                         </span>
                       )}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-medium text-ink">{p.name}</span>
-                        <span className="block text-xs text-ink-muted">
+                        <span className="block truncate text-[13px] font-medium text-ink">{p.name}</span>
+                        <span className="block text-[11.5px] text-ink-muted">
                           <span className="tnum">{p.code}</span> ·{' '}
                           {out ? <span className="font-semibold text-bad">out of stock</span> : <span className="tnum">{p.stock_available} {p.unit} left</span>}
                         </span>
                       </span>
                       <span className="text-right">
-                        <span className="tnum block text-[14px] font-semibold text-ink">{money(p.price)}</span>
-                        <span className="block text-xs text-ink-muted">per {p.unit}</span>
+                        <span className="tnum block text-[13px] font-semibold text-ink">{money(p.price)}</span>
+                        <span className="block text-[11.5px] text-ink-muted">per {p.unit}</span>
                       </span>
                       <span
                         className={cn(
-                          'tnum grid h-7 min-w-7 shrink-0 place-items-center rounded-full px-2 text-xs font-bold',
+                          'tnum grid h-7 min-w-7 shrink-0 place-items-center rounded-full px-2 text-[11.5px] font-bold',
                           line ? 'bg-fill text-on-fill' : 'border border-line text-ink-muted'
                         )}
                         aria-label={line ? `${line.qty} in the sale` : 'Add'}
@@ -276,7 +276,7 @@ export default function CounterSale() {
           <Card>
             <CardHead>
               <CardTitle>Who is it for?</CardTitle>
-              <span className="text-[12.5px] text-ink-muted">optional</span>
+              <span className="text-[12px] text-ink-muted">optional</span>
             </CardHead>
             <div className="space-y-4 p-4 sm:p-6">
               <Field
@@ -296,7 +296,7 @@ export default function CounterSale() {
                 />
               </Field>
               {match && typeof match === 'object' && (
-                <p className="flex items-center gap-2 rounded-sm border border-ok/25 bg-ok-bg px-3 py-2 text-[13.5px] text-ok">
+                <p className="flex items-center gap-2 rounded-sm border border-ok/25 bg-ok-bg px-3 py-2 text-[12.5px] text-ok">
                   <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4 shrink-0"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   <span><strong>{match.fullName}</strong>{match.orderCount ? ` · ${match.orderCount} ${match.orderCount === 1 ? 'order' : 'orders'} before` : ' · on the list'}</span>
                 </p>
@@ -318,7 +318,7 @@ export default function CounterSale() {
           <Card id="basket">
             <CardHead>
               <CardTitle>The sale</CardTitle>
-              <span className="tnum text-[12.5px] text-ink-muted">{count} {count === 1 ? 'item' : 'items'}</span>
+              <span className="tnum text-[12px] text-ink-muted">{count} {count === 1 ? 'item' : 'items'}</span>
             </CardHead>
             {basket.length === 0 ? (
               <Empty title="Nothing in it yet">Tap an item to add it. Tap again for one more.</Empty>
@@ -327,8 +327,8 @@ export default function CounterSale() {
                 {basket.map((l) => (
                   <li key={l.product.id} className="flex items-center gap-3 px-4 py-3 sm:px-6">
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-medium text-ink">{l.product.name}</span>
-                      <span className="tnum block text-xs text-ink-muted">{money(l.product.price)} × {l.qty}</span>
+                      <span className="block truncate text-[12.5px] font-medium text-ink">{l.product.name}</span>
+                      <span className="tnum block text-[11.5px] text-ink-muted">{money(l.product.price)} × {l.qty}</span>
                     </span>
                     <span className="flex items-center rounded-md border border-line">
                       <button type="button" aria-label="One fewer" onClick={() => setQty(l.product.id, l.qty - 1)} className="grid size-8 place-items-center text-ink-muted hover:text-ink active:scale-95">−</button>
@@ -337,7 +337,7 @@ export default function CounterSale() {
                         onChange={(e) => setQty(l.product.id, e.target.value)}
                         inputMode="decimal"
                         aria-label={`How many ${l.product.name}`}
-                        className="tnum w-10 bg-transparent text-center text-[14px] font-semibold text-ink outline-none"
+                        className="tnum w-10 bg-transparent text-center text-[13px] font-semibold text-ink outline-none"
                       />
                       <button
                         type="button"
@@ -349,7 +349,7 @@ export default function CounterSale() {
                         +
                       </button>
                     </span>
-                    <span className="tnum w-[92px] shrink-0 text-right text-[13.5px] font-semibold text-ink">
+                    <span className="tnum w-[92px] shrink-0 text-right text-[12.5px] font-semibold text-ink">
                       {money(l.qty * Number(l.product.price || 0))}
                     </span>
                   </li>
@@ -364,14 +364,14 @@ export default function CounterSale() {
             <div className="border-t border-line p-6 max-lg:hidden">
               <Alert>{problem}</Alert>
               <div className="mb-3 flex items-baseline justify-between">
-                <span className="text-sm font-semibold text-ink-muted">Total</span>
-                <span className="tnum text-[26px] font-extrabold text-ink">{money(total)}</span>
+                <span className="text-[13px] font-semibold text-ink-muted">Total</span>
+                <span className="tnum text-[22px] font-extrabold text-ink">{money(total)}</span>
               </div>
               <Button size="lg" block disabled={!ready} onClick={() => takePayment()}>
                 {busy ? 'Saving the sale…' : 'Take payment'}
               </Button>
               {basket.length > 0 && (
-                <button type="button" onClick={reset} className="mt-2.5 w-full text-center text-[13px] font-medium text-ink-muted hover:text-bad">
+                <button type="button" onClick={reset} className="mt-2.5 w-full text-center text-[12px] font-medium text-ink-muted hover:text-bad">
                   Clear the sale
                 </button>
               )}
@@ -382,11 +382,11 @@ export default function CounterSale() {
 
       {/* On a phone the total and the button never scroll away. */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
-        {problem && <p className="mb-2 text-[13px] font-medium text-bad">{problem}</p>}
+        {problem && <p className="mb-2 text-[12px] font-medium text-bad">{problem}</p>}
         <div className="flex items-center gap-3">
           <a href="#basket" className="min-w-0 flex-1">
-            <span className="block text-xs text-ink-muted">{count} {count === 1 ? 'item' : 'items'}</span>
-            <span className="tnum block text-[20px] font-extrabold leading-tight text-ink">{money(total)}</span>
+            <span className="block text-[11.5px] text-ink-muted">{count} {count === 1 ? 'item' : 'items'}</span>
+            <span className="tnum block text-[18px] font-extrabold leading-tight text-ink">{money(total)}</span>
           </a>
           <Button size="lg" disabled={!ready} onClick={() => takePayment()}>
             {busy ? 'Saving…' : 'Take payment'}

@@ -26,8 +26,8 @@ export default function PageError({ error, reset }) {
 
   return (
     <div className="mx-auto my-10 max-w-xl rounded-lg border border-line bg-surface px-7 py-8 text-center shadow-sm">
-      <h2 className="text-[19px] font-bold text-ink">This screen could not be drawn</h2>
-      <p className="mx-auto mb-5 mt-2 max-w-md text-sm leading-relaxed text-ink-muted">
+      <h2 className="text-[17px] font-bold text-ink">This screen could not be drawn</h2>
+      <p className="mx-auto mb-5 mt-2 max-w-md text-[13px] leading-relaxed text-ink-muted">
         Nothing has been changed and the shop&rsquo;s records are safe. Try it again.
         It usually works the second time.
       </p>
@@ -40,13 +40,13 @@ export default function PageError({ error, reset }) {
       </div>
 
       <details className="mt-6 text-left">
-        <summary className="cursor-pointer list-none text-[12.5px] font-semibold text-ink-muted marker:hidden">
+        <summary className="cursor-pointer list-none text-[12px] font-semibold text-ink-muted marker:hidden">
           <span className="select-none">▸ </span>What went wrong
         </summary>
-        <code className="mt-2.5 block break-words rounded-sm border border-line bg-surface-sunk px-3.5 py-3 text-xs leading-relaxed text-ink-2">
+        <code className="mt-2.5 block break-words rounded-sm border border-line bg-surface-sunk px-3.5 py-3 text-[11.5px] leading-relaxed text-ink-2">
           {String(error?.message || error) || 'No message was given.'}
         </code>
-        <p className="mt-2 text-xs text-ink-faint">Show this to whoever looks after the website.</p>
+        <p className="mt-2 text-[11.5px] text-ink-faint">Show this to whoever looks after the website.</p>
       </details>
     </div>
   );

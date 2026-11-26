@@ -130,7 +130,7 @@ function ManagerOrders() {
 
       {picked.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface px-4 py-2.5">
-          <span className="text-[14px] font-semibold text-ink">{picked.length} chosen</span>
+          <span className="text-[13px] font-semibold text-ink">{picked.length} chosen</span>
           <Button variant="outline" size="sm" onClick={() => setPicked([])}>Clear</Button>
           <Button variant="danger" size="sm" className="ml-auto" onClick={() => removeOrders(picked)}>
             Delete {picked.length === 1 ? 'order' : `${picked.length} orders`}
@@ -150,7 +150,7 @@ function ManagerOrders() {
           {/* On a phone: one tap-able row per order, everything that
               matters in view, no sideways scrolling to find "Open". */}
           <ul className="divide-y divide-line md:hidden">
-            <li className="flex items-center gap-3 bg-surface-2 px-4 py-2 text-[13px] font-semibold text-ink-2">
+            <li className="flex items-center gap-3 bg-surface-2 px-4 py-2 text-[12px] font-semibold text-ink-2">
               <input type="checkbox" className="size-5 cursor-pointer accent-[rgb(var(--brand))]" checked={allPicked} onChange={pickAll} aria-label="Choose all" />
               Choose all
             </li>
@@ -165,14 +165,14 @@ function ManagerOrders() {
                   className="block min-w-0 flex-1 px-3 py-3 pr-4 text-left active:bg-surface-2"
                 >
                   <span className="flex items-baseline justify-between gap-3">
-                    <span className="tnum text-[15px] font-bold text-ink">{o.order_no}</span>
-                    <span className="tnum text-[15px] font-bold text-ink">{money(o.total)}</span>
+                    <span className="tnum text-[13.5px] font-bold text-ink">{o.order_no}</span>
+                    <span className="tnum text-[13.5px] font-bold text-ink">{money(o.total)}</span>
                   </span>
                   <span className="mt-1 flex items-center justify-between gap-3">
-                    <span className="min-w-0 truncate text-[13.5px] text-ink-2">{o.company_name || o.ordered_by_name}</span>
+                    <span className="min-w-0 truncate text-[12.5px] text-ink-2">{o.company_name || o.ordered_by_name}</span>
                     <StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip>
                   </span>
-                  <span className="tnum mt-1 block text-xs text-ink-muted">
+                  <span className="tnum mt-1 block text-[11.5px] text-ink-muted">
                     {o.item_count} {o.item_count === 1 ? 'item' : 'items'} · {dateTime(o.created_at)}
                   </span>
                 </button>
@@ -277,18 +277,18 @@ function OrderDialog({ id, onClose, onChanged, onDelete }) {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <StatusChip status={order.status}>{statusLabel(order.status)}</StatusChip>
-            <span className="text-[13px] text-ink-muted">
+            <span className="text-[12px] text-ink-muted">
               {order.fulfilment === 'delivery' ? 'For delivery' : 'For collection'}
               {order.ordered_by_phone ? ` · ${order.ordered_by_phone}` : ''}
             </span>
-            <span className="tnum ml-auto font-display text-[20px] font-extrabold text-ink">
+            <span className="tnum ml-auto font-display text-[18px] font-extrabold text-ink">
               {money(order.total)}
             </span>
           </div>
 
           {items.length > 0 && (
             <TableWrap className="rounded-sm border border-line">
-              <Table className="text-[13px]">
+              <Table className="text-[12px]">
                 <thead>
                   <tr><Th>Item</Th><Th num>Qty</Th><Th num>Total</Th></tr>
                 </thead>
@@ -309,14 +309,14 @@ function OrderDialog({ id, onClose, onChanged, onDelete }) {
           )}
 
           {order.delivery_address && (
-            <p className="rounded-sm border border-line bg-surface-2 px-3.5 py-2.5 text-[13px]">
+            <p className="rounded-sm border border-line bg-surface-2 px-3.5 py-2.5 text-[12px]">
               <span className="font-semibold text-ink">Deliver to:</span>{' '}
               <span className="text-ink-2">{order.delivery_address}</span>
             </p>
           )}
 
           {order.payment && (
-            <p className="text-[13px] text-ink-muted">
+            <p className="text-[12px] text-ink-muted">
               <span className="font-semibold text-ink">{order.payment.receipt_no}</span>
               {' · '}{methodLabel(order.payment.method)}
               {' · '}taken by {order.payment.cashier_name}

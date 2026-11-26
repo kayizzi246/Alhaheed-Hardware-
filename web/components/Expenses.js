@@ -60,7 +60,7 @@ function PaymentFields({ p, set, paid }) {
                 aria-checked={on}
                 onClick={() => set({ ...p, method: m.value })}
                 className={cn(
-                  'min-h-11 rounded-sm border px-3 py-2 text-[13px] font-semibold leading-tight',
+                  'min-h-11 rounded-sm border px-3 py-2 text-[12px] font-semibold leading-tight',
                   'transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-[.97]',
                   on ? 'border-fill bg-fill text-on-fill' : 'border-line-firm/80 bg-surface text-ink-2 hover:bg-surface-2'
                 )}
@@ -261,16 +261,16 @@ export default function Expenses() {
             {rows.map((e) => (
               <li key={e.id} className="px-4 py-3.5">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 text-[14.5px] font-semibold text-ink">{e.details}</span>
-                  <span className="tnum text-[15px] font-bold text-ink">{money(e.amount)}</span>
+                  <span className="min-w-0 text-[13.5px] font-semibold text-ink">{e.details}</span>
+                  <span className="tnum text-[13.5px] font-bold text-ink">{money(e.amount)}</span>
                 </div>
-                <p className="mt-1 text-[12.5px] text-ink-muted">
+                <p className="mt-1 text-[12px] text-ink-muted">
                   <span className="tnum">{e.ref}</span> · {e.kind_label} · {e.raised_by} · <span className="tnum">{dateTime(e.created_at)}</span>
                 </p>
-                {paymentLine(e) && <p className="mt-1 text-[13px] text-ink-2">{paymentLine(e)}</p>}
+                {paymentLine(e) && <p className="mt-1 text-[12px] text-ink-2">{paymentLine(e)}</p>}
                 <div className="mt-1.5">
                   <Chip tone={TONE[e.status] || 'grey'}>{e.status_label}</Chip>
-                  {e.decision_note && <span className="mt-1 block text-xs text-ink-muted">{e.decision_note}</span>}
+                  {e.decision_note && <span className="mt-1 block text-[11.5px] text-ink-muted">{e.decision_note}</span>}
                 </div>
                 {data.canApprove && e.status === 'raised' && (
                   <div className="mt-3 grid grid-cols-2 gap-2">
@@ -298,26 +298,26 @@ export default function Expenses() {
                     <Td className="tnum font-bold text-ink">{e.ref}</Td>
                     <Td>
                       <span className="font-medium text-ink">{e.details}</span>
-                      <span className="block text-xs text-ink-muted">{e.kind_label}</span>
+                      <span className="block text-[11.5px] text-ink-muted">{e.kind_label}</span>
                     </Td>
                     <Td className="max-w-[220px]">
                       <span className="block font-medium text-ink">{methodLabel(e.method)}</span>
-                      {e.payee && <span className="block text-xs text-ink-2">{e.payee}</span>}
+                      {e.payee && <span className="block text-[11.5px] text-ink-2">{e.payee}</span>}
                       {(e.pay_number || e.pay_ref) && (
-                        <span className="block break-words text-xs text-ink-muted">
+                        <span className="block break-words text-[11.5px] text-ink-muted">
                           {[e.pay_number, e.pay_ref && `ID ${e.pay_ref}`].filter(Boolean).join(' · ')}
                         </span>
                       )}
                     </Td>
                     <Td>
                       {e.raised_by}
-                      <span className="block text-xs capitalize text-ink-muted">{e.raised_desk}</span>
+                      <span className="block text-[11.5px] capitalize text-ink-muted">{e.raised_desk}</span>
                     </Td>
                     <Td num className="font-semibold text-ink">{money(e.amount)}</Td>
                     <Td>
                       <Chip tone={TONE[e.status] || 'grey'}>{e.status_label}</Chip>
                       {e.decision_note && (
-                        <span className="mt-0.5 block max-w-[220px] text-xs text-ink-muted">
+                        <span className="mt-0.5 block max-w-[220px] text-[11.5px] text-ink-muted">
                           {e.decision_note}
                         </span>
                       )}
@@ -490,7 +490,7 @@ function RaiseDialog({ who, boss, onClose, onDone }) {
         <PaymentFields p={pay} set={setPay} paid={boss && settle === 'paid'} />
 
         {who && (
-          <p className="text-[12.5px] text-ink-muted">
+          <p className="text-[12px] text-ink-muted">
             Added as <b className="font-semibold text-ink-2">{who.fullName}</b>. Your name stays
             on it.
           </p>
@@ -567,7 +567,7 @@ function DecideDialog({ e, approve, onClose, onDone }) {
               inputMode="numeric"
               value={amount}
               onChange={(ev) => setAmount(ev.target.value)}
-              className="tnum text-[17px] font-semibold"
+              className="tnum text-[15px] font-semibold"
               autoFocus
             />
           </Field>
@@ -640,14 +640,14 @@ function PayDialog({ expense, onClose, onDone }) {
           <span className="block text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">
             Approved amount
           </span>
-          <strong className="tnum mt-1 block font-display text-[26px] font-extrabold leading-none text-ink">
+          <strong className="tnum mt-1 block font-display text-[22px] font-extrabold leading-none text-ink">
             {money(expense.amount)}
           </strong>
         </div>
 
         <PaymentFields p={pay} set={setPay} paid />
 
-        <p className="text-[12.5px] leading-relaxed text-ink-muted">
+        <p className="text-[12px] leading-relaxed text-ink-muted">
           This writes a cash-out line in today&rsquo;s cash book against{' '}
           <b className="font-semibold text-ink-2">{expense.ref}</b>, so the book still matches the
           drawer.

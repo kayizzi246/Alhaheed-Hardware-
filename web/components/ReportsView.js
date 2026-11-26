@@ -169,17 +169,17 @@ export default function ReportsView() {
           <CardBody className="space-y-2.5">
             {byDay.map((d) => (
               <div key={d.day} className="flex items-center gap-3">
-                <span className="tnum w-[70px] shrink-0 text-xs text-ink-muted">{d.day.slice(5)}</span>
+                <span className="tnum w-[70px] shrink-0 text-[11.5px] text-ink-muted">{d.day.slice(5)}</span>
                 <div className="h-5 flex-1 overflow-hidden rounded-sm bg-surface-sunk">
                   <div
                     className="h-full rounded-sm bg-brand"
                     style={{ width: `${(d.total / maxDay) * 100}%`, minWidth: d.total > 0 ? 3 : 0 }}
                   />
                 </div>
-                <span className="tnum w-[64px] shrink-0 text-right text-xs text-ink-muted">
+                <span className="tnum w-[64px] shrink-0 text-right text-[11.5px] text-ink-muted">
                   {d.receipts} rcpt
                 </span>
-                <span className="tnum w-[120px] shrink-0 text-right text-sm font-semibold text-ink">
+                <span className="tnum w-[120px] shrink-0 text-right text-[13px] font-semibold text-ink">
                   {money(d.total)}
                 </span>
               </div>
@@ -283,7 +283,7 @@ export default function ReportsView() {
                   <Tr key={m.code}>
                     <Td>
                       <span className="font-medium text-ink">{m.name}</span>
-                      <span className="tnum block text-xs text-ink-muted">{m.code}</span>
+                      <span className="tnum block text-[11.5px] text-ink-muted">{m.code}</span>
                     </Td>
                     <Td num>{m.received}</Td>
                     <Td num>{m.released}</Td>

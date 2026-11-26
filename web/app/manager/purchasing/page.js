@@ -73,8 +73,8 @@ export default function Purchasing() {
             ['Came with no order', data.receivedNoPo, data.receivedNoPo ? 'text-warn' : ''],
           ].map(([k, v, c]) => (
             <div key={k} className="rounded-xl border border-line bg-surface px-4 py-3">
-              <p className="text-[12px] text-ink-muted">{k}</p>
-              <p className={cn('tnum text-[18px] font-bold text-ink', c)}>{v}</p>
+              <p className="text-[11.5px] text-ink-muted">{k}</p>
+              <p className={cn('tnum text-[16px] font-bold text-ink', c)}>{v}</p>
             </div>
           ))}
         </div>
@@ -106,7 +106,7 @@ export default function Purchasing() {
                 <tbody>
                   {list(data.orders).map((o) => (
                     <Tr key={o.id} className="cursor-pointer" onClick={() => setDialog({ kind: 'show', id: o.id })}>
-                      <Td className="tnum font-semibold text-brand">{o.poNo}<span className="block text-xs font-normal text-ink-muted">{o.createdAt?.slice(0, 10)}</span></Td>
+                      <Td className="tnum font-semibold text-brand">{o.poNo}<span className="block text-[11.5px] font-normal text-ink-muted">{o.createdAt?.slice(0, 10)}</span></Td>
                       <Td className="font-medium text-ink">{o.supplier}</Td>
                       <Td><Chip tone={(STATUS[o.status] || [])[1] || 'grey'}>{(STATUS[o.status] || [o.status])[0]}</Chip></Td>
                       <Td num>{money(o.ordered)}</Td>
@@ -151,9 +151,9 @@ export default function Purchasing() {
                   <tbody>
                     {list(data.bills).map((b) => (
                       <Tr key={b.id}>
-                        <Td className="tnum whitespace-nowrap text-ink-muted">{b.date}{b.dueDate && <span className={cn('block text-xs', b.overdue && 'font-semibold text-bad')}>due {b.dueDate}</span>}</Td>
+                        <Td className="tnum whitespace-nowrap text-ink-muted">{b.date}{b.dueDate && <span className={cn('block text-[11.5px]', b.overdue && 'font-semibold text-bad')}>due {b.dueDate}</span>}</Td>
                         <Td className="font-medium text-ink">{b.supplier}</Td>
-                        <Td>{b.kind === 'credit' ? <Chip tone="good">Credit</Chip> : b.invoiceNo}{b.poNo && <span className="block text-xs text-ink-muted">{b.poNo}</span>}{b.kind === 'credit' && <span className="block text-xs text-ink-muted">{b.note}</span>}</Td>
+                        <Td>{b.kind === 'credit' ? <Chip tone="good">Credit</Chip> : b.invoiceNo}{b.poNo && <span className="block text-[11.5px] text-ink-muted">{b.poNo}</span>}{b.kind === 'credit' && <span className="block text-[11.5px] text-ink-muted">{b.note}</span>}</Td>
                         <Td num className={cn(b.amount < 0 && 'text-ok')}>{money(b.amount)}</Td>
                         <Td num className="font-semibold text-ink">{b.kind === 'bill' ? money(b.owed) : ''}</Td>
                         <Td>{b.kind === 'bill' && (b.poId ? <Match m={b.match} /> : <Chip tone="pending">No purchase order</Chip>)}</Td>
@@ -189,7 +189,7 @@ export default function Purchasing() {
                     <Td className="tnum text-ink-muted">{r.day}</Td>
                     <Td className="font-semibold text-ink">{r.name}</Td>
                     <Td num>{r.qty}</Td>
-                    <Td>{r.supplier}{r.ref && <span className="block text-xs text-ink-muted">{r.ref}</span>}</Td>
+                    <Td>{r.supplier}{r.ref && <span className="block text-[11.5px] text-ink-muted">{r.ref}</span>}</Td>
                     <Td className="text-ink-2">{r.note}</Td>
                     <Td num className="text-ok">{money(r.qty * r.unit_cost)}</Td>
                     <Td className="text-ink-muted">{r.user_name}</Td>
@@ -264,7 +264,7 @@ function NewPo({ suppliers, products, onClose, onDone }) {
 
   return (
     <Modal wide title="New purchase order" description="What you are asking the supplier for, at the agreed price." onClose={onClose}
-      footer={<><span className="mr-auto self-center text-[14px] font-semibold text-ink">Total {money(total)}</span><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!ok || busy} onClick={save}>{busy ? 'Saving…' : 'Save the order'}</Button></>}>
+      footer={<><span className="mr-auto self-center text-[13px] font-semibold text-ink">Total {money(total)}</span><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!ok || busy} onClick={save}>{busy ? 'Saving…' : 'Save the order'}</Button></>}>
       <div className="space-y-4">
         <Alert>{error}</Alert>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -355,7 +355,7 @@ function ShowPo({ id, onClose, onBill }) {
       {!po ? (error ? <Alert>{error}</Alert> : <Loading>Opening…</Loading>) : (
         <div className="space-y-4">
           <Alert>{error}</Alert>
-          <div className="flex flex-wrap items-center gap-2 text-[13.5px]">
+          <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
             <span>Ordered <b>{money(po.ordered)}</b></span>·<span>Delivered <b>{money(po.received)}</b></span>·<span>Billed <b>{money(po.billed)}</b></span><Match m={po.match} />
           </div>
           {open && (
@@ -389,8 +389,8 @@ function ShowPo({ id, onClose, onBill }) {
           </TableWrap>
           {!!list(po.deliveries).length && (
             <div>
-              <h3 className="mb-1 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-muted">Deliveries</h3>
-              <ul className="space-y-0.5 text-[13px] text-ink-2">
+              <h3 className="mb-1 text-[11.5px] font-bold uppercase tracking-[0.06em] text-ink-muted">Deliveries</h3>
+              <ul className="space-y-0.5 text-[12px] text-ink-2">
                 {po.deliveries.map((d) => <li key={d.id}>{d.day} · {d.ref} · {d.qty} {d.name} · {d.user_name}</li>)}
               </ul>
             </div>
@@ -444,7 +444,7 @@ function NewBill({ po, suppliers, orders, onClose, onDone }) {
           <Field label="Pay by (optional)"><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></Field>
         </div>
         {diff !== null && diff !== 0 && (
-          <p className={cn('rounded-sm px-3 py-2 text-[13px]', diff > 0 ? 'bg-bad-bg text-bad' : 'bg-warn-bg text-warn')}>
+          <p className={cn('rounded-sm px-3 py-2 text-[12px]', diff > 0 ? 'bg-bad-bg text-bad' : 'bg-warn-bg text-warn')}>
             {diff > 0 ? `This bill is ${money(diff)} more than the goods that arrived. Pay only for what came.` : `This bill is ${money(-diff)} less than the goods that arrived.`}
           </p>
         )}
@@ -479,7 +479,7 @@ function PayBill({ bill, onClose, onDone }) {
       footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={busy || !(Number(amount) > 0) || (method !== 'cash' && !ref.trim())} onClick={save}>{busy ? 'Saving…' : 'Record the payment'}</Button></>}>
       <div className="space-y-4">
         <Alert>{error}</Alert>
-        {overPay && <p className="rounded-sm bg-bad-bg px-3 py-2 text-[13px] text-bad">This bill charges {money(bill.match.diff)} more than was delivered. Pay only for what came.</p>}
+        {overPay && <p className="rounded-sm bg-bad-bg px-3 py-2 text-[12px] text-bad">This bill charges {money(bill.match.diff)} more than was delivered. Pay only for what came.</p>}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Amount (UGX)"><Input type="number" min="1" max={bill.owed} value={amount} onChange={(e) => setAmount(e.target.value)} className="tnum" /></Field>
           <Field label="Date paid"><Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} /></Field>

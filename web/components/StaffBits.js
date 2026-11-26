@@ -66,7 +66,7 @@ export function SignInCard({ phone, password }) {
   const text = `Al Hadeed staff panel\nSign in with: ${phone}\nPassword: ${password}`;
   return (
     <div className="space-y-3">
-      <dl className="rounded-sm border border-line bg-surface-2 px-4 py-3 text-[14px]">
+      <dl className="rounded-sm border border-line bg-surface-2 px-4 py-3 text-[13px]">
         <div className="flex justify-between gap-4 py-1">
           <dt className="text-ink-muted">Sign in with</dt>
           <dd className="tnum font-semibold text-ink">{phone}</dd>
@@ -84,7 +84,7 @@ export function SignInCard({ phone, password }) {
       >
         {copied ? 'Copied' : 'Copy sign-in details'}
       </Button>
-      <p className="text-[12.5px] leading-relaxed text-ink-muted">
+      <p className="text-[12px] leading-relaxed text-ink-muted">
         Shown once. It is not sent by text message. An SMS sits on a phone for anyone to read.
         You can set a new one from their page at any time.
       </p>

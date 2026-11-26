@@ -176,7 +176,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
           <span className="block text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">
             Amount due
           </span>
-          <strong className="tnum mt-1 block font-display text-[26px] font-extrabold leading-none text-ink">
+          <strong className="tnum mt-1 block font-display text-[22px] font-extrabold leading-none text-ink">
             {money(order.total)}
           </strong>
         </div>
@@ -198,7 +198,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
             onFocus={(e) => e.target.select()}
             autoFocus
             required
-            className="tnum text-[17px] font-semibold"
+            className="tnum text-[15px] font-semibold"
           />
         </Field>
 
@@ -212,7 +212,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
                 <label
                   className={cn(
                     'flex cursor-pointer items-center justify-center gap-2 rounded-sm border border-dashed border-line-firm',
-                    'bg-surface px-4 py-4 text-[13.5px] font-semibold text-brand transition-colors duration-150',
+                    'bg-surface px-4 py-4 text-[12.5px] font-semibold text-brand transition-colors duration-150',
                     'hover:border-brand hover:bg-brand-soft active:scale-[0.99]'
                   )}
                 >
@@ -230,7 +230,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
                   <button type="button" onClick={() => setBig((b) => !b)} title={big ? 'Hide the picture' : 'Show the picture'} className="shrink-0">
                     <img src={preview} alt="Payment screenshot" className="h-16 w-12 rounded-[3px] border border-line object-cover object-center" />
                   </button>
-                  <div className="min-w-0 flex-1 text-[13px]">
+                  <div className="min-w-0 flex-1 text-[12px]">
                     {reading ? (
                       <>
                         <span className="block font-medium text-ink">
@@ -303,7 +303,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
             </Field>
 
             {amountMismatch && (
-              <p className="rounded-sm border border-warn/30 bg-warn-bg px-3 py-2 text-[13px] text-warn">
+              <p className="rounded-sm border border-warn/30 bg-warn-bg px-3 py-2 text-[12px] text-warn">
                 The message says <strong className="tnum">{money(found.amount)}</strong>, but{' '}
                 <strong className="tnum">{money(Math.trunc(paid))}</strong> is entered as received.
                 Check before confirming.

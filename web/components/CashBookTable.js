@@ -67,7 +67,7 @@ export default function CashBookTable({ date }) {
                 <span className="mx-1.5 text-ink-faint">·</span>
                 <span className="text-ink">{e.details}</span>
                 {e.recorded_by_name && (
-                  <span className="block text-xs text-ink-muted">{e.recorded_by_name}</span>
+                  <span className="block text-[11.5px] text-ink-muted">{e.recorded_by_name}</span>
                 )}
               </Td>
               <Td className="whitespace-nowrap text-ink-muted">{methodLabel(e.method)}</Td>
@@ -87,7 +87,7 @@ export default function CashBookTable({ date }) {
             <Td />
             <Td num className="font-bold text-ok">{totalIn.toLocaleString('en-UG')}</Td>
             <Td num className="font-bold text-bad">{totalOut.toLocaleString('en-UG')}</Td>
-            <Td num className="font-display text-[15px] font-extrabold text-ink">{money(book.closing)}</Td>
+            <Td num className="font-display text-[13.5px] font-extrabold text-ink">{money(book.closing)}</Td>
           </tr>
         </tfoot>
       </Table>

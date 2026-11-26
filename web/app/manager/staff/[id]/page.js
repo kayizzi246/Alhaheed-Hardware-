@@ -77,7 +77,7 @@ export default function StaffMember() {
       <>
         <PageHead title="Staff member" />
         <Alert>{error}</Alert>
-        <Link href="/manager/staff" className="text-sm font-semibold text-brand">Back to staff</Link>
+        <Link href="/manager/staff" className="text-[13px] font-semibold text-brand">Back to staff</Link>
       </>
     );
   }
@@ -108,7 +108,7 @@ export default function StaffMember() {
 
   return (
     <>
-      <Link href="/manager/staff" className="mb-2 inline-block text-[13px] font-semibold text-brand hover:underline">
+      <Link href="/manager/staff" className="mb-2 inline-block text-[12px] font-semibold text-brand hover:underline">
         ← All staff
       </Link>
       <PageHead
@@ -183,15 +183,15 @@ export default function StaffMember() {
         <Card>
           <CardHead>
             <CardTitle>What they have been doing</CardTitle>
-            <span className="text-[12.5px] text-ink-muted">latest first</span>
+            <span className="text-[12px] text-ink-muted">latest first</span>
           </CardHead>
           {recent.length === 0 ? (
             <Empty title="Nothing recorded yet">Whatever they do at their desk appears here.</Empty>
           ) : (
             <ul className="divide-y divide-line">
               {(allActs ? recent : recent.slice(0, 12)).map((r, i) => (
-                <li key={i} className="flex items-baseline gap-3 px-4 py-2.5 text-[13.5px]">
-                  <span className="tnum w-[92px] shrink-0 text-xs text-ink-muted">{dateTime(r.at)}</span>
+                <li key={i} className="flex items-baseline gap-3 px-4 py-2.5 text-[12.5px]">
+                  <span className="tnum w-[92px] shrink-0 text-[11.5px] text-ink-muted">{dateTime(r.at)}</span>
                   <span className="min-w-0 flex-1">
                     <span className="font-medium text-ink">{say(r.action)}</span>
                     {r.orderNo && (
@@ -208,7 +208,7 @@ export default function StaffMember() {
               ))}
               {recent.length > 12 && (
                 <li className="px-4 py-2.5">
-                  <button type="button" onClick={() => setAllActs((v) => !v)} className="text-[13px] font-semibold text-brand hover:underline">
+                  <button type="button" onClick={() => setAllActs((v) => !v)} className="text-[12px] font-semibold text-brand hover:underline">
                     {allActs ? 'Show fewer' : `Show all ${recent.length}`}
                   </button>
                 </li>
@@ -221,7 +221,7 @@ export default function StaffMember() {
           <Card className="order-first">
             <CardHead>
               <CardTitle>Their receipts</CardTitle>
-              <span className="text-[12.5px] text-ink-muted">and what Accounts made of each</span>
+              <span className="text-[12px] text-ink-muted">and what Accounts made of each</span>
             </CardHead>
             {receipts.length === 0 ? (
               <Empty title="No payments taken yet" />
@@ -236,18 +236,18 @@ export default function StaffMember() {
                       <Tr key={r.paymentId}>
                         <Td>
                           <span className="tnum whitespace-nowrap font-semibold text-ink">{r.receiptNo}</span>
-                          <span className="tnum block whitespace-nowrap text-xs text-ink-muted">{dateTime(r.at)}</span>
+                          <span className="tnum block whitespace-nowrap text-[11.5px] text-ink-muted">{dateTime(r.at)}</span>
                         </Td>
                         <Td className="tnum whitespace-nowrap">{r.orderNo}</Td>
                         <Td>
                           {methodLabel(r.method)}
-                          {r.ref && <span className="tnum block text-xs text-ink-muted">{r.ref}</span>}
+                          {r.ref && <span className="tnum block text-[11.5px] text-ink-muted">{r.ref}</span>}
                         </Td>
                         <Td num className="whitespace-nowrap font-semibold text-ink">{money(r.amount)}</Td>
                         <Td className="whitespace-nowrap">
                           <Chip tone={STATE[r.state][0]}>{STATE[r.state][1]}</Chip>
                           {r.state === 'rejected' && r.remarks && (
-                            <span className="mt-1 block text-xs text-ink-muted">&ldquo;{r.remarks}&rdquo;</span>
+                            <span className="mt-1 block text-[11.5px] text-ink-muted">&ldquo;{r.remarks}&rdquo;</span>
                           )}
                         </Td>
                         <Td>
@@ -287,7 +287,7 @@ export default function StaffMember() {
         </Card>
       )}
 
-      <p className="text-[12.5px] text-ink-muted">
+      <p className="text-[12px] text-ink-muted">
         On the staff list since {dateTime(s.joined)}{s.hiredBy ? `, hired by ${s.hiredBy}` : ''}.
       </p>
 

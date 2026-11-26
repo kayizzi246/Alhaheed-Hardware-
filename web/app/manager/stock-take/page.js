@@ -32,7 +32,7 @@ function Steps({ at }) {
         <li
           key={s}
           className={cn(
-            'flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-semibold',
+            'flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold',
             i === at ? 'border-fill bg-fill text-on-fill' : i < at ? 'border-ok/30 bg-ok-bg text-ok' : 'border-line text-ink-muted'
           )}
         >
@@ -104,8 +104,8 @@ export default function StockTake() {
       <Card>
         <div className="space-y-5 p-5 sm:p-7">
           <div>
-            <h2 className="text-[20px] font-extrabold text-ink">Count the shelf</h2>
-            <p className="mt-1 max-w-2xl text-[14px] leading-relaxed text-ink-2">
+            <h2 className="text-[18px] font-extrabold text-ink">Count the shelf</h2>
+            <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-ink-2">
               Walk the shop. Type how many of each item you see.
               The system shows what is missing or extra. Nothing changes until you press Approve.
             </p>
@@ -117,9 +117,9 @@ export default function StockTake() {
               ['3', 'Approve', 'The stock is changed to your count.'],
             ].map(([n, t, d]) => (
               <li key={n} className="rounded-xl border border-line bg-surface-2 p-4">
-                <span className="grid size-7 place-items-center rounded-full bg-fill text-[13px] font-bold text-on-fill">{n}</span>
+                <span className="grid size-7 place-items-center rounded-full bg-fill text-[12px] font-bold text-on-fill">{n}</span>
                 <p className="mt-2 font-bold text-ink">{t}</p>
-                <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{d}</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-ink-2">{d}</p>
               </li>
             ))}
           </ol>
@@ -131,7 +131,7 @@ export default function StockTake() {
             {otherDay ? (
               <Field label="Day of the count"><Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} /></Field>
             ) : (
-              <button type="button" onClick={() => setOtherDay(true)} className="pb-2 text-[13px] font-semibold text-brand hover:underline">
+              <button type="button" onClick={() => setOtherDay(true)} className="pb-2 text-[12px] font-semibold text-brand hover:underline">
                 Counting for an earlier day?
               </button>
             )}
@@ -364,8 +364,8 @@ function CountScreen({ id, onLeave }) {
           <Card>
             <div className="space-y-3 p-4 sm:p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="text-[15px] font-bold text-ink">{counted} of {items.length} items counted</p>
-                <p className="text-[13px] text-ink-muted">{differ.length ? `${differ.length} not the same` : 'All the same so far'}</p>
+                <p className="text-[13.5px] font-bold text-ink">{counted} of {items.length} items counted</p>
+                <p className="text-[12px] text-ink-muted">{differ.length ? `${differ.length} not the same` : 'All the same so far'}</p>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-surface-sunk">
                 <div className="h-full rounded-full bg-fill transition-[width] duration-300" style={{ width: `${items.length ? (counted / items.length) * 100 : 0}%` }} />
@@ -378,12 +378,12 @@ function CountScreen({ id, onLeave }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find an item by name or code" className="min-w-[200px] flex-1" />
-                <label className="inline-flex h-11 cursor-pointer items-center rounded-sm border border-line bg-surface px-4 text-[13.5px] font-semibold text-ink hover:bg-surface-2">
+                <label className="inline-flex h-11 cursor-pointer items-center rounded-sm border border-line bg-surface px-4 text-[12.5px] font-semibold text-ink hover:bg-surface-2">
                   Fill from a spreadsheet
                   <input type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={fillFromSheet} />
                 </label>
               </div>
-              <p className="text-[12.5px] text-ink-muted">Have a spreadsheet? It needs a <b>Code</b> column and a <b>Counted</b> column.</p>
+              <p className="text-[12px] text-ink-muted">Have a spreadsheet? It needs a <b>Code</b> column and a <b>Counted</b> column.</p>
             </div>
           </Card>
 
@@ -402,8 +402,8 @@ function CountScreen({ id, onLeave }) {
                     <li key={i.id} className={cn('flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5', diff === 0 && 'bg-ok-bg/40', diff && diff < 0 && 'bg-bad-bg/40')}>
                       <div className="min-w-[180px] flex-1">
                         <p className="font-semibold text-ink">{i.name}</p>
-                        <p className="text-[12.5px] text-ink-muted">{i.code} · system says <b className="text-ink-2">{book} {i.unit}</b></p>
-                        <p className={cn('text-[12.5px] font-semibold', say.tone)}>{unsaved ? 'Saving…' : say.text}</p>
+                        <p className="text-[12px] text-ink-muted">{i.code} · system says <b className="text-ink-2">{book} {i.unit}</b></p>
+                        <p className={cn('text-[12px] font-semibold', say.tone)}>{unsaved ? 'Saving…' : say.text}</p>
                       </div>
                       <Input
                         ref={(el) => { inputs.current[n] = el; }}
@@ -416,13 +416,13 @@ function CountScreen({ id, onLeave }) {
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); inputs.current[n + 1]?.focus(); } }}
                         aria-label={`How many ${i.name} are on the shelf`}
                         placeholder="On shelf"
-                        className="tnum w-[110px] text-center text-[17px] font-bold"
+                        className="tnum w-[110px] text-center text-[15px] font-bold"
                       />
                       <Button variant="outline" size="sm" onClick={() => { put(i.id, String(Math.max(0, book))); inputs.current[n + 1]?.focus(); }}>
                         Matches
                       </Button>
                       {v !== '' && (
-                        <button type="button" onClick={() => put(i.id, '')} className="text-[12.5px] font-semibold text-bad hover:underline" aria-label={`Clear the count for ${i.name}`}>
+                        <button type="button" onClick={() => put(i.id, '')} className="text-[12px] font-semibold text-bad hover:underline" aria-label={`Clear the count for ${i.name}`}>
                           Delete
                         </button>
                       )}
@@ -434,7 +434,7 @@ function CountScreen({ id, onLeave }) {
           </Card>
 
           <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
-            <span className="text-[13.5px] text-ink-2">{counted} counted · {differ.length} differ</span>
+            <span className="text-[12.5px] text-ink-2">{counted} counted · {differ.length} differ</span>
             <div className="flex gap-2">
               <Button variant="ghost" className="text-bad hover:bg-bad-bg" disabled={busy} onClick={discard}>Delete this count</Button>
               <Button disabled={!counted || saving} onClick={async () => { await flush(); setView('check'); }}>Next: check</Button>
@@ -458,7 +458,7 @@ function CountScreen({ id, onLeave }) {
           onClose={() => setConfirm(false)}
           footer={<><Button variant="outline" onClick={() => setConfirm(false)}>Not yet</Button><Button disabled={busy} onClick={approve}>{busy ? 'Updating the stock book…' : 'Yes, approve'}</Button></>}
         >
-          <div className="space-y-2 text-[14px] leading-relaxed text-ink">
+          <div className="space-y-2 text-[13px] leading-relaxed text-ink">
             <p>The stock book will be set to what you counted for the <b>{counted}</b> items you counted. Items you did not count stay as they are.</p>
             {differ.length ? (
               <p><b>{differ.length}</b> {differ.length === 1 ? 'item differs' : 'items differ'}. Shortages ({money(-c.shortValue)}) show as losses on Stock control.</p>
@@ -479,7 +479,7 @@ function CatChip({ on, onClick, label, sub, done }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors',
+        'rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors',
         on ? 'border-fill bg-fill text-on-fill' : done ? 'border-ok/30 bg-ok-bg text-ok' : 'border-line bg-surface text-ink-2 hover:bg-surface-2'
       )}
     >
@@ -498,8 +498,8 @@ function Summary({ c, total }) {
         ['Extra (value)', money(c.overValue), ''],
       ].map(([k, v, tone]) => (
         <div key={k} className="rounded-xl border border-line bg-surface px-4 py-3">
-          <p className="text-[12px] text-ink-muted">{k}</p>
-          <p className={cn('tnum text-[18px] font-bold text-ink', tone)}>{v}</p>
+          <p className="text-[11.5px] text-ink-muted">{k}</p>
+          <p className={cn('tnum text-[16px] font-bold text-ink', tone)}>{v}</p>
         </div>
       ))}
     </div>
@@ -521,7 +521,7 @@ function Differences({ items }) {
                 const say = verdict(i.variance, i.unit, 0);
                 return (
                   <Tr key={i.id}>
-                    <Td><span className="block font-semibold text-ink">{i.name}</span><span className="block text-xs text-ink-muted">{i.code}</span></Td>
+                    <Td><span className="block font-semibold text-ink">{i.name}</span><span className="block text-[11.5px] text-ink-muted">{i.code}</span></Td>
                     <Td num>{i.bookAtCount}</Td>
                     <Td num className="font-bold text-ink">{i.counted}</Td>
                     <Td className={cn('font-semibold', say.tone)}>{say.text}</Td>

@@ -83,7 +83,7 @@ export default function Suppliers() {
         <CardHead>
           <CardTitle>Who the shop buys from</CardTitle>
           {health?.from && (
-            <span className="text-[12.5px] text-ink-muted">sent as {health.from}</span>
+            <span className="text-[12px] text-ink-muted">sent as {health.from}</span>
           )}
         </CardHead>
 
@@ -108,7 +108,7 @@ export default function Suppliers() {
                       <span className="font-semibold text-ink">{s.name}</span>
                       {!s.active && <Chip className="ml-2">No longer used</Chip>}
                       {s.phone && (
-                        <span className="tnum block text-xs text-ink-muted">{s.phone}</span>
+                        <span className="tnum block text-[11.5px] text-ink-muted">{s.phone}</span>
                       )}
                     </Td>
                     <Td className="text-ink-muted">{s.contact || ''}</Td>
@@ -153,7 +153,7 @@ export default function Suppliers() {
       <Card className="mb-4">
         <CardHead>
           <CardTitle>Low on the shelf</CardTitle>
-          <span className="text-[12.5px] text-ink-muted">
+          <span className="text-[12px] text-ink-muted">
             {low.length === 0 ? 'nothing to reorder' : 'worst first'}
           </span>
         </CardHead>
@@ -196,7 +196,7 @@ export default function Suppliers() {
       <Card>
         <CardHead>
           <CardTitle>Messages sent</CardTitle>
-          <span className="text-[12.5px] text-ink-muted">
+          <span className="text-[12px] text-ink-muted">
             {mail.length === 0 ? 'nothing sent yet' : `last ${mail.length}`}
           </span>
         </CardHead>
@@ -267,7 +267,7 @@ export default function Suppliers() {
           {reading.status !== 'sent' && reading.error && (
             <Alert>{reading.error}</Alert>
           )}
-          <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-md bg-surface-sunk p-3 text-[13px] leading-relaxed text-ink">
+          <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-md bg-surface-sunk p-3 text-[12px] leading-relaxed text-ink">
             {reading.body}
           </pre>
         </Modal>
@@ -417,7 +417,7 @@ function Compose({ supplier, low, sender, onClose, onSent, onError }) {
             {theirs.map((i) => (
               <label
                 key={i.code}
-                className="flex cursor-pointer items-center gap-3 border-b border-line px-3 py-2 text-[13px] last:border-0 hover:bg-surface-sunk"
+                className="flex cursor-pointer items-center gap-3 border-b border-line px-3 py-2 text-[12px] last:border-0 hover:bg-surface-sunk"
               >
                 <input
                   type="checkbox"
@@ -444,7 +444,7 @@ function Compose({ supplier, low, sender, onClose, onSent, onError }) {
       </div>
 
       <Field label="What they will receive" hint="This is the message, exactly as it goes out.">
-        <pre className="max-h-[200px] overflow-auto whitespace-pre rounded-md bg-surface-sunk p-3 text-[12.5px] leading-relaxed text-ink">
+        <pre className="max-h-[200px] overflow-auto whitespace-pre rounded-md bg-surface-sunk p-3 text-[12px] leading-relaxed text-ink">
           {body}
         </pre>
       </Field>

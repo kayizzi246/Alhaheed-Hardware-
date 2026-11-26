@@ -51,8 +51,8 @@ export default function ManagerOrderDetail() {
     <>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="tnum text-[26px] leading-tight text-ink">Order {order.order_no}</h1>
-          <p className="mt-1 text-sm text-ink-muted">{dateTime(order.created_at)}</p>
+          <h1 className="tnum text-[22px] leading-tight text-ink">Order {order.order_no}</h1>
+          <p className="mt-1 text-[13px] text-ink-muted">{dateTime(order.created_at)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="ghost" size="sm"><Link href="/manager/orders">← All orders</Link></Button>
@@ -137,7 +137,7 @@ export default function ManagerOrderDetail() {
             <tfoot>
               <tr className="bg-surface-2">
                 <Td colSpan={3} className="font-bold text-ink">Total</Td>
-                <Td num className="font-display text-[15px] font-extrabold text-ink">{money(order.total)}</Td>
+                <Td num className="font-display text-[13.5px] font-extrabold text-ink">{money(order.total)}</Td>
               </tr>
             </tfoot>
           </Table>

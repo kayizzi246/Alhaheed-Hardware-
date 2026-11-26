@@ -210,7 +210,7 @@ export default function MonthlyReport() {
           <Card className="mb-4">
             <CardHead>
               <CardTitle>Takings by day</CardTitle>
-              <span className="text-[12.5px] text-ink-muted">
+              <span className="text-[12px] text-ink-muted">
                 {byDay.length} {byDay.length === 1 ? 'day' : 'days'} with money in
               </span>
             </CardHead>
@@ -220,17 +220,17 @@ export default function MonthlyReport() {
               <CardBody className="space-y-2.5">
                 {byDay.map((d) => (
                   <div key={d.day} className="flex items-center gap-3">
-                    <span className="tnum w-[70px] shrink-0 text-xs text-ink-muted">{d.day.slice(5)}</span>
+                    <span className="tnum w-[70px] shrink-0 text-[11.5px] text-ink-muted">{d.day.slice(5)}</span>
                     <div className="h-5 flex-1 overflow-hidden rounded-sm bg-surface-sunk">
                       <div
                         className="h-full rounded-sm bg-brand"
                         style={{ width: `${(d.total / maxDay) * 100}%`, minWidth: d.total > 0 ? 3 : 0 }}
                       />
                     </div>
-                    <span className="tnum w-[64px] shrink-0 text-right text-xs text-ink-muted">
+                    <span className="tnum w-[64px] shrink-0 text-right text-[11.5px] text-ink-muted">
                       {d.receipts} rcpt
                     </span>
-                    <span className="tnum w-[120px] shrink-0 text-right text-sm font-semibold text-ink">
+                    <span className="tnum w-[120px] shrink-0 text-right text-[13px] font-semibold text-ink">
                       {money(d.total)}
                     </span>
                   </div>
@@ -242,7 +242,7 @@ export default function MonthlyReport() {
           <Card className="mb-4">
             <CardHead>
               <CardTitle>Internal spending</CardTitle>
-              <span className="text-[12.5px] text-ink-muted">
+              <span className="text-[12px] text-ink-muted">
                 {money(t.expenses)} paid
                 {openSpend.length > 0 && ` · ${openSpend.length} still open`}
               </span>
@@ -264,20 +264,20 @@ export default function MonthlyReport() {
                         <Td className="tnum font-bold text-ink">{e.ref}</Td>
                         <Td>
                           <span className="font-medium text-ink">{e.details}</span>
-                          <span className="block text-xs text-ink-muted">{KIND_LABEL[e.kind] || e.kind}</span>
+                          <span className="block text-[11.5px] text-ink-muted">{KIND_LABEL[e.kind] || e.kind}</span>
                         </Td>
                         <Td>
                           <span className="block font-medium text-ink">{methodLabel(e.method)}</span>
-                          {e.payee && <span className="block text-xs text-ink-2">{e.payee}</span>}
+                          {e.payee && <span className="block text-[11.5px] text-ink-2">{e.payee}</span>}
                           {(e.number || e.pay_ref) && (
-                            <span className="block break-words text-xs text-ink-muted">
+                            <span className="block break-words text-[11.5px] text-ink-muted">
                               {[e.number, e.pay_ref && `ID ${e.pay_ref}`].filter(Boolean).join(' · ')}
                             </span>
                           )}
                         </Td>
                         <Td className="tnum whitespace-nowrap text-ink-muted">
                           {dateTime(e.paid)}
-                          {e.paid_by && <span className="block text-xs">{e.paid_by}</span>}
+                          {e.paid_by && <span className="block text-[11.5px]">{e.paid_by}</span>}
                         </Td>
                         <Td num className="font-semibold text-ink">{money(e.amount)}</Td>
                         <Td
@@ -297,14 +297,14 @@ export default function MonthlyReport() {
             )}
             {list(data.spentBy).length > 0 && (
               <div className="border-t border-line px-4 py-4 sm:px-6">
-                <p className="text-[13px] font-semibold text-ink-2">How it was paid</p>
+                <p className="text-[12px] font-semibold text-ink-2">How it was paid</p>
                 <dl className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
                   {list(data.spentBy).map((m) => (
                     <div key={m.method} className="flex items-baseline justify-between gap-3">
-                      <dt className="text-[13.5px] text-ink-2">
+                      <dt className="text-[12.5px] text-ink-2">
                         {methodLabel(m.method)} <span className="text-ink-muted">({m.payments})</span>
                       </dt>
-                      <dd className="tnum text-[14px] font-semibold text-ink">{money(m.total)}</dd>
+                      <dd className="tnum text-[13px] font-semibold text-ink">{money(m.total)}</dd>
                     </div>
                   ))}
                 </dl>
@@ -369,7 +369,7 @@ export default function MonthlyReport() {
           <Card className="mb-4">
             <CardHead>
               <CardTitle>Every order this month</CardTitle>
-              <span className="text-[12.5px] text-ink-muted">
+              <span className="text-[12px] text-ink-muted">
                 {orders.length} {orders.length === 1 ? 'order' : 'orders'}
                 {orders.length > SHOWN && ` · first ${SHOWN} shown`}
               </span>
@@ -411,7 +411,7 @@ export default function MonthlyReport() {
           <Card>
             <CardHead>
               <CardTitle>Who did the work</CardTitle>
-              <span className="text-[12.5px] text-ink-muted">{data.staff.length} on the floor</span>
+              <span className="text-[12px] text-ink-muted">{data.staff.length} on the floor</span>
             </CardHead>
             {list(data.staff).length === 0 ? (
               <Empty title="No recorded staff activity this month" />

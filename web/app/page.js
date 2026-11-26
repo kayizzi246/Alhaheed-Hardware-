@@ -169,16 +169,16 @@ export default function LoginPage() {
 
         <div className="w-full max-w-[380px]">
           <div className="mb-9 flex items-center gap-2.5">
-            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-fill to-fill-dark text-[13px] font-extrabold text-white shadow-sm">
+            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-fill to-fill-dark text-[12px] font-extrabold text-white shadow-sm">
               AH
             </span>
-            <span className="font-display text-[15px] font-extrabold tracking-[-.01em] text-ink">
+            <span className="font-display text-[13.5px] font-extrabold tracking-[-.01em] text-ink">
               Al Hadeed <span className="text-brand">Hardware</span>
             </span>
           </div>
 
-          <h1 className="text-[28px] leading-[1.15] text-ink">Log in to your account</h1>
-          <p className="mb-7 mt-2 text-sm text-ink-muted">
+          <h1 className="text-[24px] leading-[1.15] text-ink">Log in to your account</h1>
+          <p className="mb-7 mt-2 text-[13px] text-ink-muted">
             {reachable === false
               ? 'The shop cannot be reached just now.'
               : 'Welcome back. Choose how you want to sign in:'}
@@ -202,7 +202,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="my-6 flex items-center gap-3 text-[12.5px] text-ink-faint">
+          <div className="my-6 flex items-center gap-3 text-[12px] text-ink-faint">
             <span className="h-px flex-1 bg-line" />
             {mode === 'password' ? 'your phone number and password' : 'we will text a code to your phone'}
             <span className="h-px flex-1 bg-line" />
@@ -211,7 +211,7 @@ export default function LoginPage() {
           <div aria-live="polite">
             {note && !error && <Alert kind="ok">{note}</Alert>}
             {forgot && mode === 'code' && !error && (
-              <p className="mb-4 rounded-sm border border-line bg-surface-2 px-3.5 py-3 text-[13px] leading-relaxed text-ink-2">
+              <p className="mb-4 rounded-sm border border-line bg-surface-2 px-3.5 py-3 text-[12px] leading-relaxed text-ink-2">
                 No problem. Sign in with a code sent to your phone instead. Once you are in,
                 ask the manager to set you a new password.
               </p>
@@ -273,7 +273,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setMode('code'); setForgot(true); setError(''); setNote(''); }}
-                  className="text-[13px] font-semibold text-brand-dark underline-offset-2 hover:underline"
+                  className="text-[12px] font-semibold text-brand-dark underline-offset-2 hover:underline"
                 >
                   Forgot password?
                 </button>
@@ -312,7 +312,7 @@ export default function LoginPage() {
                     maxLength={6}
                     autoFocus
                     required
-                    className="tnum bg-surface-2 text-center text-[22px] font-bold tracking-[.4em]"
+                    className="tnum bg-surface-2 text-center text-[20px] font-bold tracking-[.4em]"
                   />
                 </Field>
               )}
@@ -340,7 +340,7 @@ export default function LoginPage() {
             </form>
           )}
 
-          <p className="mt-7 text-center text-[13px] text-ink-muted">
+          <p className="mt-7 text-center text-[12px] text-ink-muted">
             No account?{' '}
             <span className="font-semibold text-ink-2">
               Ask the manager to set you up.
@@ -368,10 +368,10 @@ export default function LoginPage() {
         <div className="relative w-full max-w-[460px]">
           <OrderFlowArt />
 
-          <h2 className="mt-12 text-center font-display text-[26px] font-extrabold leading-[1.2] tracking-[-.02em]">
+          <h2 className="mt-12 text-center font-display text-[22px] font-extrabold leading-[1.2] tracking-[-.02em]">
             {SLIDES[slide].title}
           </h2>
-          <p className="mx-auto mt-3 max-w-sm text-center text-[14.5px] leading-relaxed text-white/60">
+          <p className="mx-auto mt-3 max-w-sm text-center text-[13.5px] leading-relaxed text-white/60">
             {SLIDES[slide].line}
           </p>
 
@@ -431,7 +431,7 @@ function MethodButton({ on, onClick, icon, label }) {
       onClick={onClick}
       aria-pressed={on}
       className={[
-        'flex items-center justify-center gap-2 rounded-sm border px-3 py-3 text-[13.5px] font-semibold',
+        'flex items-center justify-center gap-2 rounded-sm border px-3 py-3 text-[12.5px] font-semibold',
         'transition-[border-color,background-color,color,transform] duration-150 ease-out active:scale-[.98]',
         on
           ? 'border-brand bg-brand-soft text-brand-dark'
@@ -494,7 +494,7 @@ function OrderFlowArt() {
               {i + 1}
             </span>
             <span className="min-w-0 flex-1">
-              <b className="block text-[13.5px] font-semibold leading-tight">{who}</b>
+              <b className="block text-[12.5px] font-semibold leading-tight">{who}</b>
               <em className="block text-[11.5px] not-italic text-white/50">{what}</em>
             </span>
             <span className="tnum shrink-0 rounded-md bg-white/10 px-2 py-1 text-[11px] font-semibold text-white/75">
@@ -514,7 +514,7 @@ function Figure({ value, label, first }) {
     <div className={first ? 'pr-6' : 'px-6'}>
       <strong
         className={[
-          'tnum block min-h-[22px] text-center font-display text-[22px] font-extrabold leading-none',
+          'tnum block min-h-[22px] text-center font-display text-[20px] font-extrabold leading-none',
           'transition-opacity duration-200 ease-out',
           known ? 'opacity-100' : 'opacity-0',
         ].join(' ')}

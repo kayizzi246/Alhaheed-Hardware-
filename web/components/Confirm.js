@@ -76,12 +76,12 @@ export function ConfirmHost() {
               <span className={cn('mx-auto grid size-12 place-items-center rounded-full', danger ? 'bg-bad-bg text-bad' : 'bg-brand-soft text-brand')}>
                 {danger ? <Bin /> : <Question />}
               </span>
-              <DialogPrimitive.Title className="mt-4 text-[17px] font-bold leading-snug text-ink">{ask.title}</DialogPrimitive.Title>
+              <DialogPrimitive.Title className="mt-4 text-[15px] font-bold leading-snug text-ink">{ask.title}</DialogPrimitive.Title>
               {ask.body && (
-                <DialogPrimitive.Description className="mt-1.5 text-[13.5px] leading-relaxed text-ink-muted">{ask.body}</DialogPrimitive.Description>
+                <DialogPrimitive.Description className="mt-1.5 text-[12.5px] leading-relaxed text-ink-muted">{ask.body}</DialogPrimitive.Description>
               )}
               {ask.points?.length > 0 && (
-                <ul className="mx-auto mt-4 max-w-[320px] space-y-1.5 rounded-xl bg-surface-2 px-4 py-3 text-left text-[13px] text-ink-2">
+                <ul className="mx-auto mt-4 max-w-[320px] space-y-1.5 rounded-xl bg-surface-2 px-4 py-3 text-left text-[12px] text-ink-2">
                   {ask.points.map((p, i) => (
                     <li key={i} className="flex gap-2">
                       <span aria-hidden="true" className={cn('mt-[7px] size-1.5 shrink-0 rounded-full', danger ? 'bg-bad' : 'bg-brand')} />

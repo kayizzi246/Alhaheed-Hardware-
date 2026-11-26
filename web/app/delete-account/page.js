@@ -79,17 +79,17 @@ export default function DeleteAccount() {
 
   return (
     <main className="mx-auto max-w-lg px-4 py-12 sm:py-16">
-      <p className="text-[13px] font-semibold text-brand-dark">Al Hadeed Hardware</p>
-      <h1 className="mt-1 text-[28px] leading-tight text-ink">Delete your account</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-ink-2">
+      <p className="text-[12px] font-semibold text-brand-dark">Al Hadeed Hardware</p>
+      <h1 className="mt-1 text-[24px] leading-tight text-ink">Delete your account</h1>
+      <p className="mt-3 text-[13.5px] leading-relaxed text-ink-2">
         For customers of the Al Hadeed Hardware app. You can also do this in the app, under{' '}
         <b>Account</b>, then <b>Delete account</b>.
       </p>
 
       <Card className="mt-6">
         <CardBody>
-          <h2 className="text-[15.5px] font-bold text-ink">What happens</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-[14px] leading-relaxed text-ink-2">
+          <h2 className="text-[14px] font-bold text-ink">What happens</h2>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-ink-2">
             <li><b>Deleted at once:</b> your account, name, phone number, email, addresses and sign-in.</li>
             <li><b>Kept without your name:</b> past orders, receipts and payment records, because the shop must keep its accounts. A payment screenshot sent to the shop stays with its receipt.</li>
             <li><b>Orders you have not paid for</b> are cancelled. One you have paid for must be collected or refunded first.</li>
@@ -103,12 +103,12 @@ export default function DeleteAccount() {
           <Alert>{error}</Alert>
           {done ? (
             <div role="status">
-              <h2 className="text-lg font-bold text-ink">Your account has been deleted</h2>
-              <p className="mt-2 text-[14px] text-ink-2">Thank you for shopping with us. You can make a new account any time.</p>
+              <h2 className="text-[16px] font-bold text-ink">Your account has been deleted</h2>
+              <p className="mt-2 text-[13px] text-ink-2">Thank you for shopping with us. You can make a new account any time.</p>
             </div>
           ) : account ? (
             <form onSubmit={remove} className="space-y-4">
-              <p className="text-[14px] text-ink-2">Signed in as <b className="text-ink">{account.name}</b>.</p>
+              <p className="text-[13px] text-ink-2">Signed in as <b className="text-ink">{account.name}</b>.</p>
               <Field label="Type DELETE to confirm">
                 <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="off" autoCapitalize="characters" autoFocus />
               </Field>
@@ -118,7 +118,7 @@ export default function DeleteAccount() {
             </form>
           ) : (
             <form onSubmit={signIn} className="space-y-4">
-              <p className="text-[14px] text-ink-2">Sign in first, so we know it is you.</p>
+              <p className="text-[13px] text-ink-2">Sign in first, so we know it is you.</p>
               <Segmented label="How to sign in" value={way} onChange={(v) => { setWay(v); setSent(false); setSecret(''); setError(''); }} options={WAYS} />
               <Field label={way === 'sms' ? 'Phone number' : 'Email or phone number'}>
                 <Input
