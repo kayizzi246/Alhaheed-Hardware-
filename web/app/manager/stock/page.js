@@ -62,6 +62,39 @@ export default function StockControl() {
       <PageHead title="Stock control" sub="Worked out from every purchase, sale and count in the stock book." />
       <Alert>{error}</Alert>
 
+      <Card>
+        <CardHead>
+          <CardTitle>What needs your attention</CardTitle>
+          <span className="text-[12.5px] text-ink-muted">{list(data.todo).length ? `${list(data.todo).length} things` : 'all clear'}</span>
+        </CardHead>
+        {!list(data.todo).length ? (
+          <p className="px-4 py-5 text-[14px] text-ok sm:px-6">Nothing needs you. Every item is accounted for, nothing is below zero and the margin is on track.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {list(data.todo).map((t, n) => (
+              <li key={n}>
+                <a href={t.link} className="flex items-start gap-3 px-4 py-3 text-[14px] text-ink hover:bg-surface-2 sm:px-6">
+                  <span aria-hidden="true" className={cn('mt-1.5 size-2.5 shrink-0 rounded-full', t.level === 'bad' ? 'bg-bad' : t.level === 'warn' ? 'bg-warn' : 'bg-info')} />
+                  <span className="min-w-0 flex-1">{t.text}</span>
+                  <span aria-hidden="true" className="text-ink-faint">›</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+        <details className="border-t border-line px-4 py-3 text-[13px] text-ink-2 sm:px-6">
+          <summary className="cursor-pointer font-semibold text-ink">How the stock book keeps every item accounted for</summary>
+          <ul className="mt-2 list-disc space-y-1 pl-5 leading-relaxed">
+            <li><b>Stock = what was bought in − what was sold + counts and adjustments.</b> Nobody types the stock figure; it is added up from the book every time.</li>
+            <li>Goods only come in with a <b>delivery note (FDN), supplier, date and buy price</b>. Goods only go out as a <b>sale</b>, a <b>write-off</b> with a reason, or a <b>count</b> you approve.</li>
+            <li>A sale <b>cannot</b> take stock below zero or go below the buy price unless you override it, and every override is listed here with your reason.</li>
+            <li>The cost of each sale is the <b>latest buy price</b>, filled in by the system, so profit cannot be made up.</li>
+            <li>Only you can receive stock, change prices, write off, count, delete or cancel a paid order. Every change is in the Audit Trail with who did it.</li>
+            <li>The one thing a system cannot see is goods leaving with no record at all. A <b>monthly stock-take</b> catches that: anything short shows up as a loss below.</li>
+          </ul>
+        </details>
+      </Card>
+
       {m.alert.raised && (
         <div className="rounded-sm border border-bad/25 bg-bad-bg px-4 py-3 text-[13.5px] text-bad">
           <b>Margin is falling.</b> This month is {m.alert.current}%, against a six-month average of {m.alert.average}%.{' '}
@@ -83,7 +116,32 @@ export default function StockControl() {
         />
       </Stats>
 
-      <Card>
+      {list(data.unreleased).length > 0 && (
+        <Card id="unreleased">
+          <CardHead>
+            <CardTitle>Paid, not released after a day</CardTitle>
+            <span className="text-[12.5px] text-ink-muted">check the goods are still here</span>
+          </CardHead>
+          <TableWrap>
+            <Table>
+              <thead><tr><Th>Order</Th><Th>Customer</Th><Th>Stage</Th><Th num>Total</Th><Th num>Waiting</Th></tr></thead>
+              <tbody>
+                {list(data.unreleased).map((o) => (
+                  <Tr key={o.id}>
+                    <Td><Link href={`/manager/orders/${o.id}`} className="tnum font-semibold text-brand hover:underline">{o.orderNo}</Link></Td>
+                    <Td>{o.customer}</Td>
+                    <Td className="text-ink-muted">{o.status}</Td>
+                    <Td num className="font-semibold text-ink">{money(o.total)}</Td>
+                    <Td num className={cn(o.days >= 3 && 'font-semibold text-bad')}>{o.days === null ? '' : `${o.days} ${o.days === 1 ? 'day' : 'days'}`}</Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
+          </TableWrap>
+        </Card>
+      )}
+
+      <Card id="reorder">
         <CardHead>
           <CardTitle>Reorder now</CardTitle>
           <span className="text-[12.5px] text-ink-muted">
@@ -171,7 +229,7 @@ export default function StockControl() {
           )}
         </Card>
 
-        <Card>
+        <Card id="negative">
           <CardHead>
             <CardTitle>Below zero</CardTitle>
             <span className="text-[12.5px] text-ink-muted">sold before the purchase was recorded</span>
@@ -199,6 +257,56 @@ export default function StockControl() {
               {list(data.drift).length} {list(data.drift).length === 1 ? 'item has' : 'items have'} a shelf count that differs from the book.
               A <Link href="/manager/stock-take" className="font-semibold text-brand underline">stock-take</Link> settles it.
             </p>
+          )}
+        </Card>
+      </div>
+
+      <div className="grid gap-4">
+        <Card id="losses">
+          <CardHead>
+            <CardTitle>Losses and write-offs</CardTitle>
+            <span className="text-[12.5px] text-ink-muted">{money(data.losses?.monthValue || 0)} this month · {money(data.losses?.value90 || 0)} in 90 days</span>
+          </CardHead>
+          {!list(data.losses?.lines).length ? (
+            <Empty title="No losses in 90 days">Nothing damaged, used by the shop or found short at a count.</Empty>
+          ) : (
+            <TableWrap>
+              <Table>
+                <thead><tr><Th>Date</Th><Th>Item</Th><Th>What</Th><Th num>Qty</Th><Th num>Value</Th><Th>Recorded by</Th></tr></thead>
+                <tbody>
+                  {list(data.losses.lines).map((l) => (
+                    <Tr key={l.id}>
+                      <Td className="tnum whitespace-nowrap text-ink-muted">{l.date}</Td>
+                      <Td className="font-semibold text-ink">{l.name}</Td>
+                      <Td>{l.what}{l.note && <span className="block text-xs text-ink-muted">{l.note}</span>}</Td>
+                      <Td num>{l.qty}</Td>
+                      <Td num className="font-semibold text-bad">{l.value ? money(l.value) : ''}</Td>
+                      <Td className="whitespace-nowrap text-ink-muted">{l.by}</Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            </TableWrap>
+          )}
+        </Card>
+
+        <Card id="overrides">
+          <CardHead>
+            <CardTitle>Overrides, last 30 days</CardTitle>
+            <span className="text-[12.5px] text-ink-muted">sales let through against the rules</span>
+          </CardHead>
+          {!list(data.overrides).length ? (
+            <Empty title="No overrides">Every sale kept to the rules.</Empty>
+          ) : (
+            <ul className="divide-y divide-line">
+              {list(data.overrides).map((o) => (
+                <li key={o.id} className="px-4 py-3 text-[13.5px] sm:px-6">
+                  <p className="font-semibold text-ink">{o.rule === 'below_cost' ? 'Sold below cost' : 'Sold more than in stock'} · {o.detail}</p>
+                  <p className="text-ink-2">&ldquo;{o.reason}&rdquo;</p>
+                  <p className="text-xs text-ink-muted">{o.user_name}, {o.created_at}</p>
+                </li>
+              ))}
+            </ul>
           )}
         </Card>
       </div>

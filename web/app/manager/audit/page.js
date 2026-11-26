@@ -28,6 +28,9 @@ const ACTION_LABEL = {
   staff_suspended: 'Desk login suspended',
   staff_restored: 'Desk login let back in',
   staff_moved: 'Moved to another desk',
+  price_changed: 'Price changed',
+  stock_count_approved: 'Stock count approved',
+  customer_added: 'Customer added',
 };
 
 /**

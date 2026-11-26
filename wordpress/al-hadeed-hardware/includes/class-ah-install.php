@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.7.0';
+	const DB_VERSION = '1.7.1';
 
 	public static function activate() {
 		self::tables();
@@ -352,6 +352,7 @@ class AH_Install {
 		self::tables();
 		AH_Roles::add();
 		self::open_the_books();
+		self::track_everything();
 		update_option( 'ah_db_version', self::DB_VERSION );
 	}
 
@@ -363,6 +364,25 @@ class AH_Install {
 	 * would sum to the wrong figure, so each one gets a single opening
 	 * line for the difference. Nothing already written is changed.
 	 */
+	/**
+	 * Every product counted. One left "not counted" can be sold without
+	 * the shop ever knowing how many it had, so each is switched on with
+	 * the stock book's own figure.
+	 */
+	public static function track_everything() {
+		$ids = get_posts( array( 'post_type' => 'product', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids' ) );
+		foreach ( $ids as $id ) {
+			if ( 'yes' === get_post_meta( $id, '_manage_stock', true ) ) {
+				continue;
+			}
+			update_post_meta( $id, '_manage_stock', 'yes' );
+			$book = class_exists( 'AH_Ledger' ) ? AH_Ledger::book( $id ) : 0;
+			update_post_meta( $id, '_stock', $book );
+			update_post_meta( $id, '_stock_status', $book > 0 ? 'instock' : 'outofstock' );
+			wc_delete_product_transients( $id );
+		}
+	}
+
 	public static function open_the_books() {
 		global $wpdb;
 		if ( get_option( 'ah_books_opened' ) ) {

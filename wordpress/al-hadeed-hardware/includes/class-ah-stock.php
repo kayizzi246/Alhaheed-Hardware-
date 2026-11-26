@@ -52,6 +52,9 @@ class AH_Stock {
 	);
 
 	public static function init() {
+		// However a product is made (the panel, an import, the back
+		// office), it is counted from the start.
+		add_action( 'woocommerce_new_product', array( __CLASS__, 'track_new' ), 10, 1 );
 		add_action( 'woocommerce_reduce_order_item_stock', array( __CLASS__, 'on_sold' ), 10, 3 );
 		add_action( 'woocommerce_restore_order_item_stock', array( __CLASS__, 'on_restored' ), 10, 4 );
 	}
@@ -309,6 +312,10 @@ class AH_Stock {
 				return self::err( 'ah_code_taken', sprintf( 'The code %s is already used by another product', $code ), 409 );
 			}
 		}
+		// What the prices were, so a change can be written down.
+		$was_price = (int) round( (float) $product->get_regular_price() );
+		$was_cost  = (int) get_post_meta( $product->get_id(), '_ah_cost', true );
+
 		if ( null !== $req->get_param( 'price' ) ) {
 			$price = (int) $req->get_param( 'price' );
 			if ( $price <= 0 ) {
@@ -326,6 +333,20 @@ class AH_Stock {
 		}
 		$product->save();
 		self::apply_meta( $product->get_id(), $req );
+
+		$now_price = (int) round( (float) wc_get_product( $product->get_id() )->get_regular_price() );
+		$now_cost  = (int) get_post_meta( $product->get_id(), '_ah_cost', true );
+		if ( $now_price !== $was_price || $now_cost !== $was_cost ) {
+			$bits = array();
+			if ( $now_price !== $was_price ) {
+				$bits[] = sprintf( 'price %s to %s', number_format( $was_price ), number_format( $now_price ) );
+			}
+			if ( $now_cost !== $was_cost ) {
+				$bits[] = sprintf( 'buy price %s to %s', number_format( $was_cost ), number_format( $now_cost ) );
+			}
+			$user = AH_Auth::current();
+			AH_Flow::log_event( 0, 'manager', 'price_changed', null, null, $user ? $user->ID : null, $product->get_name() . ': ' . implode( ', ', $bits ) );
+		}
 
 		// Older screens send the new count with an edit. It still goes in
 		// the book, as a count, rather than quietly replacing the number.
@@ -414,6 +435,14 @@ class AH_Stock {
 		$names = array();
 		foreach ( $ids as $id ) {
 			$product = wc_get_product( $id );
+			if ( $product && 'trash' !== $product->get_status() ) {
+				// Units on the shelf cannot be deleted away: count it or write
+				// it off first, so the stock book says where they went.
+				$left = AH_Ledger::book( $product->get_id() );
+				if ( 0 !== $left ) {
+					return self::err( 'ah_has_stock', sprintf( '%s still has %d in the stock book. Count it or write it off to zero first, so every unit is accounted for.', $product->get_name(), $left ), 409 );
+				}
+			}
 			if ( ! $product || 'trash' === $product->get_status() ) {
 				continue;
 			}
@@ -584,6 +613,16 @@ class AH_Stock {
 			$args['unit_cost'] = (int) get_post_meta( $product->get_id(), '_ah_cost', true );
 		}
 		self::record( $product->get_id(), $kind, (int) $delta, $before, $before + (int) $delta, $args );
+	}
+
+	public static function track_new( $id ) {
+		if ( 'yes' !== get_post_meta( $id, '_manage_stock', true ) ) {
+			update_post_meta( $id, '_manage_stock', 'yes' );
+			if ( '' === (string) get_post_meta( $id, '_stock', true ) ) {
+				update_post_meta( $id, '_stock', 0 );
+				update_post_meta( $id, '_stock_status', 'outofstock' );
+			}
+		}
 	}
 
 	/** "a, b and c" */

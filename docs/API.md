@@ -211,6 +211,8 @@ Book stock is never stored: it is `SUM(qty)` of every line in `wp_ah_stock_moves
 
 Sales (`POST /cashier/orders`, and app orders) are refused with `409 ah_sale_blocked` when they would take the book below zero (counting goods sold and paid for but not yet released) or sell below the latest purchase cost. `data.problems` lists why and `data.canOverride` says whether this login may override; a manager resends with `override: "reason"`, which is kept in `wp_ah_overrides`. A line with no item, quantity or price is refused outright. Each sold line is stamped with the latest purchase cost (`_ah_unit_cost`); nobody types it.
 
+Accountability rules: a paid order can only be cancelled by the manager, with a reason. A product with stock in the book cannot be deleted until it is counted or written off to zero. Every price or buy-price change is in the audit trail (`price_changed`). Every product has stock tracking on. The dashboard lists losses (write-offs, use by the shop, count shortages), overrides, and paid orders not released after a day, with a plain-words `todo` list.
+
 Rules: reorder when days of stock < 15 or book < target (`reorder_level`); suggested order = max(0, target − book); average daily sales = units sold in the last 90 days ÷ 90; dead = stock with no sale in 180 days; slow = over 180 days of stock; zakat = 2.5% of the month's gross profit, matched on year and month. The tests are in `wordpress/al-hadeed-hardware/tests/run.php`.
 
 ## Workers and salaries — `/api/manager`  *(manager only)*

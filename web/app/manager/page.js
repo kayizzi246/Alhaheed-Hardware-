@@ -44,13 +44,16 @@ export default function ManagerConsole() {
     return r ? list(r.orders).slice(0, 7) : null;
   });
   const [error, setError] = useState('');
+  const [todo, setTodo] = useState(() => peek('/api/manager/stock/control')?.todo || null);
 
   const load = useCallback(async () => {
-    const [dash, sellers, orders] = await Promise.allSettled([
+    const [dash, sellers, orders, stock] = await Promise.allSettled([
       api('/api/manager/dashboard'),
       api('/api/reports/best-sellers?period=weekly'),
       api('/api/orders?limit=7'),
+      api('/api/manager/stock/control'),
     ]);
+    if (stock.status === 'fulfilled') setTodo(list(stock.value.todo));
 
     if (dash.status === 'fulfilled') setD(dash.value);
     if (sellers.status === 'fulfilled') setBest(list(sellers.value.products).slice(0, 5));
@@ -94,6 +97,26 @@ export default function ManagerConsole() {
           <Button asChild size="sm"><Link href="/manager/orders">All orders</Link></Button>
         </div>
       </header>
+
+      {/* The owner's short list: what is wrong, in plain words. */}
+      {todo && todo.length > 0 && (
+        <section className="mb-5 rounded-xl border border-line bg-surface">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
+            <h2 className="text-[15px] font-bold text-ink">Needs your attention</h2>
+            <Link href="/manager/stock" className="text-[13px] font-semibold text-brand hover:underline">Stock control</Link>
+          </div>
+          <ul className="divide-y divide-line">
+            {todo.slice(0, 5).map((t, n) => (
+              <li key={n}>
+                <Link href={t.link.startsWith('#') ? `/manager/stock${t.link}` : t.link} className="flex items-start gap-3 px-4 py-2.5 text-[13.5px] text-ink hover:bg-surface-2 sm:px-5">
+                  <span aria-hidden="true" className={cn('mt-1.5 size-2 shrink-0 rounded-full', t.level === 'bad' ? 'bg-bad' : t.level === 'warn' ? 'bg-warn' : 'bg-info')} />
+                  <span className="min-w-0 flex-1">{t.text}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Alert>{error}</Alert>
 

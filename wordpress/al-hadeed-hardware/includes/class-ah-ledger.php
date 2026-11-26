@@ -253,7 +253,46 @@ class AH_Ledger {
 		$now    = end( $months );
 		$prev   = prev( $months );
 
+		$losses     = self::losses();
+		$unreleased = self::unreleased();
+		$overrides  = self::recent_overrides();
+		$alert      = self::alert( $months );
+
+		// What the owner should look at today, in plain words, worst first.
+		$todo = array();
+		if ( $negative ) {
+			$todo[] = array( 'level' => 'bad', 'text' => sprintf( '%d %s below zero: sold more than was ever bought in. Record the missing purchase, or count the shelf.', count( $negative ), count( $negative ) === 1 ? 'item is' : 'items are' ), 'link' => '#negative' );
+		}
+		if ( $unreleased ) {
+			$todo[] = array( 'level' => 'bad', 'text' => sprintf( '%d paid %s not released by the store after a day. Check the goods are still here, or that the store recorded them.', count( $unreleased ), count( $unreleased ) === 1 ? 'order is' : 'orders are' ), 'link' => '#unreleased' );
+		}
+		if ( $alert['raised'] ) {
+			$todo[] = array( 'level' => 'bad', 'text' => sprintf( 'Profit margin this month is %s%%, under the usual %s%%. Check selling prices against the latest buying prices.', $alert['current'], $alert['average'] ), 'link' => '/manager/margins' );
+		}
+		if ( $losses['monthValue'] > 0 ) {
+			$todo[] = array( 'level' => 'warn', 'text' => sprintf( 'UGX %s of stock lost this month (damaged, used, or short at a count).', number_format( $losses['monthValue'] ) ), 'link' => '#losses' );
+		}
+		if ( $overrides ) {
+			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d %s let through by override in the last 30 days.', count( $overrides ), count( $overrides ) === 1 ? 'sale was' : 'sales were' ), 'link' => '#overrides' );
+		}
+		if ( $reorder ) {
+			$todo[] = array( 'level' => 'warn', 'text' => sprintf( '%d %s to reorder, about UGX %s.', count( $reorder ), count( $reorder ) === 1 ? 'item' : 'items', number_format( array_sum( wp_list_pluck( $reorder, 'orderCost' ) ) ) ), 'link' => '#reorder' );
+		}
+		$no_price = count( array_filter( $items, function ( $i ) { return $i['price'] <= 0; } ) );
+		if ( $no_price ) {
+			$todo[] = array( 'level' => 'info', 'text' => sprintf( '%d %s no selling price, so cannot be sold yet.', $no_price, 1 === $no_price ? 'product has' : 'products have' ), 'link' => '/manager/products' );
+		}
+		$last_count = self::last_count();
+		if ( ! $last_count || ( strtotime( current_time( 'Y-m-d' ) ) - strtotime( $last_count ) ) > 30 * DAY_IN_SECONDS ) {
+			$todo[] = array( 'level' => 'info', 'text' => $last_count ? sprintf( 'The shelf was last counted on %s. Count it at least once a month.', $last_count ) : 'The shelf has never been counted. A stock-take shows what is really there.', 'link' => '/manager/stock-take' );
+		}
+
 		return array(
+			'todo'       => $todo,
+			'losses'     => $losses,
+			'unreleased' => $unreleased,
+			'overrides'  => $overrides,
+			'lastCount'  => $last_count,
 			'summary'  => array(
 				'stockValue'   => $value,
 				'items'        => count( $items ),
@@ -266,7 +305,7 @@ class AH_Ledger {
 			'margin'   => array(
 				'thisMonth' => $now,
 				'lastMonth' => $prev ?: null,
-				'alert'     => self::alert( $months ),
+				'alert'     => $alert,
 			),
 			'reorder'  => $reorder,
 			'slow'     => $slow,
@@ -275,6 +314,87 @@ class AH_Ledger {
 			'months'   => array_values( $months ),
 			'vatIncluded' => self::vat_included(),
 		);
+	}
+
+	/**
+	 * Stock that left without being sold: written off, used by the shop,
+	 * short at a count, corrected down. Who recorded each, and what it
+	 * was worth at cost.
+	 */
+	public static function losses() {
+		global $wpdb;
+		$t     = AH_Install::table( 'stock_moves' );
+		$day   = self::day_sql();
+		$since = gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' -90 days' ) );
+		$month = current_time( 'Y-m' );
+		$where = "( kind IN ('damaged','own_use') OR ( kind IN ('count','correction') AND qty < 0 ) )";
+		$rows  = $wpdb->get_results( $wpdb->prepare(
+			"SELECT id, product_id, kind, -qty AS qty, unit_cost, note, ref, user_name, {$day} AS day
+			   FROM {$t} WHERE {$where} AND {$day} >= %s ORDER BY day DESC, id DESC",
+			$since
+		), ARRAY_A );
+		$out   = array();
+		$month_value = 0;
+		$value_90    = 0;
+		foreach ( (array) $rows as $r ) {
+			$v = (int) $r['qty'] * (int) $r['unit_cost'];
+			$value_90 += $v;
+			if ( substr( $r['day'], 0, 7 ) === $month ) {
+				$month_value += $v;
+			}
+			$out[] = array(
+				'id'    => (int) $r['id'],
+				'date'  => $r['day'],
+				'name'  => AH_Shape::text( get_the_title( (int) $r['product_id'] ) ) ?: 'Deleted product',
+				'what'  => 'count' === $r['kind'] ? 'Short at a count' : ( AH_Stock::KINDS[ $r['kind'] ] ?? $r['kind'] ),
+				'qty'   => (int) $r['qty'],
+				'value' => $v,
+				'note'  => (string) $r['note'],
+				'by'    => (string) $r['user_name'],
+			);
+		}
+		return array( 'monthValue' => $month_value, 'value90' => $value_90, 'lines' => $out );
+	}
+
+	/**
+	 * Paid for more than a day ago and still not released. Either the
+	 * customer has not come, or the goods left without the store
+	 * recording it; both are worth a look.
+	 */
+	public static function unreleased() {
+		$cut = strtotime( current_time( 'mysql' ) ) - DAY_IN_SECONDS;
+		$out = array();
+		foreach ( wc_get_orders( array( 'status' => array( 'ah-paid', 'ah-verified', 'processing' ), 'limit' => -1 ) ) as $o ) {
+			$paid_at = $o->get_date_modified() ? $o->get_date_modified()->getOffsetTimestamp() : 0;
+			if ( $paid_at && $paid_at > $cut ) {
+				continue;
+			}
+			$row   = AH_Shape::order( $o );
+			$out[] = array(
+				'id'       => $row['id'],
+				'orderNo'  => $row['order_no'],
+				'customer' => $row['company_name'] ?: $row['ordered_by_name'],
+				'total'    => $row['total'],
+				'status'   => $row['status_label'],
+				'since'    => $paid_at ? gmdate( 'Y-m-d H:i', $paid_at ) : '',
+				'days'     => $paid_at ? (int) floor( ( strtotime( current_time( 'mysql' ) ) - $paid_at ) / DAY_IN_SECONDS ) : null,
+			);
+		}
+		return $out;
+	}
+
+	private static function recent_overrides() {
+		global $wpdb;
+		$t = AH_Install::table( 'overrides' );
+		return (array) $wpdb->get_results( $wpdb->prepare(
+			"SELECT id, rule, detail, reason, user_name, created_at FROM {$t} WHERE created_at >= %s ORDER BY id DESC",
+			gmdate( 'Y-m-d', strtotime( current_time( 'Y-m-d' ) . ' -30 days' ) )
+		), ARRAY_A );
+	}
+
+	private static function last_count() {
+		global $wpdb;
+		return $wpdb->get_var( 'SELECT MAX(count_date) FROM ' . AH_Install::table( 'stock_counts' ) . " WHERE status = 'approved'" );
 	}
 
 	// -----------------------------------------------------------------

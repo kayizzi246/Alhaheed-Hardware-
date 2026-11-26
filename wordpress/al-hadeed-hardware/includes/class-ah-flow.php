@@ -332,6 +332,19 @@ class AH_Flow {
 			);
 		}
 
+		// Once money has been taken, cancelling is the manager's call and
+		// needs a reason: a paid order quietly cancelled is the oldest way
+		// for takings to go missing.
+		if ( ! in_array( $status, array( 'pending_payment', 'rejected' ), true ) ) {
+			$who = get_user_by( 'id', (int) $user_id );
+			if ( ! $who || 'manager' !== AH_Roles::desk_of( $who ) ) {
+				return new WP_Error( 'ah_paid_order', 'This order is paid. Only the manager can cancel it.', array( 'status' => 403 ) );
+			}
+			if ( mb_strlen( trim( (string) $reason ) ) < 5 ) {
+				return new WP_Error( 'ah_need_reason', 'Say why a paid order is being cancelled, and how the money goes back.', array( 'status' => 400 ) );
+			}
+		}
+
 		$order->update_meta_data( '_ah_cancel_reason', $reason ? sanitize_text_field( $reason ) : null );
 		$order->set_status( 'cancelled', $reason ? $reason : 'Cancelled.' );
 		$order->save();
