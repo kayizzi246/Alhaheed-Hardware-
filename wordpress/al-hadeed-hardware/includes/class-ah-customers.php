@@ -52,6 +52,71 @@ class AH_Customers {
 				'callback'            => array( __CLASS__, 'one' ),
 			)
 		);
+
+		// Taking customers off the list: the manager only, one or many.
+		register_rest_route(
+			$ns,
+			'/customers/delete',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'permission_callback' => AH_Rest::desk( array( 'manager' ) ),
+				'callback'            => array( __CLASS__, 'remove' ),
+			)
+		);
+	}
+
+	/**
+	 * Delete customers. What they bought stays in the books: each order
+	 * keeps their name and number and becomes a walk-in sale, so sales,
+	 * margins and the stock book do not change. A customer with an order
+	 * still open (not paid, or paid and not yet delivered) is refused
+	 * until it is finished, and company accounts are left to the
+	 * company page.
+	 */
+	public static function remove( $req ) {
+		$ids = array_unique( array_filter( array_map( 'intval', (array) $req->get_param( 'ids' ) ) ) );
+		if ( ! $ids ) {
+			return new WP_Error( 'ah_nothing_chosen', 'Choose the customers to delete', array( 'status' => 400 ) );
+		}
+		$open    = array( 'pending', 'on-hold', 'ah-paid', 'ah-verified', 'processing' );
+		$deleted = array();
+		$kept    = array();
+		require_once ABSPATH . 'wp-admin/includes/user.php';
+		foreach ( $ids as $id ) {
+			$user = get_user_by( 'id', $id );
+			if ( ! $user || AH_Roles::desk_of( $user ) || ! in_array( 'customer', (array) $user->roles, true ) ) {
+				$kept[] = array( 'id' => $id, 'name' => $user ? $user->display_name : '#' . $id, 'why' => 'Not a customer' );
+				continue;
+			}
+			if ( 'individual' !== ( get_user_meta( $id, 'ah_account_type', true ) ?: 'individual' ) ) {
+				$kept[] = array( 'id' => $id, 'name' => $user->display_name, 'why' => 'A company account. Manage it on the company page.' );
+				continue;
+			}
+			$orders = wc_get_orders( array( 'customer_id' => $id, 'limit' => -1 ) );
+			$busy   = array_filter( $orders, function ( $o ) use ( $open ) { return in_array( $o->get_status(), $open, true ); } );
+			if ( $busy ) {
+				$kept[] = array( 'id' => $id, 'name' => $user->display_name, 'why' => count( $busy ) . ' order(s) still open. Finish or cancel them first.' );
+				continue;
+			}
+			foreach ( $orders as $o ) {
+				if ( ! $o->get_billing_first_name() ) {
+					$o->set_billing_first_name( $user->display_name );
+				}
+				if ( ! $o->get_billing_phone() ) {
+					$o->set_billing_phone( (string) get_user_meta( $id, 'ah_phone', true ) );
+				}
+				$o->update_meta_data( '_ah_former_customer', $user->display_name );
+				$o->set_customer_id( 0 );
+				$o->save();
+			}
+			wp_delete_user( $id );
+			$deleted[] = $user->display_name;
+		}
+		if ( $deleted ) {
+			$me = AH_Auth::current();
+			AH_Flow::log_event( 0, 'manager', 'customers_deleted', null, null, $me ? $me->ID : null, sprintf( '%d deleted: %s', count( $deleted ), implode( ', ', array_slice( $deleted, 0, 20 ) ) ) );
+		}
+		return array( 'deleted' => count( $deleted ), 'names' => $deleted, 'kept' => $kept );
 	}
 
 	/**

@@ -32,7 +32,7 @@ const HOW = [
  * they are buying, then the money. Tapping a customer shows everything
  * they have ever bought, and starts a new sale for them.
  */
-export default function Customers({ canAdd = false, from = '/api/customers' }) {
+export default function Customers({ canAdd = false, from = '/api/customers', canDelete = false }) {
   const [customers, setCustomers] = useState(() => {
     const r = peek(from);
     return r ? list(r.customers) : null;
@@ -44,6 +44,8 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
   const [viewing, setViewing] = useState(null); // a customer row
   const [paying, setPaying] = useState(null);   // { order, customer }
   const [fresh, setFresh] = useState(null);
+  const [picked, setPicked] = useState(() => new Set());
+  const [deleting, setDeleting] = useState(false);
   const [where, setWhere] = useState('all');    // all | shop | app
   const [walkIns, setWalkIns] = useState(() => peek(from)?.walkIns || null);
   const [nameless, setNameless] = useState(false);
@@ -152,9 +154,27 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
           </Empty>
         ) : (
           <TableWrap>
+            {canDelete && picked.size > 0 && (
+              <div className="flex flex-wrap items-center gap-3 border-b border-line bg-surface-2 px-4 py-2.5 text-[13.5px] sm:px-6">
+                <span className="font-semibold text-ink">{picked.size} selected</span>
+                <Button size="sm" variant="danger" onClick={() => setDeleting(true)}>Delete {picked.size}</Button>
+                <button type="button" onClick={() => setPicked(new Set())} className="font-semibold text-ink-muted hover:text-ink">Clear</button>
+              </div>
+            )}
             <Table>
               <thead>
                 <tr>
+                  {canDelete && (
+                    <Th className="w-10">
+                      <input
+                        type="checkbox"
+                        aria-label="Select every customer shown"
+                        className="size-4 cursor-pointer accent-[rgb(var(--brand))]"
+                        checked={rows.length > 0 && rows.every((c) => picked.has(c.id))}
+                        onChange={(e) => setPicked(e.target.checked ? new Set(rows.map((c) => c.id)) : new Set())}
+                      />
+                    </Th>
+                  )}
                   <Th>Name</Th><Th>Phone</Th><Th>Buys</Th>
                   <Th num>Orders</Th><Th num>In the shop</Th><Th num>Total spent</Th><Th>Last bought</Th><Th>Status</Th>
                 </tr>
@@ -167,8 +187,19 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
                     <Tr
                       key={c.id}
                       onClick={() => setViewing(c)}
-                      className={cn('cursor-pointer', fresh === c.id && 'bg-brand-soft/60')}
+                      className={cn('cursor-pointer', fresh === c.id && 'bg-brand-soft/60', picked.has(c.id) && 'bg-brand-soft/40')}
                     >
+                      {canDelete && (
+                        <Td onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${c.fullName}`}
+                            className="size-4 cursor-pointer accent-[rgb(var(--brand))]"
+                            checked={picked.has(c.id)}
+                            onChange={(e) => setPicked((p) => { const n = new Set(p); if (e.target.checked) n.add(c.id); else n.delete(c.id); return n; })}
+                          />
+                        </Td>
+                      )}
                       <Td>
                         <button
                           type="button"
@@ -230,6 +261,14 @@ export default function Customers({ canAdd = false, from = '/api/customers' }) {
       )}
 
       {nameless && <NamelessSales onClose={() => setNameless(false)} />}
+
+      {deleting && (
+        <DeleteCustomers
+          people={all.filter((c) => picked.has(c.id))}
+          onClose={() => setDeleting(false)}
+          onDone={(msg) => { setDeleting(false); setPicked(new Set()); setNotice(msg); load(); }}
+        />
+      )}
 
       {viewing && (
         <CustomerHistory
@@ -804,6 +843,65 @@ function NamelessSales({ onClose }) {
           <SaleList orders={orders} />
         </div>
       )}
+    </Modal>
+  );
+}
+
+/**
+ * Take customers off the list. What they bought stays in the books
+ * under their name, so no sale disappears.
+ */
+function DeleteCustomers({ people, onClose, onDone }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [kept, setKept] = useState(null);
+
+  async function go() {
+    setBusy(true);
+    setError('');
+    try {
+      const r = await api('/api/customers/delete', { method: 'POST', body: { ids: people.map((p) => p.id) } });
+      if (list(r.kept).length) {
+        setKept({ deleted: r.deleted, kept: r.kept });
+        setBusy(false);
+        return;
+      }
+      onDone(`${r.deleted} ${r.deleted === 1 ? 'customer' : 'customers'} deleted. Their past sales stay in the books.`);
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  }
+
+  if (kept) {
+    return (
+      <Modal title={`${kept.deleted} deleted`} onClose={() => onDone(`${kept.deleted} deleted, ${kept.kept.length} kept.`)}
+        footer={<Button onClick={() => onDone(`${kept.deleted} deleted, ${kept.kept.length} kept.`)}>OK</Button>}>
+        <p className="mb-3 text-[14px] text-ink">These were kept:</p>
+        <ul className="space-y-2 text-[13.5px]">
+          {kept.kept.map((k) => <li key={k.id}><b className="text-ink">{k.name}</b><span className="block text-ink-muted">{k.why}</span></li>)}
+        </ul>
+      </Modal>
+    );
+  }
+
+  const one = people.length === 1;
+  return (
+    <Modal
+      title={one ? `Delete ${people[0].fullName}?` : `Delete ${people.length} customers?`}
+      onClose={onClose}
+      footer={<><Button variant="outline" onClick={onClose}>Keep them</Button><Button variant="danger" disabled={busy} onClick={go}>{busy ? 'Deleting…' : one ? 'Delete' : `Delete ${people.length}`}</Button></>}
+    >
+      <div className="space-y-3 text-[14px] leading-relaxed text-ink">
+        <Alert>{error}</Alert>
+        {!one && (
+          <ul className="max-h-[180px] overflow-y-auto rounded-sm border border-line px-3 py-2 text-[13.5px]">
+            {people.map((p) => <li key={p.id}>{p.fullName} <span className="tnum text-ink-muted">{p.phone}</span></li>)}
+          </ul>
+        )}
+        <p>{one ? 'They come' : 'They come'} off the customer list and can no longer sign in to the app with that account.</p>
+        <p className="text-ink-muted">Everything they bought stays in the sales, the stock book and the reports under their name. Anyone with an order still open is kept until it is finished.</p>
+      </div>
     </Modal>
   );
 }

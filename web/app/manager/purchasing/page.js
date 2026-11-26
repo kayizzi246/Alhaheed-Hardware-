@@ -156,7 +156,17 @@ export default function Purchasing() {
                         <Td num className={cn(b.amount < 0 && 'text-ok')}>{money(b.amount)}</Td>
                         <Td num className="font-semibold text-ink">{b.kind === 'bill' ? money(b.owed) : ''}</Td>
                         <Td>{b.kind === 'bill' && (b.poId ? <Match m={b.match} /> : <Chip tone="pending">No purchase order</Chip>)}</Td>
-                        <Td>{b.kind === 'bill' && b.owed > 0 && <Button size="sm" onClick={() => setDialog({ kind: 'pay', bill: b })}>Pay</Button>}</Td>
+                        <Td>
+                          <div className="flex justify-end gap-2">
+                            {b.kind === 'bill' && b.owed > 0 && <Button size="sm" onClick={() => setDialog({ kind: 'pay', bill: b })}>Pay</Button>}
+                            {b.kind === 'bill' && b.paid === 0 && (
+                              <Button size="sm" variant="outline" className="text-bad" onClick={async () => {
+                                if (!window.confirm(`Delete invoice ${b.invoiceNo} from ${b.supplier}? Only for a bill typed by mistake.`)) return;
+                                try { await api(`/api/manager/supplier-bills/${b.id}/delete`, { method: 'POST', body: {} }); done(`Invoice ${b.invoiceNo} deleted.`); } catch (e) { setError(e.message); }
+                              }}>Delete</Button>
+                            )}
+                          </div>
+                        </Td>
                       </Tr>
                     ))}
                   </tbody>
@@ -309,6 +319,18 @@ function ShowPo({ id, onClose, onBill }) {
     setBusy(false);
   }
 
+  async function remove() {
+    if (!window.confirm('Delete this purchase order? Use this only for an order typed by mistake.')) return;
+    setBusy(true);
+    try {
+      await api(`/api/manager/purchase-orders/${id}/delete`, { method: 'POST', body: {} });
+      onClose();
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  }
+
   async function close() {
     if (!window.confirm('Nothing more is coming on this order? What was not delivered will not be owed.')) return;
     setBusy(true);
@@ -324,7 +346,8 @@ function ShowPo({ id, onClose, onBill }) {
   return (
     <Modal wide title={po ? `${po.poNo} · ${po.supplier}` : 'Purchase order'} description={po ? `${(STATUS[po.status] || [po.status])[0]} · ordered by ${po.createdBy}` : ''} onClose={onClose}
       footer={po && <>
-        {open && <Button variant="ghost" className="mr-auto" disabled={busy} onClick={close}>Close the order</Button>}
+        {po.received === 0 && po.billed === 0 && <Button variant="ghost" className="mr-auto text-bad hover:bg-bad-bg" disabled={busy} onClick={remove}>Delete</Button>}
+        {open && <Button variant="ghost" className={po.received === 0 && po.billed === 0 ? '' : 'mr-auto'} disabled={busy} onClick={close}>Close the order</Button>}
         <Button variant="outline" onClick={() => onBill(po)}>Record the supplier&rsquo;s bill</Button>
         {open && <Button disabled={busy || !fdn.trim() || !typed.length} onClick={receive}>{busy ? 'Saving…' : 'Receive into stock'}</Button>}
       </>}>

@@ -6,5 +6,5 @@ import Customers from '@/components/Customers';
 export default function ManagerCustomers() {
   // Its long-standing address, so this screen keeps working on a site
   // whose plugin has not been updated yet. The cashier's is new.
-  return <Customers canAdd from="/api/manager/customers" />;
+  return <Customers canAdd canDelete from="/api/manager/customers" />;
 }

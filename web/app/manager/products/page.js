@@ -333,6 +333,7 @@ export default function ManagerProducts() {
           onClose={() => setHistory(null)}
           onStock={() => { setMoving(history); setHistory(null); }}
           onEdit={() => { setForm(history); setHistory(null); }}
+          onDelete={() => { setDeleting([history]); setHistory(null); }}
         />
       )}
       {importing && (
@@ -739,7 +740,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
  * with what came in (debit), what went out (credit) and the balance
  * after each, worked out from the stock book itself.
  */
-function History({ product, onClose, onStock, onEdit }) {
+function History({ product, onClose, onStock, onEdit, onDelete }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [kind, setKind] = useState('');
@@ -782,6 +783,7 @@ function History({ product, onClose, onStock, onEdit }) {
       onClose={onClose}
       footer={
         <>
+          <Button variant="ghost" className="mr-auto text-bad hover:bg-bad-bg hover:text-bad" onClick={onDelete}>Delete</Button>
           <Button variant="outline" onClick={onEdit}>Edit</Button>
           <Button onClick={onStock}>Receive or adjust</Button>
         </>

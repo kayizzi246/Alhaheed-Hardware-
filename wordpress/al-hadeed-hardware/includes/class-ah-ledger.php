@@ -167,7 +167,7 @@ class AH_Ledger {
 			  WHERE tr.object_id IN ({$ids})",
 			ARRAY_A
 		) as $c ) {
-			$cats[ (int) $c['object_id'] ] = $c['name'];
+			$cats[ (int) $c['object_id'] ] = AH_Shape::text( $c['name'] );
 		}
 
 		$today = strtotime( current_time( 'Y-m-d' ) );

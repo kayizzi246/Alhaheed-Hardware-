@@ -42,6 +42,8 @@ class AH_Purchasing {
 		$route( '/manager/purchase-orders/(?P<id>\d+)/close', $post, 'close_po' );
 		$route( '/manager/supplier-bills', $post, 'add_bill' );
 		$route( '/manager/supplier-bills/(?P<id>\d+)/pay', $post, 'pay_bill' );
+		$route( '/manager/purchase-orders/(?P<id>\d+)/delete', $post, 'delete_po' );
+		$route( '/manager/supplier-bills/(?P<id>\d+)/delete', $post, 'delete_bill' );
 		$route( '/manager/supplier-returns', $post, 'return_goods' );
 	}
 
@@ -274,6 +276,45 @@ class AH_Purchasing {
 		), array( 'id' => (int) $h['id'] ) );
 		self::audit( $got ? 'po_closed' : 'po_cancelled', $h['po_no'] . ' · ' . trim( sanitize_text_field( (string) $req->get_param( 'reason' ) ) ) );
 		return self::show_po( array( 'id' => (int) $h['id'] ) );
+	}
+
+	/**
+	 * Delete a purchase order typed by mistake. Only while nothing has
+	 * been received or billed on it: after that it is part of the books.
+	 */
+	public static function delete_po( $req ) {
+		global $wpdb;
+		$h = self::po( (int) $req['id'] );
+		if ( ! $h ) {
+			return self::err( 'ah_not_found', 'That purchase order was not found', 404 );
+		}
+		$got   = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COALESCE(SUM(qty_received),0) FROM ' . self::t( 'po_lines' ) . ' WHERE po_id = %d', $h['id'] ) );
+		$bills = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . self::t( 'supplier_bills' ) . ' WHERE po_id = %d', $h['id'] ) );
+		if ( $got || $bills ) {
+			return self::err( 'ah_po_used', 'Goods have been received or billed on this order, so it stays in the books. Use Close the order instead.', 409 );
+		}
+		$wpdb->delete( self::t( 'po_lines' ), array( 'po_id' => (int) $h['id'] ) );
+		$wpdb->delete( self::t( 'purchase_orders' ), array( 'id' => (int) $h['id'] ) );
+		self::audit( 'po_deleted', $h['po_no'] . ' to ' . $h['supplier'] );
+		return array( 'ok' => true );
+	}
+
+	/** Delete a bill typed by mistake, only while nothing is paid on it. */
+	public static function delete_bill( $req ) {
+		global $wpdb;
+		$b = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . self::t( 'supplier_bills' ) . ' WHERE id = %d', (int) $req['id'] ), ARRAY_A );
+		if ( ! $b ) {
+			return self::err( 'ah_not_found', 'That bill was not found', 404 );
+		}
+		if ( 'bill' !== $b['kind'] ) {
+			return self::err( 'ah_credit', 'A credit note comes from goods sent back and stays with that return.', 409 );
+		}
+		if ( (int) $b['paid'] > 0 ) {
+			return self::err( 'ah_bill_paid', 'Money has been paid on this bill, so it stays in the books.', 409 );
+		}
+		$wpdb->delete( self::t( 'supplier_bills' ), array( 'id' => (int) $b['id'] ) );
+		self::audit( 'bill_deleted', sprintf( '%s invoice %s, UGX %s', $b['supplier'], $b['invoice_no'], number_format( (int) $b['amount'] ) ) );
+		return array( 'ok' => true );
 	}
 
 	// -----------------------------------------------------------------
