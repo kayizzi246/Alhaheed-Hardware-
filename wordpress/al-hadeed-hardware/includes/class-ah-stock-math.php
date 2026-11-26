@@ -40,9 +40,9 @@ class AH_Stock_Math {
 	public static function book_stock( array $lines ) {
 		$total = 0;
 		foreach ( $lines as $q ) {
-			$total += (int) $q;
+			$total += (float) $q;
 		}
-		return $total;
+		return round( $total, 2 );
 	}
 
 	/** Units sold a day, over the last 90 days. */
@@ -70,7 +70,7 @@ class AH_Stock_Math {
 	}
 
 	public static function suggested_order( $book, $min_level ) {
-		return max( 0, (int) $min_level - (int) $book );
+		return max( 0, (float) $min_level - (float) $book );
 	}
 
 	/** Stock on the shelf and nothing sold for 180 days, or ever. */
@@ -94,7 +94,7 @@ class AH_Stock_Math {
 	 */
 	public static function sale_problems( $book, $reserved, $qty, $price, $cost ) {
 		$out = array();
-		if ( (int) $book - (int) $reserved - (int) $qty < 0 ) {
+		if ( (float) $book - (float) $reserved - (float) $qty < 0 ) {
 			$out[] = 'negative_stock';
 		}
 		if ( $cost > 0 && $price < $cost ) {
@@ -108,7 +108,7 @@ class AH_Stock_Math {
 	 * plus the new units at their price, over all of them.
 	 */
 	public static function weighted_average( $on_hand, $avg, $qty, $cost ) {
-		$units = max( 0, (int) $on_hand ) + max( 0, (int) $qty );
+		$units = max( 0, (float) $on_hand ) + max( 0, (float) $qty );
 		if ( $units <= 0 ) {
 			return (int) $cost;
 		}

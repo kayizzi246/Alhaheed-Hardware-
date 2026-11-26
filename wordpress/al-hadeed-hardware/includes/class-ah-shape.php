@@ -82,7 +82,7 @@ class AH_Shape {
 		}
 
 		$stock = $product->get_manage_stock()
-			? (int) $product->get_stock_quantity()
+			? (float) $product->get_stock_quantity()
 			: ( $product->is_in_stock() ? 9999 : 0 );
 
 		return array(
@@ -237,7 +237,7 @@ class AH_Shape {
 		$out = array();
 		foreach ( $order->get_items() as $item ) {
 			$product = $item->get_product();
-			$qty     = (int) $item->get_quantity();
+			$qty     = (float) $item->get_quantity();
 			$total   = self::money( $item->get_total() );
 
 			$out[] = array(
@@ -249,7 +249,7 @@ class AH_Shape {
 				'quantity'     => $qty,
 				'unit_price'   => $qty > 0 ? (int) round( $total / $qty ) : $total,
 				'line_total'   => $total,
-				'qty_released' => (int) $item->get_meta( '_ah_qty_released' ),
+				'qty_released' => (float) $item->get_meta( '_ah_qty_released' ),
 			);
 		}
 		return $out;

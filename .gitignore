@@ -15,3 +15,6 @@ backend/data/
 # so the folder is the source and the zip is an artefact. It is kept in
 # the repository anyway, because the shop installs it by upload and
 # should not need a build step to get it.
+
+# Business data (prices, suppliers, stock) stays on this computer, never on GitHub.
+private/

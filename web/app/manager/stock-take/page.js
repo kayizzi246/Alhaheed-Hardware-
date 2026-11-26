@@ -11,13 +11,16 @@ import {
 const nice = (d) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : '');
 
 /** "2 short", "1 extra", "Matches", in words anyone reads at a glance. */
+const q = (n) => String(Math.round(n * 100) / 100);
+
 function verdict(diff, unit, cost) {
   if (diff === null || diff === undefined) return { text: 'Not counted yet', tone: 'text-ink-faint' };
+  diff = Math.round(diff * 100) / 100;
   if (diff === 0) return { text: 'Matches the book', tone: 'text-ok' };
   const v = cost ? ` · ${money(Math.abs(diff) * cost)}` : '';
   return diff < 0
-    ? { text: `${-diff} ${unit} short${v}`, tone: 'text-bad' }
-    : { text: `${diff} ${unit} extra${v}`, tone: 'text-warn' };
+    ? { text: `${q(-diff)} ${unit} short${v}`, tone: 'text-bad' }
+    : { text: `${q(diff)} ${unit} extra${v}`, tone: 'text-warn' };
 }
 
 function Steps({ at }) {
@@ -58,6 +61,7 @@ export default function StockTake() {
   const [busy, setBusy] = useState(false);
   const [otherDay, setOtherDay] = useState(false);
   const [date, setDate] = useState(today());
+  const [note, setNote] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -78,7 +82,7 @@ export default function StockTake() {
     setBusy(true);
     setError('');
     try {
-      const r = await api('/api/manager/stocktakes/start', { method: 'POST', body: { date } });
+      const r = await api('/api/manager/stocktakes/start', { method: 'POST', body: { date, note } });
       setOpen(r.count.id);
     } catch (e) {
       setError(e.message);
@@ -120,6 +124,9 @@ export default function StockTake() {
           </ol>
           <div className="flex flex-wrap items-end gap-3">
             <Button size="lg" disabled={busy} onClick={start}>{busy ? 'Starting…' : otherDay ? `Start counting for ${nice(date)}` : 'Start counting today'}</Button>
+            <Field label="Note (optional)" className="min-w-[220px]">
+              <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Month-end count, plates store" />
+            </Field>
             {otherDay ? (
               <Field label="Day of the count"><Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} /></Field>
             ) : (
@@ -174,6 +181,7 @@ function CountScreen({ id, onLeave }) {
   const timer = useRef(null);
   const pending = useRef({});
   const inputs = useRef({});
+  const [filled, setFilled] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -237,6 +245,35 @@ function CountScreen({ id, onLeave }) {
   const c = data?.count;
   const counted = c?.counted || 0;
 
+  async function fillFromSheet(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setError('');
+    setSaving(true);
+    try {
+      const { readSheet } = await import('@/lib/sheet');
+      const parsed = await readSheet(file);
+      const byCode = new Map(items.map((i) => [String(i.code).trim().toLowerCase(), i]));
+      const lines = [];
+      const missing = [];
+      for (const row of parsed.rows) {
+        const item = byCode.get(String(row.code || '').trim().toLowerCase());
+        const n = row.stock === '' || row.stock === undefined ? null : Number(row.stock);
+        if (!item) { missing.push(row.code); continue; }
+        if (n === null || Number.isNaN(n)) continue;
+        lines.push({ productId: item.id, counted: Math.max(0, Math.round(n * 100) / 100) });
+      }
+      if (!lines.length) throw new Error('No rows matched an item. The sheet needs a Code (or SKU) column and a Counted column.');
+      const r = await api(`/api/manager/stocktakes/${id}/lines`, { method: 'POST', body: { lines } });
+      setData(r);
+      setFilled(`${lines.length} items filled from ${file.name}.${missing.length ? ` ${missing.length} codes did not match an item: ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? '…' : ''}` : ''} Check them, then approve.`);
+    } catch (err) {
+      setError(err.message);
+    }
+    setSaving(false);
+  }
+
   async function approve() {
     setBusy(true);
     await flush();
@@ -291,6 +328,7 @@ function CountScreen({ id, onLeave }) {
       </PageHead>
       <Steps at={view === 'count' ? 0 : 1} />
       <Alert>{error}</Alert>
+      <Alert kind="ok" onDone={() => setFilled('')}>{filled}</Alert>
 
       {view === 'count' ? (
         <>
@@ -309,7 +347,14 @@ function CountScreen({ id, onLeave }) {
                   <CatChip key={k} on={cat === k} onClick={() => setCat(k)} label={k} sub={`${v.done}/${v.all}`} done={v.done === v.all} />
                 ))}
               </div>
-              <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find an item by name or code" />
+              <div className="flex flex-wrap gap-2">
+                <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find an item by name or code" className="min-w-[200px] flex-1" />
+                <label className="inline-flex h-11 cursor-pointer items-center rounded-sm border border-line bg-surface px-4 text-[13.5px] font-semibold text-ink hover:bg-surface-2">
+                  Fill from a spreadsheet
+                  <input type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={fillFromSheet} />
+                </label>
+              </div>
+              <p className="text-[12.5px] text-ink-muted">A spreadsheet with a <b>Code</b> (or SKU) column and a <b>Counted</b> column fills every item at once. You still check and approve.</p>
             </div>
           </Card>
 
@@ -334,7 +379,8 @@ function CountScreen({ id, onLeave }) {
                       <Input
                         ref={(el) => { inputs.current[n] = el; }}
                         type="number"
-                        inputMode="numeric"
+                        inputMode="decimal"
+                        step="any"
                         min="0"
                         value={v}
                         onChange={(e) => put(i.id, e.target.value)}

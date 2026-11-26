@@ -133,9 +133,9 @@ class AH_Stocktake {
 				'unit'        => $i['unit'],
 				'cost'        => $i['cost'],
 				'bookNow'     => $i['book'],
-				'bookAtCount' => $l ? (int) $l['book_qty'] : null,
-				'counted'     => $l ? (int) $l['counted_qty'] : null,
-				'variance'    => $l ? (int) $l['variance'] : null,
+				'bookAtCount' => $l ? (float) $l['book_qty'] : null,
+				'counted'     => $l ? (float) $l['counted_qty'] : null,
+				'variance'    => $l ? (float) $l['variance'] : null,
 				'varianceValue' => $l ? (int) $l['variance_value'] : null,
 			);
 			unset( $lines[ $i['id'] ] );
@@ -145,7 +145,7 @@ class AH_Stocktake {
 			$items[] = array(
 				'id' => $pid, 'name' => $l['product_name'], 'code' => '', 'category' => '', 'unit' => '',
 				'cost' => (int) $l['unit_cost'], 'bookNow' => null, 'bookAtCount' => (int) $l['book_qty'],
-				'counted' => (int) $l['counted_qty'], 'variance' => (int) $l['variance'], 'varianceValue' => (int) $l['variance_value'],
+				'counted' => (float) $l['counted_qty'], 'variance' => (float) $l['variance'], 'varianceValue' => (int) $l['variance_value'],
 			);
 		}
 
@@ -178,7 +178,7 @@ class AH_Stocktake {
 				$wpdb->delete( $table, array( 'count_id' => (int) $h['id'], 'product_id' => $pid ) );
 				continue;
 			}
-			$counted = (int) $raw;
+			$counted = round( (float) $raw, 2 );
 			if ( $counted < 0 ) {
 				return self::err( 'ah_bad_qty', 'A count cannot be below zero' );
 			}
@@ -188,13 +188,13 @@ class AH_Stocktake {
 			}
 			$book = AH_Ledger::book( $pid );
 			$cost = AH_Stock::cost_of( $pid );
-			$var  = $counted - $book;
+			$var  = round( $counted - $book, 2 );
 			$wpdb->query( $wpdb->prepare(
 				"INSERT INTO {$table} (count_id, product_id, product_name, book_qty, counted_qty, variance, unit_cost, variance_value, counted_by, counted_at)
-				 VALUES (%d, %d, %s, %d, %d, %d, %d, %d, %d, %s)
+				 VALUES (%d, %d, %s, %f, %f, %f, %d, %d, %d, %s)
 				 ON DUPLICATE KEY UPDATE book_qty = VALUES(book_qty), counted_qty = VALUES(counted_qty), variance = VALUES(variance),
 				   unit_cost = VALUES(unit_cost), variance_value = VALUES(variance_value), counted_by = VALUES(counted_by), counted_at = VALUES(counted_at)",
-				$h['id'], $pid, $product->get_name(), $book, $counted, $var, $cost, $var * $cost, $user->ID, current_time( 'mysql' )
+				$h['id'], $pid, $product->get_name(), $book, $counted, $var, $cost, (int) round( $var * $cost ), $user->ID, current_time( 'mysql' )
 			) );
 			++$saved;
 		}
@@ -218,21 +218,28 @@ class AH_Stocktake {
 
 		$posted = 0;
 		foreach ( $lines as $l ) {
-			if ( 0 === (int) $l['variance'] ) {
-				continue;
-			}
 			$product = wc_get_product( (int) $l['product_id'] );
 			if ( ! $product ) {
 				continue;
 			}
-			AH_Stock::adjust( $product, (int) $l['variance'], 'count', array(
-				'note'      => 'stock count',
-				'ref'       => 'Count #' . $h['id'],
-				'moved_on'  => $h['count_date'],
-				'count_id'  => (int) $h['id'],
-				'unit_cost' => (int) $l['unit_cost'],
-			) );
-			++$posted;
+			if ( abs( (float) $l['variance'] ) >= 0.005 ) {
+				AH_Stock::adjust( $product, (float) $l['variance'], 'count', array(
+					'note'      => 'stock count' . ( $h['note'] ? ': ' . $h['note'] : '' ),
+					'ref'       => 'Count #' . $h['id'],
+					'moved_on'  => $h['count_date'],
+					'count_id'  => (int) $h['id'],
+					'unit_cost' => (int) $l['unit_cost'],
+				) );
+				++$posted;
+			}
+			// The count is the truth: the shop's own figure is set to the
+			// book, so any drift from before is settled here too.
+			$product = wc_get_product( (int) $l['product_id'] );
+			if ( ! $product->get_manage_stock() ) {
+				$product->set_manage_stock( true );
+				$product->save();
+			}
+			wc_update_product_stock( $product, AH_Ledger::book( $product->get_id() ), 'set' );
 		}
 
 		$user = AH_Auth::current();

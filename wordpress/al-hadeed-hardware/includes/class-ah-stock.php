@@ -56,6 +56,10 @@ class AH_Stock {
 		// However a product is made (the panel, an import, the back
 		// office), it is counted from the start.
 		add_action( 'woocommerce_new_product', array( __CLASS__, 'track_new' ), 10, 1 );
+		// Steel is sold by the half length and the half sheet: stock and
+		// order quantities keep two decimals instead of WooCommerce's whole numbers.
+		remove_filter( 'woocommerce_stock_amount', 'intval' );
+		add_filter( 'woocommerce_stock_amount', array( __CLASS__, 'stock_amount' ), 99 );
 		add_action( 'woocommerce_reduce_order_item_stock', array( __CLASS__, 'on_sold' ), 10, 3 );
 		add_action( 'woocommerce_restore_order_item_stock', array( __CLASS__, 'on_restored' ), 10, 4 );
 	}
@@ -150,7 +154,7 @@ class AH_Stock {
 		}
 		$id      = $product->get_id();
 		$tracked = (bool) $product->get_manage_stock();
-		$stock   = $tracked ? (int) $product->get_stock_quantity() : null;
+		$stock   = $tracked ? (float) $product->get_stock_quantity() : null;
 		$cost    = (int) get_post_meta( $id, '_ah_cost', true );
 		$price   = (int) $s['price'];
 		$reorder = (int) $s['reorder_level'];
@@ -159,7 +163,7 @@ class AH_Stock {
 		if ( null === $sold ) {
 			$sold = self::sold_since( gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - 30 * DAY_IN_SECONDS ), $id );
 		}
-		$sold30 = isset( $sold[ $id ] ) ? (int) $sold[ $id ] : 0;
+		$sold30 = isset( $sold[ $id ] ) ? (float) $sold[ $id ] : 0;
 
 		if ( ! $tracked ) {
 			$state = 'untracked';
@@ -352,8 +356,8 @@ class AH_Stock {
 		// Older screens send the new count with an edit. It still goes in
 		// the book, as a count, rather than quietly replacing the number.
 		if ( null !== $req->get_param( 'stockAvailable' ) ) {
-			$want = (int) $req->get_param( 'stockAvailable' );
-			if ( ! $product->get_manage_stock() || $want !== (int) $product->get_stock_quantity() ) {
+			$want = round( (float) $req->get_param( 'stockAvailable' ), 2 );
+			if ( ! $product->get_manage_stock() || abs( $want - (float) $product->get_stock_quantity() ) > 0.005 ) {
 				self::set_count( $product, max( 0, $want ), 'count', array( 'note' => 'Changed while editing the product' ) );
 			}
 		}
@@ -473,9 +477,9 @@ class AH_Stock {
 		if ( ! isset( self::MANUAL[ $kind ] ) ) {
 			return self::err( 'ah_bad_kind', 'Choose what happened to the stock', 400 );
 		}
-		$qty  = (int) $req->get_param( 'qty' );
+		$qty  = (float) $req->get_param( 'qty' );
 		$note = trim( sanitize_text_field( (string) $req->get_param( 'note' ) ) );
-		$now  = $product->get_manage_stock() ? (int) $product->get_stock_quantity() : 0;
+		$now  = $product->get_manage_stock() ? (float) $product->get_stock_quantity() : 0;
 		$unit = get_post_meta( $product->get_id(), '_ah_unit', true ) ?: 'pc';
 
 		if ( 'count' === $kind ) {
@@ -484,7 +488,7 @@ class AH_Stock {
 			}
 			$target = $qty;
 		} elseif ( 'correction' === $kind ) {
-			if ( 0 === $qty ) {
+			if ( abs( $qty ) < 0.005 ) {
 				return self::err( 'ah_bad_qty', 'Enter how many to add or take off', 400 );
 			}
 			if ( strlen( $note ) < 3 ) {
@@ -565,12 +569,12 @@ class AH_Stock {
 
 	/** Set the count and write the line that explains it. */
 	private static function set_count( $product, $target, $kind, $args = array() ) {
-		$before = $product->get_manage_stock() ? (int) $product->get_stock_quantity() : 0;
+		$before = $product->get_manage_stock() ? (float) $product->get_stock_quantity() : 0;
 		if ( ! $product->get_manage_stock() ) {
 			$product->set_manage_stock( true );
 			$product->save();
 		}
-		$after = (int) wc_update_product_stock( $product, $target, 'set' );
+		$after = (float) wc_update_product_stock( $product, $target, 'set' );
 		if ( empty( $args['unit_cost'] ) ) {
 			$args['unit_cost'] = (int) get_post_meta( $product->get_id(), '_ah_cost', true );
 		}
@@ -584,9 +588,9 @@ class AH_Stock {
 		$wpdb->insert( AH_Install::table( 'stock_moves' ), array(
 			'product_id'   => (int) $product_id,
 			'kind'         => $kind,
-			'qty'          => (int) $qty,
-			'stock_before' => (int) $before,
-			'stock_after'  => (int) $after,
+			'qty'          => round( (float) $qty, 2 ),
+			'stock_before' => round( (float) $before, 2 ),
+			'stock_after'  => round( (float) $after, 2 ),
 			'unit_cost'    => isset( $args['unit_cost'] ) ? (int) $args['unit_cost'] : 0,
 			'unit_price'   => isset( $args['unit_price'] ) ? (int) $args['unit_price'] : 0,
 			'order_id'     => isset( $args['order_id'] ) ? (int) $args['order_id'] : 0,
@@ -612,11 +616,15 @@ class AH_Stock {
 			$product->set_manage_stock( true );
 			$product->save();
 		}
-		wc_update_product_stock( $product, abs( (int) $delta ), $delta >= 0 ? 'increase' : 'decrease' );
+		wc_update_product_stock( $product, abs( (float) $delta ), $delta >= 0 ? 'increase' : 'decrease' );
 		if ( empty( $args['unit_cost'] ) ) {
 			$args['unit_cost'] = self::cost_of( $product->get_id() );
 		}
-		self::record( $product->get_id(), $kind, (int) $delta, $before, $before + (int) $delta, $args );
+		self::record( $product->get_id(), $kind, (float) $delta, $before, $before + (float) $delta, $args );
+	}
+
+	public static function stock_amount( $amount ) {
+		return round( (float) $amount, 2 );
 	}
 
 	public static function track_new( $id ) {
@@ -773,9 +781,9 @@ class AH_Stock {
 				'unit'         => $units[ $pid ],
 				'kind'         => $r['kind'],
 				'kind_label'   => self::KINDS[ $r['kind'] ] ?? $r['kind'],
-				'qty'          => (int) $r['qty'],
-				'before'       => (int) $r['stock_before'],
-				'after'        => (int) $r['stock_after'],
+				'qty'          => (float) $r['qty'],
+				'before'       => (float) $r['stock_before'],
+				'after'        => (float) $r['stock_after'],
 				'unit_cost'    => (int) $r['unit_cost'],
 				'unit_price'   => (int) $r['unit_price'],
 				'value'        => abs( (int) $r['qty'] ) * (int) $r['unit_cost'],

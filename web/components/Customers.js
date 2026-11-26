@@ -374,7 +374,7 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
       b
         .map((l) => {
           if (l.product.id !== id) return l;
-          const n = Math.max(0, Math.min(Number(l.product.stock_available) || 0, Math.floor(Number(value) || 0)));
+          const n = Math.max(0, Math.min(Number(l.product.stock_available) || 0, Math.round((Number(value) || 0) * 100) / 100));
           return { ...l, qty: n };
         })
         .filter((l) => l.qty > 0)
@@ -641,7 +641,7 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
                         <input
                           value={l.qty}
                           onChange={(e) => setQty(l.product.id, e.target.value)}
-                          inputMode="numeric"
+                          inputMode="decimal"
                           aria-label={`How many ${l.product.name}`}
                           className="tnum w-9 bg-transparent text-center text-[13.5px] font-semibold text-ink outline-none"
                         />

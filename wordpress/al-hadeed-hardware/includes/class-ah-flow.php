@@ -295,10 +295,10 @@ class AH_Flow {
 		$going   = array();
 		$left    = 0;
 		foreach ( $order->get_items() as $item_id => $item ) {
-			$sold = (int) $item->get_quantity();
-			$done = (int) $item->get_meta( '_ah_qty_released' );
-			$rest = max( 0, $sold - $done );
-			$now  = null === $want ? $rest : (int) ( $want[ $item_id ] ?? $want[ (string) $item_id ] ?? 0 );
+			$sold = (float) $item->get_quantity();
+			$done = (float) $item->get_meta( '_ah_qty_released' );
+			$rest = max( 0, round( $sold - $done, 2 ) );
+			$now  = null === $want ? $rest : (float) ( $want[ $item_id ] ?? $want[ (string) $item_id ] ?? 0 );
 			if ( $now < 0 || $now > $rest ) {
 				return new WP_Error( 'ah_bad_qty', sprintf( 'Only %d of %s are still to deliver', $rest, $item->get_name() ), array( 'status' => 400 ) );
 			}
@@ -315,7 +315,7 @@ class AH_Flow {
 		foreach ( $going as list( $item, $now ) ) {
 			$product = $item->get_product();
 			if ( $product ) {
-				$sold_qty = max( 1, (int) $item->get_quantity() );
+				$sold_qty = max( 1, (float) $item->get_quantity() );
 				AH_Stock::adjust( $product, -$now, 'sold', array(
 					'order_id'   => $order->get_id(),
 					'ref'        => $no,
@@ -324,7 +324,7 @@ class AH_Flow {
 					'note'       => ! empty( $args['collected_by'] ) ? 'Collected by ' . sanitize_text_field( $args['collected_by'] ) : '',
 				) );
 			}
-			$item->update_meta_data( '_ah_qty_released', (int) $item->get_meta( '_ah_qty_released' ) + $now );
+			$item->update_meta_data( '_ah_qty_released', (float) $item->get_meta( '_ah_qty_released' ) + $now );
 			$item->save();
 		}
 

@@ -28,15 +28,19 @@ $M = 'AH_Stock_Math';
 
 echo "Stock balance\n";
 // Two purchases, three sales, a count that found two short, a return.
-check( 'purchases minus sales plus adjustments', $M::book_stock( array( 100, 50, -30, -45, -10, -2, 3 ) ), 66 );
-check( 'nothing in the book is zero', $M::book_stock( array() ), 0 );
-check( 'can go below zero, and says so', $M::book_stock( array( 5, -8 ) ), -3 );
+check( 'purchases minus sales plus adjustments', $M::book_stock( array( 100, 50, -30, -45, -10, -2, 3 ) ), 66.0 );
+check( 'nothing in the book is zero', $M::book_stock( array() ), 0.0 );
+check( 'can go below zero, and says so', $M::book_stock( array( 5, -8 ) ), -3.0 );
 // No row limit: the 70,000th line counts like the first.
 $lines = array_fill( 0, 70000, -1 );
 $lines[] = 80000;
-check( 'every line counts, however many', $M::book_stock( $lines ), 10000 );
+check( 'every line counts, however many', $M::book_stock( $lines ), 10000.0 );
+
+check( 'half lengths add up', $M::book_stock( array( 20.5, -1.5, 0.5 ) ), 19.5 );
 
 echo "Negative-stock block\n";
+check( 'half a length more than is left is refused', $M::sale_problems( 2.5, 0, 3, 5000, 4000 ), array( 'negative_stock' ) );
+check( 'the last half length can be sold', $M::sale_problems( 2.5, 0, 2.5, 5000, 4000 ), array() );
 check( 'enough on the shelf', $M::sale_problems( 10, 0, 10, 5000, 4000 ), array() );
 check( 'one too many', $M::sale_problems( 10, 0, 11, 5000, 4000 ), array( 'negative_stock' ) );
 check( 'sold and waiting to be released counts as gone', $M::sale_problems( 10, 4, 7, 5000, 4000 ), array( 'negative_stock' ) );
@@ -56,7 +60,7 @@ check( 'an item that does not sell has no end date', $M::days_of_stock( 30, 0.0 
 check( 'under 15 days: reorder', $M::needs_reorder( 20, 0, 14.9 ), true );
 check( 'exactly 15 days: not yet', $M::needs_reorder( 30, 0, 15.0 ), false );
 check( 'below the minimum level: reorder', $M::needs_reorder( 5, 10, null ), true );
-check( 'suggested order tops up to the minimum', $M::suggested_order( 4, 10 ), 6 );
+check( 'suggested order tops up to the minimum', $M::suggested_order( 4, 10 ), 6.0 );
 check( 'never a negative order', $M::suggested_order( 40, 10 ), 0 );
 
 echo "Slow and dead stock\n";

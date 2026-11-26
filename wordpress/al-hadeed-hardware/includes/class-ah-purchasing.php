@@ -77,13 +77,13 @@ class AH_Purchasing {
 		$lines = array();
 		foreach ( (array) $req->get_param( 'lines' ) as $l ) {
 			$pid  = (int) ( $l['productId'] ?? 0 );
-			$qty  = (int) ( $l['qty'] ?? 0 );
+			$qty  = (float) ( $l['qty'] ?? 0 );
 			$cost = (int) ( $l['unitCost'] ?? 0 );
 			$p    = $pid ? wc_get_product( $pid ) : null;
 			if ( ! $p ) {
 				return self::err( 'ah_bad_product', 'One of the lines has no product' );
 			}
-			if ( $qty < 1 || $cost < 1 ) {
+			if ( $qty <= 0 || $cost < 1 ) {
 				return self::err( 'ah_bad_line', sprintf( 'Enter how many %s and the agreed price', $p->get_name() ) );
 			}
 			$lines[] = array( $p, $qty, $cost );
@@ -144,9 +144,9 @@ class AH_Purchasing {
 				'productId'   => (int) $l['product_id'],
 				'name'        => $l['product_name'],
 				'unit'        => get_post_meta( (int) $l['product_id'], '_ah_unit', true ) ?: 'pc',
-				'ordered'     => (int) $l['qty_ordered'],
-				'received'    => (int) $l['qty_received'],
-				'outstanding' => max( 0, (int) $l['qty_ordered'] - (int) $l['qty_received'] ),
+				'ordered'     => (float) $l['qty_ordered'],
+				'received'    => (float) $l['qty_received'],
+				'outstanding' => max( 0, (float) $l['qty_ordered'] - (float) $l['qty_received'] ),
 				'unitCost'    => (int) $l['unit_cost'],
 			);
 		}
@@ -216,14 +216,14 @@ class AH_Purchasing {
 		$todo = array();
 		foreach ( (array) $req->get_param( 'lines' ) as $l ) {
 			$lid = (int) ( $l['lineId'] ?? 0 );
-			$qty = (int) ( $l['qty'] ?? 0 );
+			$qty = (float) ( $l['qty'] ?? 0 );
 			if ( ! $qty ) {
 				continue;
 			}
 			if ( ! isset( $by[ $lid ] ) ) {
 				return self::err( 'ah_bad_line', 'That line is not on this purchase order' );
 			}
-			$open = (int) $by[ $lid ]['qty_ordered'] - (int) $by[ $lid ]['qty_received'];
+			$open = (float) $by[ $lid ]['qty_ordered'] - (float) $by[ $lid ]['qty_received'];
 			if ( $qty < 0 || $qty > $open ) {
 				return self::err( 'ah_too_many', sprintf( 'Only %d %s are still to come on this order. More than that is a new order.', $open, $by[ $lid ]['product_name'] ) );
 			}
@@ -248,11 +248,11 @@ class AH_Purchasing {
 				'po_id'     => (int) $h['id'],
 				'note'      => $h['po_no'],
 			) );
-			$wpdb->query( $wpdb->prepare( 'UPDATE ' . self::t( 'po_lines' ) . ' SET qty_received = qty_received + %d WHERE id = %d', $qty, $l['id'] ) );
+			$wpdb->query( $wpdb->prepare( 'UPDATE ' . self::t( 'po_lines' ) . ' SET qty_received = qty_received + %f WHERE id = %d', $qty, $l['id'] ) );
 		}
 		$left = 0;
 		foreach ( self::po_lines( (int) $h['id'] ) as $l ) {
-			$left += max( 0, (int) $l['qty_ordered'] - (int) $l['qty_received'] );
+			$left += max( 0, (float) $l['qty_ordered'] - (float) $l['qty_received'] );
 		}
 		$wpdb->update( self::t( 'purchase_orders' ), array(
 			'status'    => $left ? 'partial' : 'received',
@@ -451,7 +451,7 @@ class AH_Purchasing {
 	public static function return_goods( $req ) {
 		global $wpdb;
 		$pid      = (int) $req->get_param( 'productId' );
-		$qty      = (int) $req->get_param( 'qty' );
+		$qty      = (float) $req->get_param( 'qty' );
 		$supplier = trim( sanitize_text_field( (string) $req->get_param( 'supplier' ) ) );
 		$ref      = trim( sanitize_text_field( (string) $req->get_param( 'ref' ) ) );
 		$reason   = trim( sanitize_textarea_field( (string) $req->get_param( 'reason' ) ) );
@@ -460,7 +460,7 @@ class AH_Purchasing {
 		if ( ! $product ) {
 			return self::err( 'ah_bad_product', 'Choose the item going back' );
 		}
-		if ( $qty < 1 || '' === $supplier || mb_strlen( $reason ) < 3 ) {
+		if ( $qty <= 0 || '' === $supplier || mb_strlen( $reason ) < 3 ) {
 			return self::err( 'ah_return_incomplete', 'A return needs how many, the supplier and why it is going back' );
 		}
 		if ( ! self::date_ok( $date ) ) {

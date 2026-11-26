@@ -612,7 +612,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
 
   const move = MOVES.find((m) => m.value === kind);
   const now = product.stock_available ?? 0;
-  const n = int(qty);
+  const n = Math.round((Number(qty) || 0) * 100) / 100;
   const after = kind === 'count' ? n : kind === 'correction' ? now + n : now + move.sign * n;
   const needsNote = ['damaged', 'own_use', 'correction'].includes(kind);
   // A purchase only counts with its paperwork.
@@ -682,7 +682,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={kind === 'correction' ? `${product.unit} to add, or minus to take off` : `How many ${product.unit}?`}>
-            <Input type="number" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum text-lg font-semibold" autoFocus />
+            <Input type="number" step="any" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum text-lg font-semibold" autoFocus />
           </Field>
           <Field label={kind === 'received' ? 'Delivery date' : 'Date'}>
             <Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />

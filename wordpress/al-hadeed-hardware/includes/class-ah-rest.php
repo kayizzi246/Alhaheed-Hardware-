@@ -1141,12 +1141,12 @@ class AH_Rest {
 		$want = array();
 		foreach ( $items as $i => $line ) {
 			$product_id = isset( $line['productId'] ) ? (int) $line['productId'] : 0;
-			$qty        = isset( $line['quantity'] ) ? (int) $line['quantity'] : 0;
+			$qty        = isset( $line['quantity'] ) ? (float) $line['quantity'] : 0;
 			$product    = $product_id ? wc_get_product( $product_id ) : null;
 			if ( ! $product || 'trash' === $product->get_status() ) {
 				return self::err( 'ah_bad_product', 'Line ' . ( $i + 1 ) . ' has no item, or the item is no longer sold', 400 );
 			}
-			if ( $qty < 1 ) {
+			if ( $qty <= 0 ) {
 				return self::err( 'ah_bad_qty', sprintf( 'Enter how many %s', $product->get_name() ), 400 );
 			}
 			if ( (int) round( (float) $product->get_price() ) <= 0 ) {
@@ -1387,7 +1387,7 @@ class AH_Rest {
 		$row['canRelease'] = 'payment_verified' === $status;
 		$row['advice']     = $say[ $status ] ?? '';
 		foreach ( $row['items'] as &$it ) {
-			$it['qty_to_deliver'] = max( 0, (int) $it['quantity'] - (int) $it['qty_released'] );
+			$it['qty_to_deliver'] = max( 0, (float) $it['quantity'] - (float) $it['qty_released'] );
 		}
 		unset( $it );
 		AH_Flow::log_event( $order->get_id(), 'store', 'looked_up', null, null, AH_Auth::current()->ID, 'Order opened at the store' );

@@ -63,11 +63,11 @@ class AH_Ledger {
 		global $wpdb;
 		$t = AH_Install::table( 'stock_moves' );
 		if ( null !== $product_id ) {
-			return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(qty),0) FROM {$t} WHERE product_id = %d", $product_id ) );
+			return (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(qty),0) FROM {$t} WHERE product_id = %d", $product_id ) );
 		}
 		$out = array();
 		foreach ( (array) $wpdb->get_results( "SELECT product_id, COALESCE(SUM(qty),0) AS q FROM {$t} GROUP BY product_id", ARRAY_A ) as $r ) {
-			$out[ (int) $r['product_id'] ] = (int) $r['q'];
+			$out[ (int) $r['product_id'] ] = round( (float) $r['q'], 2 );
 		}
 		return $out;
 	}
@@ -108,7 +108,7 @@ class AH_Ledger {
 		);
 		$out = array();
 		foreach ( (array) $rows as $r ) {
-			$out[ (int) $r['product_id'] ] = (int) $r['q'];
+			$out[ (int) $r['product_id'] ] = round( (float) $r['q'], 2 );
 		}
 		return $out;
 	}
@@ -153,7 +153,7 @@ class AH_Ledger {
 			"SELECT product_id, -SUM(qty) AS q FROM {$t} WHERE kind IN ('sold','restored') AND {$day} > %s GROUP BY product_id",
 			$since
 		), ARRAY_A ) as $r ) {
-			$sold[ (int) $r['product_id'] ] = max( 0, (int) $r['q'] );
+			$sold[ (int) $r['product_id'] ] = max( 0, round( (float) $r['q'], 2 ) );
 		}
 		$last = array();
 		foreach ( (array) $wpdb->get_results( "SELECT product_id, MAX({$day}) AS d FROM {$t} WHERE kind = 'sold' GROUP BY product_id", ARRAY_A ) as $r ) {
@@ -373,7 +373,7 @@ class AH_Ledger {
 				'date'  => $r['day'],
 				'name'  => AH_Shape::text( get_the_title( (int) $r['product_id'] ) ) ?: 'Deleted product',
 				'what'  => 'count' === $r['kind'] ? 'Short at a count' : ( AH_Stock::KINDS[ $r['kind'] ] ?? $r['kind'] ),
-				'qty'   => (int) $r['qty'],
+				'qty'   => (float) $r['qty'],
 				'value' => $v,
 				'note'  => (string) $r['note'],
 				'by'    => (string) $r['user_name'],
@@ -540,7 +540,7 @@ class AH_Ledger {
 				);
 			}
 			$g = &$groups[ $id ];
-			$q = (int) $l['qty'];
+			$q = (float) $l['qty'];
 			++$g['lines'];
 			$g['qty']   += $q;
 			$g['sales'] += AH_Stock_Math::ex_vat( $q * (int) $l['unit_price'], $vat );
@@ -590,7 +590,7 @@ class AH_Ledger {
 		$totals  = array( 'in' => 0, 'out' => 0, 'purchased' => 0, 'sold' => 0, 'adjusted' => 0 );
 		$out     = array();
 		foreach ( (array) $rows as $r ) {
-			$q        = (int) $r['qty'];
+			$q        = (float) $r['qty'];
 			$balance += $q;
 			if ( $q > 0 ) {
 				$totals['in'] += $q;

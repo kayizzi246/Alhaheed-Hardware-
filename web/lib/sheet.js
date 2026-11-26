@@ -25,7 +25,7 @@ const COLUMNS = {
   code: ['code', 'sku', 'productcode', 'itemcode', 'ref'],
   name: ['name', 'product', 'productname', 'description', 'item', 'itemname'],
   price: ['price', 'regularprice', 'unitprice', 'sellingprice', 'rate', 'amount'],
-  stock: ['stock', 'quantity', 'qty', 'instock', 'stockavailable', 'onhand'],
+  stock: ['stock', 'quantity', 'qty', 'instock', 'stockavailable', 'onhand', 'counted', 'count', 'onshelf'],
   unit: ['unit', 'units', 'soldby', 'soldin', 'measure', 'uom'],
   reorderLevel: ['reorderlevel', 'reorder', 'reorderat', 'minimumstock', 'minstock', 'reorderpoint'],
   reorderQty: ['reorderquantity', 'reorderqty', 'orderquantity', 'orderqty', 'ordersize'],

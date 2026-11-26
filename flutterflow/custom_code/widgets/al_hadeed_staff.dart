@@ -1412,6 +1412,20 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
 int _int(Object? v) =>
     v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? 0;
 
+/// Quantities can be part units: half a length, half a sheet.
+double _num(Object? v) =>
+    v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0;
+
+/// "2", "2.5": no trailing zeros.
+String _qtyText(num n) {
+  final r = (n * 100).round() / 100;
+  return r == r.roundToDouble() ? r.toInt().toString() : r.toString();
+}
+
+/// Half steps for an item sold in halves, whole steps otherwise.
+double _step(Map<String, dynamic> item) =>
+    _num(item['quantity']) % 1 == 0 && _num(item['qty_released']) % 1 == 0 ? 1 : 0.5;
+
 String _method(Object? m) => switch (m?.toString()) {
       'mobile_money' => 'Mobile Money',
       'mtn_momo' => 'MTN Mobile Money',
@@ -2800,7 +2814,7 @@ class _StockRow extends StatelessWidget {
             children: [
               Text(
                   tracked
-                      ? '${_int(p['stock_available'])} ${p['unit'] ?? ''}'
+                      ? '${_qtyText(_num(p['stock_available']))} ${p['unit'] ?? ''}'
                       : '',
                   style: _title(15)),
               const SizedBox(height: 4),
@@ -2866,9 +2880,9 @@ class _MoveSheetState extends State<_MoveSheet> {
           _fdn.text.trim().isNotEmpty &&
           _int(_cost.text.replaceAll(RegExp(r'[^0-9]'), '')) > 0);
 
-  int get _now => _int(widget.p['stock_available']);
-  int get _n => int.tryParse(_qty.text.trim()) ?? 0;
-  int get _after {
+  double get _now => _num(widget.p['stock_available']);
+  double get _n => double.tryParse(_qty.text.trim()) ?? 0;
+  double get _after {
     final sign = _kinds.firstWhere((k) => k.$1 == _kind).$3;
     if (_kind == 'count') return _n;
     if (_kind == 'correction') return _now + _n;
@@ -2908,7 +2922,7 @@ class _MoveSheetState extends State<_MoveSheet> {
         },
       });
       HapticFeedback.mediumImpact();
-      navigator.pop('${widget.p['name']}: $_after ${widget.p['unit']} in stock');
+      navigator.pop('${widget.p['name']}: ${_qtyText(_after)} ${widget.p['unit']} in stock');
     } on _ApiError catch (e) {
       if (!mounted) return;
       setState(() {
@@ -2923,7 +2937,7 @@ class _MoveSheetState extends State<_MoveSheet> {
     final p = widget.p;
     final unit = '${p['unit'] ?? ''}';
     final facts = [
-      ('In stock', p['tracked'] == true ? '$_now $unit' : 'Not counted'),
+      ('In stock', p['tracked'] == true ? '${_qtyText(_now)} $unit' : 'Not counted'),
       ('Sale price', _ugx(_int(p['price']))),
       ('Buy price', _int(p['cost']) > 0 ? _ugx(_int(p['cost'])) : 'Not set'),
       if (p['margin'] != null) ('Margin', '${p['margin']}%'),
@@ -3076,7 +3090,7 @@ class _MoveSheetState extends State<_MoveSheet> {
                   Text(
                       _after < 0
                           ? 'Cannot go below zero'
-                          : '$_now → $_after $unit',
+                          : '${_qtyText(_now)} → ${_qtyText(_after)} $unit',
                       style: _title(15, color: _after < 0 ? _ember : _ink)),
                 ]),
               ),
@@ -4663,7 +4677,7 @@ class _Delivery extends StatefulWidget {
 }
 
 class _DeliveryState extends State<_Delivery> {
-  final Map<int, int> _now = {};
+  final Map<int, double> _now = {};
   final _who = TextEditingController();
   bool _busy = false;
   String? _error;
@@ -4677,7 +4691,7 @@ class _DeliveryState extends State<_Delivery> {
   void initState() {
     super.initState();
     for (final i in _items) {
-      _now[_int(i['id'])] = _int(i['qty_to_deliver']);
+      _now[_int(i['id'])] = _num(i['qty_to_deliver']);
     }
   }
 
@@ -4687,7 +4701,7 @@ class _DeliveryState extends State<_Delivery> {
     super.dispose();
   }
 
-  int get _going => _now.values.fold(0, (a, b) => a + b);
+  double get _going => _now.values.fold(0.0, (a, b) => a + b);
 
   Future<void> _confirm() async {
     setState(() {
@@ -4756,25 +4770,25 @@ class _DeliveryState extends State<_Delivery> {
                       Text('${i['product_name']}',
                           style: _txt(14, weight: FontWeight.w700, color: _ink)),
                       Text(
-                          'Sold ${_int(i['quantity'])} · gone ${_int(i['qty_released'])} · '
-                          'to deliver ${_int(i['qty_to_deliver'])} ${i['unit'] ?? ''}',
+                          'Sold ${_qtyText(_num(i['quantity']))} · gone ${_qtyText(_num(i['qty_released']))} · '
+                          'to deliver ${_qtyText(_num(i['qty_to_deliver']))} ${i['unit'] ?? ''}',
                           style: _txt(12, color: _mid)),
                     ],
                   ),
                 ),
-                if (can && _int(i['qty_to_deliver']) > 0) ...[
+                if (can && _num(i['qty_to_deliver']) > 0) ...[
                   _Pressable(
                     scale: 0.85,
                     onTap: () => setState(() {
                       final id = _int(i['id']);
-                      _now[id] = ((_now[id] ?? 0) - 1).clamp(0, _int(i['qty_to_deliver']));
+                      _now[id] = ((_now[id] ?? 0) - _step(i)).clamp(0.0, _num(i['qty_to_deliver']));
                     }),
                     child: const Icon(Icons.remove_circle_outline_rounded,
                         size: 26, color: _mid),
                   ),
                   SizedBox(
                     width: 40,
-                    child: Text('${_now[_int(i['id'])] ?? 0}',
+                    child: Text(_qtyText(_now[_int(i['id'])] ?? 0),
                         textAlign: TextAlign.center,
                         style: _title(16, weight: FontWeight.w800)),
                   ),
@@ -4782,7 +4796,7 @@ class _DeliveryState extends State<_Delivery> {
                     scale: 0.85,
                     onTap: () => setState(() {
                       final id = _int(i['id']);
-                      _now[id] = ((_now[id] ?? 0) + 1).clamp(0, _int(i['qty_to_deliver']));
+                      _now[id] = ((_now[id] ?? 0) + _step(i)).clamp(0.0, _num(i['qty_to_deliver']));
                     }),
                     child: const Icon(Icons.add_circle_outline_rounded,
                         size: 26, color: _brand),
@@ -4805,7 +4819,7 @@ class _DeliveryState extends State<_Delivery> {
             _BigButton(
               _going == 0
                   ? 'Choose what goes now'
-                  : 'Confirm delivery of $_going',
+                  : 'Confirm delivery of ${_qtyText(_going)}',
               _going == 0 ? null : _confirm,
               busy: _busy,
               tint: _green,

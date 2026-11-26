@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.8.0';
+	const DB_VERSION = '1.9.0';
 
 	public static function activate() {
 		self::tables();
@@ -194,9 +194,9 @@ class AH_Install {
 			id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			product_id   BIGINT UNSIGNED NOT NULL,
 			kind         VARCHAR(20)     NOT NULL,
-			qty          INT             NOT NULL DEFAULT 0,
-			stock_before INT             NOT NULL DEFAULT 0,
-			stock_after  INT             NOT NULL DEFAULT 0,
+			qty          DECIMAL(14,2)   NOT NULL DEFAULT 0,
+			stock_before DECIMAL(14,2)   NOT NULL DEFAULT 0,
+			stock_after  DECIMAL(14,2)   NOT NULL DEFAULT 0,
 			unit_cost    BIGINT          NOT NULL DEFAULT 0,
 			unit_price   BIGINT          NOT NULL DEFAULT 0,
 			order_id     BIGINT UNSIGNED NOT NULL DEFAULT 0,
@@ -299,9 +299,9 @@ class AH_Install {
 			count_id       BIGINT UNSIGNED NOT NULL,
 			product_id     BIGINT UNSIGNED NOT NULL,
 			product_name   VARCHAR(191)    NOT NULL,
-			book_qty       INT             NOT NULL DEFAULT 0,
-			counted_qty    INT             NOT NULL DEFAULT 0,
-			variance       INT             NOT NULL DEFAULT 0,
+			book_qty       DECIMAL(14,2)   NOT NULL DEFAULT 0,
+			counted_qty    DECIMAL(14,2)   NOT NULL DEFAULT 0,
+			variance       DECIMAL(14,2)   NOT NULL DEFAULT 0,
 			unit_cost      BIGINT          NOT NULL DEFAULT 0,
 			variance_value BIGINT          NOT NULL DEFAULT 0,
 			counted_by     BIGINT UNSIGNED NOT NULL DEFAULT 0,
@@ -366,8 +366,8 @@ class AH_Install {
 			po_id         BIGINT UNSIGNED NOT NULL,
 			product_id    BIGINT UNSIGNED NOT NULL,
 			product_name  VARCHAR(191)    NOT NULL,
-			qty_ordered   INT             NOT NULL DEFAULT 0,
-			qty_received  INT             NOT NULL DEFAULT 0,
+			qty_ordered   DECIMAL(14,2)   NOT NULL DEFAULT 0,
+			qty_received  DECIMAL(14,2)   NOT NULL DEFAULT 0,
 			unit_cost     BIGINT          NOT NULL DEFAULT 0,
 			PRIMARY KEY (id),
 			KEY po_id (po_id)

@@ -275,7 +275,7 @@ function NewPo({ suppliers, products, onClose, onDone }) {
             <Field label="Item">
               <ProductPick products={products} value={l.productId} onChange={(id) => { set(i, 'productId', id); const p = products.find((x) => x.id === id); if (p?.cost && !l.unitCost) set(i, 'unitCost', String(p.cost)); }} />
             </Field>
-            <Field label="Quantity"><Input type="number" min="1" inputMode="numeric" value={l.qty} onChange={(e) => set(i, 'qty', e.target.value)} className="tnum" /></Field>
+            <Field label="Quantity"><Input type="number" min="0" step="any" inputMode="decimal" value={l.qty} onChange={(e) => set(i, 'qty', e.target.value)} className="tnum" /></Field>
             <Field label="Price for one (UGX)"><Input type="number" min="1" inputMode="numeric" value={l.unitCost} onChange={(e) => set(i, 'unitCost', e.target.value)} className="tnum" /></Field>
             <div className="flex items-end">
               <Button variant="ghost" className="text-bad" disabled={lines.length === 1} onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))}>Remove</Button>
@@ -377,7 +377,7 @@ function ShowPo({ id, onClose, onBill }) {
                     {open && (
                       <Td num>
                         {l.outstanding > 0 && (
-                          <Input type="number" min="0" max={l.outstanding} inputMode="numeric" value={qty[l.id] ?? ''} onChange={(e) => setQty((q) => ({ ...q, [l.id]: e.target.value }))} placeholder={String(l.outstanding)} className="tnum ml-auto w-[90px] text-right" aria-label={`${l.name} arrived now`} />
+                          <Input type="number" min="0" step="any" max={l.outstanding} inputMode="decimal" value={qty[l.id] ?? ''} onChange={(e) => setQty((q) => ({ ...q, [l.id]: e.target.value }))} placeholder={String(l.outstanding)} className="tnum ml-auto w-[90px] text-right" aria-label={`${l.name} arrived now`} />
                         )}
                       </Td>
                     )}
@@ -524,7 +524,7 @@ function ReturnGoods({ suppliers, products, onClose, onDone }) {
         <Alert>{error}</Alert>
         <Field label="Item"><ProductPick products={products} value={productId} onChange={setProductId} /></Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={`How many${p ? ` ${p.unit}` : ''}`} hint={p ? `${p.stock_available ?? 0} in stock` : undefined}><Input type="number" min="1" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum" /></Field>
+          <Field label={`How many${p ? ` ${p.unit}` : ''}`} hint={p ? `${p.stock_available ?? 0} in stock` : undefined}><Input type="number" min="0" step="any" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum" /></Field>
           <Field label="Date"><Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} /></Field>
           <Field label="Supplier"><SupplierField suppliers={suppliers} value={supplier} onChange={setSupplier} /></Field>
           <Field label="Return note no. (optional)"><Input value={ref} onChange={(e) => setRef(e.target.value)} /></Field>
