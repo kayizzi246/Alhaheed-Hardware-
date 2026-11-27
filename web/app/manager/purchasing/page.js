@@ -230,7 +230,7 @@ function SupplierField({ suppliers, value, onChange }) {
 
 /** The items this supplier sends: named on the product, or last bought from them. */
 const fromSupplier = (products, name) => {
-  const n = name.trim().toLowerCase();
+  const n = String(name || '').trim().toLowerCase();
   return products.filter((p) =>
     (p.supplier || '').trim().toLowerCase() === n || (p.last_buy?.supplier || '').trim().toLowerCase() === n);
 };

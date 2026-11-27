@@ -341,7 +341,7 @@ function AddSupplier({ onClose, onDone, onError }) {
 function Compose({ supplier, low, sender, onClose, onSent, onError }) {
   const theirs = useMemo(() => {
     const mine = low.filter(
-      (i) => i.supplier && i.supplier.toLowerCase().trim() === supplier.name.toLowerCase().trim()
+      (i) => i.supplier && String(i.supplier).toLowerCase().trim() === String(supplier.name || '').toLowerCase().trim()
     );
     // A product with no supplier named on it still has to be ordered
     // from somebody, so an unmatched shelf offers everything rather

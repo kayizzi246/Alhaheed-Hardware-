@@ -210,7 +210,7 @@ function HireDialog({ onClose, onDone }) {
 
   // A job title usually says which desk: "Cashier", "Accounts clerk", "Storekeeper".
   const deskFor = (job = '') => {
-    const j = job.toLowerCase();
+    const j = String(job || '').toLowerCase();
     if (j.includes('account')) return 'accounts';
     if (j.includes('store')) return 'store';
     if (j.includes('manag')) return 'manager';
