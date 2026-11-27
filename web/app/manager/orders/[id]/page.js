@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import DocButtons from '@/components/DocButtons';
 import { api, peek } from '@/lib/api';
 import { money, dateTime, statusLabel, methodLabel, list } from '@/lib/format';
 import {
@@ -65,6 +66,8 @@ export default function ManagerOrderDetail() {
 
       <Alert>{error}</Alert>
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
+
+      <DocButtons orderId={order.id} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>

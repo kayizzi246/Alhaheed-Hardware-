@@ -208,6 +208,8 @@ class AH_Shape {
 			'paid_now'         => (int) $order->get_meta( '_ah_paid_now' ),
 			'paid_now_receipt' => (string) $order->get_meta( '_ah_paid_now_receipt' ),
 			'wants_credit'     => 'yes' === $order->get_meta( '_ah_wants_credit' ),
+			// A loan waiting for the owner, or the owner's answer.
+			'credit_approval'  => $order->get_meta( '_ah_credit_approval' ) ?: null,
 			// The customer's own delivery man, when they send one.
 			'collector'        => $order->get_meta( '_ah_collector' ) ?: null,
 			// What the customer must pay off first for this to go on

@@ -455,7 +455,7 @@ class AH_Credit {
 
 	private static function entry( $customer_id, $kind, $amount, $args = array() ) {
 		global $wpdb;
-		$user = AH_Auth::current();
+		$user = ! empty( $args['by'] ) ? get_user_by( 'id', (int) $args['by'] ) : AH_Auth::current();
 		$wpdb->insert( self::t( 'credit_entries' ), array(
 			'customer_id' => (int) $customer_id,
 			'kind'        => $kind,
@@ -567,7 +567,7 @@ class AH_Credit {
 	 * the same customer twice inside two minutes is stopped as a double
 	 * tap unless $again says it really is a second payment.
 	 */
-	public static function take( $id, $amount, $method, $ref, $note = '', $again = false, $order_id = 0 ) {
+	public static function take( $id, $amount, $method, $ref, $note = '', $again = false, $order_id = 0, $by = 0 ) {
 		global $wpdb;
 		$user = get_user_by( 'id', (int) $id );
 		$ref  = trim( (string) $ref );
@@ -602,10 +602,10 @@ class AH_Credit {
 		}
 		// Paying more than is owed is allowed: the extra is held for the
 		// customer and used by their next credit order (a deposit).
-		$me      = AH_Auth::current();
+		$me      = $by ? get_user_by( 'id', (int) $by ) : AH_Auth::current();
 		$receipt = AH_Books::atomic( function () use ( $wpdb, $id, $amount, $method, $ref, $note, $user, $me, $order_id ) {
 			$receipt = AH_Flow::next_receipt_no();
-			if ( ! self::entry( $id, 'payment', -$amount, array( 'method' => $method, 'ref' => $ref ?: null, 'receipt_no' => $receipt, 'note' => $note ?: null, 'order_id' => $order_id ) ) ) {
+			if ( ! self::entry( $id, 'payment', -$amount, array( 'method' => $method, 'ref' => $ref ?: null, 'receipt_no' => $receipt, 'note' => $note ?: null, 'order_id' => $order_id, 'by' => $me ? $me->ID : 0 ) ) ) {
 				return self::err( 'ah_failed', 'The payment did not save. Try again.', 500 );
 			}
 			// Real money in, so it goes in the cash book with a receipt.
@@ -680,7 +680,7 @@ class AH_Credit {
 	}
 
 	/** The sale goes on the account. */
-	public static function charge( $order, $amount, $receipt ) {
+	public static function charge( $order, $amount, $receipt, $by = 0 ) {
 		$customer = (int) $order->get_customer_id();
 		$acc      = self::account( $customer );
 		$days     = $acc ? (int) $acc['terms_days'] : 30;
@@ -689,6 +689,7 @@ class AH_Credit {
 			'receipt_no' => $receipt,
 			'note'       => AH_Shape::order_no( $order ),
 			'due_on'     => gmdate( 'Y-m-d', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS ),
+			'by'         => $by,
 		) );
 		$owed = self::balance( $customer );
 		$name = get_user_by( 'id', $customer )->display_name;

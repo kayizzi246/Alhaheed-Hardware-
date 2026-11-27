@@ -2764,7 +2764,22 @@ class _CreditSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('My loan', style: _title(20, weight: FontWeight.w800)),
+            Row(children: [
+              Expanded(child: Text('My loan', style: _title(20, weight: FontWeight.w800))),
+              _Pressable(
+                scale: 0.95,
+                onTap: () => _openDoc(context, 'statement', '', download: true),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(color: _lime, borderRadius: BorderRadius.circular(18)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.download_rounded, size: 16, color: _onLime),
+                    const SizedBox(width: 5),
+                    Text('Statement PDF', style: _txt(12, weight: FontWeight.w800, color: _onLime)),
+                  ]),
+                ),
+              ),
+            ]),
             const SizedBox(height: 2),
             Text(
                 'Buy now, pay within ${_ci(a['termsDays'])} days. '
@@ -2886,6 +2901,14 @@ class _CreditSheet extends StatelessWidget {
                               style: _txt(10.5, color: _light)),
                         ],
                       ),
+                      // A payment has its own receipt to download.
+                      if (lines[i]['kind'] == 'payment' && lines[i]['ref'] != null)
+                        IconButton(
+                          tooltip: 'Receipt',
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => _openDoc(context, 'receipt', '${lines[i]['ref']}', download: true),
+                          icon: const Icon(Icons.receipt_long_outlined, size: 18, color: _brand),
+                        ),
                     ]),
                   ),
               ]),
@@ -3524,3 +3547,66 @@ class _CustomerHomeState extends State<_CustomerHome> {
         ),
       );
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  DOCUMENTS — order summary, receipts and the loan statement, as PDF
+// ═══════════════════════════════════════════════════════════════
+
+/// Asks the shop for a link to one of the customer's own documents and
+/// opens it. The phone's browser shows the PDF, with Download, Share and
+/// Print. The link works for ten minutes only.
+Future<void> _openDoc(BuildContext context, String type, String id,
+    {bool download = false}) async {
+  try {
+    final r = await _apiGet(
+        '/api/docs/link?type=$type&id=${Uri.encodeQueryComponent(id)}');
+    final url = '${r['url']}';
+    await launchURL(download ? '$url&download=1' : url);
+  } on _ApiError catch (e) {
+    if (context.mounted) _toast(context, e.message, bad: true);
+  }
+}
+
+Widget _docButton(IconData icon, String label, String note, VoidCallback onTap,
+        {VoidCallback? onPrint}) =>
+    _Pressable(
+      scale: 0.98,
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _hairline),
+        ),
+        child: Row(children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+                color: _brandPale, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 19, color: _brand),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label,
+                  style: _txt(13.5, weight: FontWeight.w700, color: _ink)),
+              Text(note,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _txt(11.5, color: _mid)),
+            ]),
+          ),
+          if (onPrint != null)
+            IconButton(
+              tooltip: 'Print',
+              onPressed: onPrint,
+              icon: const Icon(Icons.print_outlined, size: 20, color: _inkSoft),
+            ),
+          const Icon(Icons.download_rounded, size: 20, color: _brand),
+          const SizedBox(width: 4),
+        ]),
+      ),
+    );

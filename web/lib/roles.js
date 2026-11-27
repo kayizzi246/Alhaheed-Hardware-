@@ -31,6 +31,7 @@ export const NAV = {
   manager: [
     { href: '/manager', label: 'Dashboard', icon: 'home' },
     { href: '/manager/orders', label: 'All Orders', icon: 'queue' },
+    { href: '/manager/approvals', label: 'Owner approval', icon: 'check' },
 
     { group: 'Stock' },
     { href: '/manager/stock', label: 'Stock', icon: 'scales' },

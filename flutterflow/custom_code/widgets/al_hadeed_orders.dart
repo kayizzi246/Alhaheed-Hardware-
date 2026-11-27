@@ -1743,6 +1743,8 @@ class _TrackingSheetState extends State<_TrackingSheet> {
                 ),
               ),
 
+              _DocsCard(orderId: widget.orderId, orderNo: '${o['order_no'] ?? ''}'),
+
               if (payment != null) ...[
                 const SizedBox(height: 20),
                 _Pressable(
@@ -2119,5 +2121,141 @@ class _ConfirmSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DOCUMENTS — order summary, receipts and the loan statement, as PDF
+// ═══════════════════════════════════════════════════════════════
+
+/// Asks the shop for a link to one of the customer's own documents and
+/// opens it. The phone's browser shows the PDF, with Download, Share and
+/// Print. The link works for ten minutes only.
+Future<void> _openDoc(BuildContext context, String type, String id,
+    {bool download = false}) async {
+  try {
+    final r = await _apiGet(
+        '/api/docs/link?type=$type&id=${Uri.encodeQueryComponent(id)}');
+    final url = '${r['url']}';
+    await launchURL(download ? '$url&download=1' : url);
+  } on _ApiError catch (e) {
+    if (context.mounted) _toast(context, e.message, bad: true);
+  }
+}
+
+Widget _docButton(IconData icon, String label, String note, VoidCallback onTap,
+        {VoidCallback? onPrint}) =>
+    _Pressable(
+      scale: 0.98,
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _hairline),
+        ),
+        child: Row(children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+                color: _brandPale, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 19, color: _brand),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label,
+                  style: _txt(13.5, weight: FontWeight.w700, color: _ink)),
+              Text(note,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _txt(11.5, color: _mid)),
+            ]),
+          ),
+          if (onPrint != null)
+            IconButton(
+              tooltip: 'Print',
+              onPressed: onPrint,
+              icon: const Icon(Icons.print_outlined, size: 20, color: _inkSoft),
+            ),
+          const Icon(Icons.download_rounded, size: 20, color: _brand),
+          const SizedBox(width: 4),
+        ]),
+      ),
+    );
+
+/// The order's documents: the summary, a receipt for every payment the
+/// shop recorded, and the loan statement when there is a loan.
+class _DocsCard extends StatefulWidget {
+  const _DocsCard({required this.orderId, required this.orderNo});
+  final int orderId;
+  final String orderNo;
+
+  @override
+  State<_DocsCard> createState() => _DocsCardState();
+}
+
+class _DocsCardState extends State<_DocsCard> {
+  Map<String, dynamic>? _d;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiGet('/api/orders/${widget.orderId}/documents').then((r) {
+      if (mounted) setState(() => _d = r);
+    }).catchError((_) {});
+  }
+
+  String _method(Object? m) => switch ('${m ?? ''}') {
+        'cash' => 'Cash',
+        'mobile_money' => 'Mobile Money',
+        'bank' => 'Bank',
+        'card' => 'Card',
+        'cheque' => 'Cheque',
+        final o => o,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final d = _d;
+    if (d == null) return const SizedBox.shrink();
+    final receipts = ((d['receipts'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .toList();
+    final id = '${widget.orderId}';
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const SizedBox(height: 22),
+      Text('DOCUMENTS (PDF)',
+          style: _txt(11.5, weight: FontWeight.w700, color: _light)),
+      const SizedBox(height: 10),
+      _docButton(Icons.description_outlined, 'Order summary',
+          'Items, prices, total and status', () => _openDoc(context, 'order', id, download: true),
+          onPrint: () => _openDoc(context, 'order', id)),
+      if (receipts.isEmpty)
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: _tile, borderRadius: BorderRadius.circular(14)),
+          child: Text(
+              'No payment recorded yet. A receipt comes here when the shop records your payment.',
+              style: _txt(12, color: _mid)),
+        )
+      else
+        for (final r in receipts)
+          _docButton(
+              Icons.receipt_long_outlined,
+              'Payment receipt ${r['receiptNo']}',
+              '${_ugx((r['amount'] as num?)?.toInt() ?? 0)} · ${_method(r['method'])} · ${_when('${r['date']}')}',
+              () => _openDoc(context, 'receipt', '${r['receiptNo']}', download: true),
+              onPrint: () => _openDoc(context, 'receipt', '${r['receiptNo']}')),
+      if (d['statement'] != null)
+        _docButton(Icons.account_balance_wallet_outlined, 'Account statement',
+            'Your loan: bought, paid, owed, due dates',
+            () => _openDoc(context, 'statement', '${d['statement']}', download: true),
+            onPrint: () => _openDoc(context, 'statement', '${d['statement']}')),
+    ]);
   }
 }

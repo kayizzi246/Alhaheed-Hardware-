@@ -168,9 +168,20 @@ class AH_Flow {
 					return new WP_Error( 'ah_no_customer', 'This sale has no customer. Choose the customer first.', array( 'status' => 400 ) );
 				}
 			}
-			$refused = AH_Credit::check( $order, $due - $paid_now, $args['override'] ?? '', $cashier_id );
-			if ( $refused ) {
-				return $refused;
+			// A cashier's loan waits for the owner unless the owner's
+			// rules let them finish it.
+			$gate = AH_Approvals::credit_gate( $order, $args, $cashier_id, $due - $paid_now );
+			if ( is_wp_error( $gate ) ) {
+				return $gate;
+			}
+			if ( is_array( $gate ) ) {
+				return AH_Shape::order( wc_get_order( $order->get_id() ), true );
+			}
+			if ( empty( $args['approved'] ) ) {
+				$refused = AH_Credit::check( $order, $due - $paid_now, $args['override'] ?? '', $cashier_id );
+				if ( $refused ) {
+					return $refused;
+				}
 			}
 			$paid = $due;
 		}
@@ -210,9 +221,9 @@ class AH_Flow {
 		// sale takes no money, so it goes on the customer's account.
 		$part_receipt = '';
 		if ( 'credit' === $method ) {
-			AH_Credit::charge( $order, $due, $receipt_no );
+			AH_Credit::charge( $order, $due, $receipt_no, $cashier_id );
 			if ( $paid_now > 0 ) {
-				$part_receipt = AH_Credit::take( (int) $order->get_customer_id(), $paid_now, $now_method, $now_ref, 'Paid at the counter for order ' . AH_Shape::order_no( $order ), true, $order->get_id() );
+				$part_receipt = AH_Credit::take( (int) $order->get_customer_id(), $paid_now, $now_method, $now_ref, 'Paid at the counter for order ' . AH_Shape::order_no( $order ), true, $order->get_id(), $cashier_id );
 				if ( is_wp_error( $part_receipt ) ) {
 					// The sale is on the loan in full; the part can still be
 					// taken on the Credit page. Said, not hidden.
@@ -240,6 +251,10 @@ class AH_Flow {
 			)
 		);
 
+		// Paid another way: a loan request for it is no longer needed.
+		if ( 'credit' !== $method && class_exists( 'AH_Approvals' ) ) {
+			AH_Approvals::withdraw_for_order( $order->get_id(), 'Paid by ' . $method . ' instead' );
+		}
 		$order->update_meta_data( '_ah_receipt_no', $receipt_no );
 		if ( 'credit' === $method ) {
 			$order->update_meta_data( '_ah_on_credit', 'yes' );

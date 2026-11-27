@@ -535,8 +535,10 @@ function PayBill({ bill, onClose, onDone }) {
     setBusy(true);
     setError('');
     try {
-      await api(`/api/manager/supplier-bills/${bill.id}/pay`, { method: 'POST', body: { amount: Number(amount), method, ref, date, again } });
-      onDone(`${money(Number(amount))} paid to ${bill.supplier}.`);
+      const r = await api(`/api/manager/supplier-bills/${bill.id}/pay`, { method: 'POST', body: { amount: Number(amount), method, ref, date, again } });
+      onDone(r.pending
+        ? `${money(Number(amount))} to ${bill.supplier} is above your limit. It is waiting for the owner to approve.`
+        : `${money(Number(amount))} paid to ${bill.supplier}.`);
     } catch (e) {
       if (e.code === 'ah_paid_twice') setTwice(true);
       setError(e.message);

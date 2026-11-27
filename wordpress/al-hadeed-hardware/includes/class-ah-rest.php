@@ -435,6 +435,8 @@ class AH_Rest {
 		AH_Push::routes();
 		AH_Credit::routes();
 		AH_Books::routes();
+		AH_Approvals::routes();
+		AH_Docs::routes();
 
 		// Writing to suppliers from inside the shop, instead of the
 		// cashier opening a mail app and typing it out again.

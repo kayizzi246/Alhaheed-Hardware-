@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { ApprovalsCard } from '@/components/Approvals';
 import Link from 'next/link';
 import { api, peek } from '@/lib/api';
 import { money, shortMoney, time, statusLabel, list } from '@/lib/format';
@@ -147,6 +148,7 @@ export default function ManagerConsole() {
         <Tile icon={Icon.box()} label="Low on stock" value={String(low.length)} note={low.length ? 'buy soon' : 'all stocked'} tone={low.length ? 'bad' : 'ok'} href="/manager/stock" />
       </div>
 
+      <ApprovalsCard />
       {credit?.summary && <CreditCard c={credit} />}
 
       {/* ── Trajectory and funnel ──────────────────────────────────── */}

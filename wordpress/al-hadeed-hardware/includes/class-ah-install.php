@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.11.0';
+	const DB_VERSION = '1.12.0';
 
 	public static function activate() {
 		self::tables();
@@ -483,6 +483,31 @@ class AH_Install {
 			PRIMARY KEY (id),
 			KEY journal_id (journal_id),
 			KEY account (account)
+		) {$charset};";
+
+		// Requests that wait for the owner: a loan sale made by a cashier,
+		// a supplier payment above the limit. Who asked, who decided, when.
+		$sql[] = "CREATE TABLE {$p}ah_approvals (
+			id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			kind           VARCHAR(20)     NOT NULL,
+			status         VARCHAR(12)     NOT NULL DEFAULT 'pending',
+			ref_id         BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			party_id       BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			party_name     VARCHAR(191)    NULL,
+			amount         BIGINT          NOT NULL DEFAULT 0,
+			payload        TEXT            NULL,
+			snapshot       TEXT            NULL,
+			requested_by   BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			requested_name VARCHAR(191)    NULL,
+			requested_at   DATETIME        NOT NULL,
+			decided_by     BIGINT UNSIGNED NULL,
+			decided_name   VARCHAR(191)    NULL,
+			decided_at     DATETIME        NULL,
+			note           TEXT            NULL,
+			done_ref       VARCHAR(64)     NULL,
+			PRIMARY KEY (id),
+			KEY status (status),
+			KEY ref (kind, ref_id)
 		) {$charset};";
 
 		// One-time codes for phone login, for customers who order on the

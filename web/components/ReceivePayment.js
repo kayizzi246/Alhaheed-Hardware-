@@ -181,6 +181,10 @@ export default function ReceivePayment({ order, onClose, onDone }) {
             paidRef: part.ref.trim(),
           },
         });
+        if (res.order?.credit_approval?.status === 'pending') {
+          onDone(`${order.order_no} is waiting for the owner to approve the loan. It stays in the queue until then`);
+          return;
+        }
         const no = res.order?.payment?.receipt_no || '';
         onDone(partNow
           ? `${no}. Total ${money(order.total)}, paid now ${money(partNow)}${res.order?.paid_now_receipt ? ` (receipt ${res.order.paid_now_receipt})` : ''}, ${money(onLoan)} on the loan`
@@ -233,10 +237,10 @@ export default function ReceivePayment({ order, onClose, onDone }) {
             type="submit"
             form="pay"
             disabled={onCredit
-              ? busy || !partOk || (blocked && !(isManager && override.trim().length >= 5))
+              ? busy || !partOk || order.credit_approval?.status === 'pending' || (blocked && !(isManager && override.trim().length >= 5))
               : busy || reading !== null || paid < order.total || (needsRef && (!normaliseRef(ref) || dupe))}
           >
-            {busy ? 'Recording…' : onCredit ? (partNow ? `Take ${money(partNow)}, ${money(onLoan)} on loan` : 'Put on loan & send to Accounts') : 'Confirm & send to Accounts'}
+            {busy ? 'Recording…' : onCredit ? (isManager ? (partNow ? `Take ${money(partNow)}, ${money(onLoan)} on loan` : 'Put on loan & send to Accounts') : 'Ask the owner to approve the loan') : 'Confirm & send to Accounts'}
           </Button>
         </>
       }
@@ -266,6 +270,12 @@ export default function ReceivePayment({ order, onClose, onDone }) {
           <Alert kind="warn">The customer asked for credit, but has no credit account. Take payment, or ask the manager.</Alert>
         )}
 
+        {onCredit && order.credit_approval?.status === 'pending' && (
+          <Alert kind="warn">This loan is waiting for the owner. It cannot be sent again. Take cash instead, or wait.</Alert>
+        )}
+        {onCredit && order.credit_approval?.status === 'rejected' && (
+          <Alert>The owner refused this loan{order.credit_approval.note ? `: “${order.credit_approval.note}”` : '.'} Take payment another way.</Alert>
+        )}
         {onCredit && credit && (
           <div className="space-y-3 rounded-xl border border-line bg-surface-2 p-4">
             <div className="grid grid-cols-3 gap-3 text-[12px]">

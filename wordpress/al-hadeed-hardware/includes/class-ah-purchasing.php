@@ -438,6 +438,18 @@ class AH_Purchasing {
 			return new WP_Error( 'ah_paid_twice', sprintf( 'UGX %s on this bill was just recorded. If this is a second payment, tick "It is a second payment".', number_format( $amount ) ), array( 'status' => 409, 'canRepeat' => true ) );
 		}
 		$user = AH_Auth::current();
+		// Above the owner's limit, a manager who is not the owner asks.
+		$gate = AH_Approvals::supplier_gate( $b, $amount, array( 'method' => $method ?: 'cash', 'ref' => $ref, 'date' => $date ), (int) $user->ID );
+		if ( is_wp_error( $gate ) || is_array( $gate ) ) {
+			return $gate;
+		}
+		$done = self::record_payment( $b, $amount, $method, $ref, $date, $user );
+		return is_wp_error( $done ) ? $done : array( 'ok' => true );
+	}
+
+	/** Money to a supplier, saved whole or not at all. */
+	public static function record_payment( $b, $amount, $method, $ref, $date, $user ) {
+		global $wpdb;
 		$done = AH_Books::atomic( function () use ( $wpdb, $b, $amount, $method, $ref, $date, $user ) {
 			$ok = $wpdb->insert( self::t( 'bill_payments' ), array(
 				'bill_id'    => (int) $b['id'],
@@ -460,7 +472,7 @@ class AH_Purchasing {
 			return $done;
 		}
 		self::audit( 'bill_paid', sprintf( '%s invoice %s: UGX %s by %s%s', $b['supplier'], $b['invoice_no'], number_format( $amount ), $method ?: 'cash', $ref ? " ({$ref})" : '' ) );
-		return array( 'ok' => true );
+		return true;
 	}
 
 	/**

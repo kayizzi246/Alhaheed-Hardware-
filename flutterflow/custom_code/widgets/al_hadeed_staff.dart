@@ -1770,6 +1770,13 @@ class _OrderCard extends StatelessWidget {
                     ].join(' · '),
                     style: _txt(12, color: _mid)),
               ),
+              if (order['credit_approval'] is Map &&
+                  (order['credit_approval'] as Map)['status'] != 'approved') ...[
+                (order['credit_approval'] as Map)['status'] == 'pending'
+                    ? const _Chip('Waiting for the owner', bg: _bluePale, fg: _blue)
+                    : const _Chip('Loan refused', bg: _emberPale, fg: _ember),
+                const SizedBox(width: 6),
+              ],
               if (action == null)
                 // Coloured by what the status means: cancelled in red,
                 // waiting for money in amber, done in green.
@@ -2029,6 +2036,10 @@ class _OrderSheetState extends State<_OrderSheet> {
                     ? 'That makes ${_ugx(after)} owed. The limit is ${_ugx(limit)}. Take more now, or ask the manager.'
                     : null;
     final refOk = part == 0 || _partHow == 'cash' || _partRef.text.trim().length >= 3;
+    // The owner's answer, if this loan was asked for already.
+    final ap = (_full?['credit_approval'] as Map?)?.cast<String, dynamic>();
+    final waiting = ap?['status'] == 'pending';
+    final boss = _Session().role == 'manager';
     Widget fig(String k, String v, Color c) => Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(k, style: _txt(11, color: _mid)),
@@ -2114,18 +2125,44 @@ class _OrderSheetState extends State<_OrderSheet> {
           fig('On the loan', _ugx(onLoan), _ink),
         ]),
       ),
-      if (blocked != null) ...[
+      if (blocked != null && !waiting) ...[
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: _emberPale, borderRadius: BorderRadius.circular(12)),
-          child: Text(blocked, style: _txt(12.5, weight: FontWeight.w600, color: _ember)),
+          child: Text(
+              boss ? blocked : '$blocked The owner can still approve it.',
+              style: _txt(12.5, weight: FontWeight.w600, color: _ember)),
+        ),
+      ],
+      if (waiting) ...[
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: _bluePale, borderRadius: BorderRadius.circular(12)),
+          child: Text('Waiting for the owner to approve this loan. The goods stay in the shop until then.',
+              style: _txt(12.5, weight: FontWeight.w600, color: _blue)),
+        ),
+      ],
+      if (ap?['status'] == 'rejected') ...[
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: _emberPale, borderRadius: BorderRadius.circular(12)),
+          child: Text('The owner refused this loan${'${ap?['note'] ?? ''}'.isNotEmpty ? ': “${ap!['note']}”' : '.'} Take payment another way.',
+              style: _txt(12.5, weight: FontWeight.w600, color: _ember)),
         ),
       ],
       const SizedBox(height: 12),
       _BigButton(
-        part > 0 ? 'Take ${_shortUgx(part)}, ${_shortUgx(onLoan)} on loan' : 'Put ${_shortUgx(total)} on loan',
-        _full != null && blocked == null && refOk
+        waiting
+            ? 'Waiting for the owner'
+            : !boss
+                ? 'Ask the owner: ${_shortUgx(onLoan)} on loan'
+                : part > 0
+                    ? 'Take ${_shortUgx(part)}, ${_shortUgx(onLoan)} on loan'
+                    : 'Put ${_shortUgx(total)} on loan',
+        _full != null && !waiting && (blocked == null || !boss) && refOk && ap?['status'] != 'rejected'
             ? () => _send('/api/cashier/orders/$_id/payment', {
                   'method': 'credit',
                   'paidNow': part,

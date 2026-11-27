@@ -1388,6 +1388,7 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
           ),
 
           const SizedBox(height: 14),
+          const _ApprovalsCard(),
           const _BooksCard(),
           const SizedBox(height: 8),
           Text('ORDERS BY STAGE (LIVE)',
@@ -3885,6 +3886,310 @@ class _SupplierSheetState extends State<_SupplierSheet> {
             ),
             const SizedBox(width: 8),
             Expanded(flex: 2, child: _bButton('Pay ${_shortUgx(_n)}', ok ? () => _pay(b) : null, busy: _busy)),
+          ]),
+        ],
+      ]),
+    );
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+//  OWNER APPROVAL — loans and big supplier payments waiting for a yes
+// ═══════════════════════════════════════════════════════════════
+
+/// On the home screen when something waits for this person to decide.
+class _ApprovalsCard extends StatefulWidget {
+  const _ApprovalsCard();
+
+  @override
+  State<_ApprovalsCard> createState() => _ApprovalsCardState();
+}
+
+class _ApprovalsCardState extends State<_ApprovalsCard> {
+  List<Map<String, dynamic>> _rows = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final r = await _apiGet('/api/approvals?status=pending');
+      if (mounted) {
+        setState(() => _rows = _bList(r['approvals'])
+            .map((x) => (x as Map).cast<String, dynamic>())
+            .where((a) => a['canDecide'] == true)
+            .toList());
+      }
+    } on _ApiError {/* an older shop: nothing to show */}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_rows.isEmpty) return const SizedBox.shrink();
+    final total = _rows.fold<int>(0, (n, a) => n + _bn(a['amount']));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: _Pressable(
+        scale: 0.99,
+        onTap: () async {
+          await showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const _ApprovalsSheet(),
+          );
+          await _load();
+        },
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _amberPale,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _amber.withOpacity(0.35)),
+          ),
+          child: Row(children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: _amber, shape: BoxShape.circle),
+              child: Text('${_rows.length}', style: _title(17, weight: FontWeight.w800, color: _white)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Waiting for your approval', style: _title(14.5, weight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text(
+                    '${_rows.take(2).map((a) => a['partyName']).join(', ')}${_rows.length > 2 ? ' and more' : ''} · ${_shortUgx(total)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _txt(12, color: _inkSoft)),
+              ]),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: _amber),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// Everything waiting, with what the owner needs to decide each.
+class _ApprovalsSheet extends StatefulWidget {
+  const _ApprovalsSheet();
+
+  @override
+  State<_ApprovalsSheet> createState() => _ApprovalsSheetState();
+}
+
+class _ApprovalsSheetState extends State<_ApprovalsSheet> {
+  List<Map<String, dynamic>>? _rows;
+  String _show = 'pending';
+  String? _error;
+  String? _done;
+  int _busy = 0;
+  int _refusing = 0;
+  final _why = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _why.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final r = await _apiGet('/api/approvals?status=$_show');
+      if (mounted) {
+        setState(() {
+          _rows = _bList(r['approvals']).map((x) => (x as Map).cast<String, dynamic>()).toList();
+          _error = null;
+        });
+      }
+    } on _ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    }
+  }
+
+  Future<void> _decide(Map<String, dynamic> a, bool approve) async {
+    setState(() {
+      _busy = _bn(a['id']);
+      _error = null;
+    });
+    try {
+      final r = await _apiPost('/api/approvals/${a['id']}/decide', {'approve': approve, 'note': approve ? '' : _why.text.trim()});
+      HapticFeedback.mediumImpact();
+      final ap = (r['approval'] as Map?)?.cast<String, dynamic>() ?? {};
+      _why.clear();
+      setState(() {
+        _busy = 0;
+        _refusing = 0;
+        _done = approve
+            ? 'Approved ${_ugx(_bn(a['amount']))} for ${a['partyName']}.${ap['receipt'] != null ? ' Receipt ${ap['receipt']}.' : ''}'
+            : 'Refused. ${a['requestedBy']} has been told.';
+      });
+      await _load();
+    } on _ApiError catch (e) {
+      if (mounted) setState(() {
+        _busy = 0;
+        _error = e.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = _rows;
+    return _Sheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 4, 16, MediaQuery.paddingOf(context).bottom + 20),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('Owner approval', style: _title(20, weight: FontWeight.w800)),
+          const SizedBox(height: 2),
+          Text('A loan only goes ahead when you say yes.', style: _txt(12.5, color: _mid)),
+          const SizedBox(height: 12),
+          _bChoice(const [('pending', 'Waiting'), ('approved', 'Approved'), ('rejected', 'Refused')], _show, (v) {
+            setState(() {
+              _show = v;
+              _rows = null;
+            });
+            _load();
+          }),
+          if (_done != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: _greenPale, borderRadius: BorderRadius.circular(14)),
+              child: Text(_done!, style: _txt(12.5, weight: FontWeight.w600, color: _green)),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(_error!, style: _txt(12.5, color: _ember, height: 1.4)),
+          ],
+          const SizedBox(height: 10),
+          if (rows == null)
+            const Padding(
+              padding: EdgeInsets.all(30),
+              child: Center(child: CircularProgressIndicator(color: _brand)),
+            )
+          else if (rows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text(_show == 'pending' ? 'Nothing is waiting for you.' : 'Nothing here.',
+                  textAlign: TextAlign.center, style: _txt(13, color: _mid)),
+            )
+          else
+            for (final a in rows) _card(a),
+        ]),
+      ),
+    );
+  }
+
+  Widget _card(Map<String, dynamic> a) {
+    final cu = (a['customer'] as Map?)?.cast<String, dynamic>();
+    final hist = _bList(a['history']).map((x) => (x as Map).cast<String, dynamic>()).toList();
+    final over = cu != null && _bn(cu['after']) > _bn(cu['limit']);
+    final pending = a['status'] == 'pending';
+    final refusing = _refusing == _bn(a['id']);
+    Widget fig(String k, String v, Color c) => Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(k, style: _txt(10.5, color: _mid)),
+            Text(v, maxLines: 1, style: _txt(13, weight: FontWeight.w800, color: c)),
+          ]),
+        );
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: pending ? _amber.withOpacity(0.35) : _hairline),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Expanded(
+            child: Text('${a['partyName']}', style: _txt(14, weight: FontWeight.w800, color: _ink)),
+          ),
+          _bPill(a['kind'] == 'credit_sale' ? 'Loan' : 'Supplier', _blue, _bluePale),
+        ]),
+        const SizedBox(height: 4),
+        Text(
+            '${a['orderNo'] ?? ''}${a['orderNo'] != null ? ' · ' : ''}asked by ${a['requestedBy']} · ${_when('${a['requestedAt']}')}',
+            style: _txt(11.5, color: _mid)),
+        const SizedBox(height: 8),
+        Text(_ugx(_bn(a['amount'])), style: _title(22, weight: FontWeight.w800)),
+        if (_bn(a['paidNow']) > 0)
+          Text('Order ${_ugx(_bn(a['total']))} · ${_ugx(_bn(a['paidNow']))} paid now', style: _txt(11.5, color: _inkSoft)),
+        if (cu != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: _tile, borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [
+              fig('Owes now', _shortUgx(_bn(cu['owed'])), _ink),
+              fig('Limit', _shortUgx(_bn(cu['limit'])), _ink),
+              fig('Late', _bn(cu['overdue']) > 0 ? _shortUgx(_bn(cu['overdue'])) : 'Nothing', _bn(cu['overdue']) > 0 ? _ember : _green),
+              fig('After', _shortUgx(_bn(cu['after'])), over ? _ember : _ink),
+            ]),
+          ),
+          if (over || _bn(cu['overdue']) > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+                [
+                  if (over) 'Goes ${_ugx(_bn(cu['after']) - _bn(cu['limit']))} over the limit.',
+                  if (_bn(cu['overdue']) > 0) '${_ugx(_bn(cu['overdue']))} already late.',
+                ].join(' '),
+                style: _txt(12, weight: FontWeight.w700, color: _ember)),
+          ],
+          const SizedBox(height: 8),
+          Text('Paid in the last 90 days: ${_ugx(_bn(a['paidIn90']))}', style: _txt(11.5, weight: FontWeight.w600, color: _inkSoft)),
+          for (final l in hist.take(4))
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Row(children: [
+                Expanded(child: Text('${_bDay(l['date'])} · ${l['what']}', style: _txt(11, color: _mid))),
+                Text(_bn(l['credit']) > 0 ? '-${_shortUgx(_bn(l['credit']))}' : '+${_shortUgx(_bn(l['debit']))}',
+                    style: _txt(11, weight: FontWeight.w700, color: _bn(l['credit']) > 0 ? _green : _ink)),
+              ]),
+            ),
+        ],
+        if (!pending) ...[
+          const SizedBox(height: 8),
+          Text(
+              '${a['status'] == 'approved' ? 'Approved' : a['status'] == 'rejected' ? 'Refused' : 'Paid another way'}${a['decidedBy'] != null ? ' by ${a['decidedBy']}' : ''}${a['note'] != null ? ': “${a['note']}”' : ''}',
+              style: _txt(12, weight: FontWeight.w600, color: a['status'] == 'approved' ? _green : _ember)),
+        ] else if (a['canDecide'] != true) ...[
+          const SizedBox(height: 8),
+          Text(a['mine'] == true ? 'You asked for this. The owner decides it.' : 'Above what you may approve.',
+              style: _txt(12, color: _mid)),
+        ] else if (refusing) ...[
+          const SizedBox(height: 10),
+          _Field(controller: _why, hint: 'Why? The cashier reads this.', autofocus: true, onChanged: (_) => setState(() {})),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: _bButton('Back', () => setState(() => _refusing = 0), tint: _mid)),
+            const SizedBox(width: 8),
+            Expanded(child: _bButton('Refuse', _why.text.trim().length >= 3 ? () => _decide(a, false) : null, tint: _ember, busy: _busy == _bn(a['id']))),
+          ]),
+        ] else ...[
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: _bButton('Refuse', () => setState(() => _refusing = _bn(a['id'])), tint: _ember)),
+            const SizedBox(width: 8),
+            Expanded(flex: 2, child: _bButton('Approve', () => _decide(a, true), busy: _busy == _bn(a['id']))),
           ]),
         ],
       ]),
