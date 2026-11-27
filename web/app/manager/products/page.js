@@ -586,23 +586,15 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
               )}
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Next buy price" hint="What you expect to pay next time.">
-              <MoneyField value={f.expectedCost} onChange={(v) => setF((x) => ({ ...x, expectedCost: v }))} placeholder="Optional" />
-            </Field>
-            <Field label="Next sale price" hint="What you plan to sell at.">
-              <MoneyField value={f.expectedPrice} onChange={(v) => setF((x) => ({ ...x, expectedPrice: v }))} placeholder="Optional" />
-            </Field>
-            {editing && product.last_buy ? (
-              <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
-                <p className="text-[12px] font-semibold text-ink-muted">Last bought</p>
-                <p className="tnum mt-1 text-[14px] font-bold text-ink">{money(product.last_buy.cost)}</p>
-                <p className="text-[12px] text-ink-muted">
-                  {[product.last_buy.supplier, product.last_buy.fdn && `FDN ${product.last_buy.fdn}`, product.last_buy.date].filter(Boolean).join(' · ')}
-                </p>
-              </div>
-            ) : <div />}
-          </div>
+          {editing && product.last_buy && (
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl border border-line bg-surface-2 px-4 py-3">
+              <p className="text-[12px] font-semibold text-ink-muted">Last bought</p>
+              <p className="tnum text-[14px] font-bold text-ink">{money(product.last_buy.cost)}</p>
+              <p className="text-[12px] text-ink-muted">
+                {[product.last_buy.supplier, product.last_buy.fdn && `FDN ${product.last_buy.fdn}`, product.last_buy.date].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+          )}
         </Section>
 
         <Section title="Size and weight">
