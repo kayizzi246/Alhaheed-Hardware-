@@ -989,6 +989,23 @@ class AH_Rest {
 		}
 		// Asked to buy on credit: checked now, so the customer knows before
 		// walking to the shop. The cashier puts it on the account.
+		// The customer's own delivery man: who will come for the goods, so
+		// the store can check him before anything leaves.
+		$who_comes = (array) $req->get_param( 'collector' );
+		if ( 'own_transport' === $how ) {
+			$c = array(
+				'name'    => trim( sanitize_text_field( (string) ( $who_comes['name'] ?? '' ) ) ),
+				'phone'   => AH_Sms::normalise_phone( (string) ( $who_comes['phone'] ?? '' ) ) ?: trim( sanitize_text_field( (string) ( $who_comes['phone'] ?? '' ) ) ),
+				'vehicle' => trim( sanitize_text_field( (string) ( $who_comes['vehicle'] ?? '' ) ) ),
+				'plate'   => strtoupper( trim( sanitize_text_field( (string) ( $who_comes['plate'] ?? '' ) ) ) ),
+			);
+			if ( '' !== $c['name'] || '' !== $c['plate'] ) {
+				$order->update_meta_data( '_ah_collector', $c );
+				$order->add_order_note( sprintf( 'Collected by %s, %s, %s %s', $c['name'], $c['phone'], $c['vehicle'], $c['plate'] ) );
+				$order->save();
+			}
+		}
+
 		// Over the limit or late: the order is still taken, and the
 		// customer is told how much to pay first. Stopped or no credit:
 		// refused, because paying would not help.

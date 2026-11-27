@@ -1166,6 +1166,43 @@ class _Details extends ChangeNotifier {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  THE CUSTOMER'S OWN DELIVERY MEN
+//
+//  Kept on the phone, newest first, so the next order is one tap.
+// ═══════════════════════════════════════════════════════════════
+
+class _Drivers {
+  static const _key = 'alhadeed.drivers';
+
+  static Future<List<Map<String, dynamic>>> load() async {
+    final p = await SharedPreferences.getInstance();
+    try {
+      return ((jsonDecode(p.getString(_key) ?? '[]') as List))
+          .map((x) => (x as Map).cast<String, dynamic>())
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> remember(Map<String, dynamic> d) async {
+    final p = await SharedPreferences.getInstance();
+    final all = await load();
+    String key(Map m) => '${m['plate']}'.toUpperCase().replaceAll(' ', '');
+    all.removeWhere((x) => key(x) == key(d) && key(d).isNotEmpty);
+    all.insert(0, d);
+    await p.setString(_key, jsonEncode(all.take(6).toList()));
+  }
+
+  static Future<void> forget(Map<String, dynamic> d) async {
+    final p = await SharedPreferences.getInstance();
+    final all = await load();
+    all.removeWhere((x) => '${x['plate']}' == '${d['plate']}' && '${x['name']}' == '${d['name']}');
+    await p.setString(_key, jsonEncode(all));
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  SCREEN 2 OF 4 — THE FINAL PAGE
 // ═══════════════════════════════════════════════════════════════
 
@@ -1197,6 +1234,31 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
   /// 'shop_delivery' | 'own_transport' | 'pickup'
   String _delivery = 'shop_delivery';
 
+  /// Their own delivery man: saved ones, the one chosen, or a new one.
+  List<Map<String, dynamic>> _drivers = [];
+  int _driver = -1; // index in _drivers, or -1 for a new one
+  final _dName = TextEditingController();
+  final _dPhone = TextEditingController();
+  final _dPlate = TextEditingController();
+  String _dVehicle = 'Boda boda';
+
+  Map<String, dynamic> get _collector => _driver >= 0 && _driver < _drivers.length
+      ? _drivers[_driver]
+      : {
+          'name': _dName.text.trim(),
+          'phone': _dPhone.text.trim(),
+          'vehicle': _dVehicle,
+          'plate': _dPlate.text.trim().toUpperCase(),
+        };
+
+  bool get _collectorOk {
+    if (_delivery != 'own_transport') return true;
+    final c = _collector;
+    return '${c['name']}'.trim().length >= 2 &&
+        '${c['phone']}'.replaceAll(RegExp(r'[^0-9]'), '').length >= 9 &&
+        '${c['plate']}'.trim().length >= 3;
+  }
+
   /// The customer's credit account, when the shop gives them one.
   Map<String, dynamic>? _credit;
   bool _onCredit = false;
@@ -1215,6 +1277,9 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
   void dispose() {
     _name.dispose();
     _location.dispose();
+    _dName.dispose();
+    _dPhone.dispose();
+    _dPlate.dispose();
     super.dispose();
   }
 
@@ -1229,6 +1294,8 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
 
     _name.text = _Details().fullName;
     _location.text = _Details().location;
+    _drivers = await _Drivers.load();
+    _driver = _drivers.isEmpty ? -1 : 0;
     if (_Session().signedIn) {
       try {
         final r = await _apiGet('/api/me/credit');
@@ -1283,6 +1350,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
       _name.text.trim().length >= 2 &&
       (!_needsLocation || _location.text.trim().isNotEmpty) &&
       !_overLimit &&
+      _collectorOk &&
       (!_onCredit || _creditProblem == null);
 
   int _n(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
@@ -1336,7 +1404,9 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
         'phone': _Details().phone.trim(),
         'fullName': _name.text.trim(),
         if (_onCredit) 'onCredit': true,
+        if (_delivery == 'own_transport') 'collector': _collector,
       });
+      if (_delivery == 'own_transport') await _Drivers.remember(_collector);
       final order = (r['order'] as Map).cast<String, dynamic>();
       final smsSent = r['smsSent'] != false;
 
@@ -1458,6 +1528,236 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
         if (mounted) setState(() {});
       });
 
+  /// One numbered step of the page, in its own card.
+  Widget _section(int n, String title, List<Widget> children, {Widget? trailing}) =>
+      Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Container(
+                width: 22,
+                height: 22,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(color: _lime, shape: BoxShape.circle),
+                child: Text('$n', style: _txt(11.5, weight: FontWeight.w800, color: _onLime)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Text(title, style: _title(14.5, weight: FontWeight.w800))),
+              if (trailing != null) trailing,
+            ]),
+            const SizedBox(height: 10),
+            ...children,
+          ],
+        ),
+      );
+
+  /// The loan, at the top of the page, for anyone who owes the shop.
+  Widget _loanStrip() {
+    final c = _credit!;
+    final owed = _n(c['owed']);
+    final limit = _n(c['limit']);
+    final late = _n(c['overdue']);
+    final over = owed > limit;
+    final bad = over || late > 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: bad ? _emberPale : _brandPale,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: (bad ? _ember : _brand).withOpacity(0.25)),
+      ),
+      child: Row(children: [
+        Icon(Icons.account_balance_wallet_rounded, size: 18, color: bad ? _ember : _brand),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Your loan: ${_ugx(owed)} of ${_ugx(limit)}',
+                  style: _txt(12.5, weight: FontWeight.w800, color: bad ? _ember : _brandDark)),
+              Text(
+                  over
+                      ? 'Over your limit by ${_ugx(owed - limit)}${late > 0 ? ' · ${_shortUgx(late)} late' : ''}'
+                      : late > 0
+                          ? '${_ugx(late)} is late'
+                          : '${_ugx(_n(c['available']))} left to use',
+                  style: _txt(11.5, color: _inkSoft)),
+            ],
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _vehicleChip(String v, IconData icon) {
+    final on = _dVehicle == v;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6, bottom: 6),
+      child: _Pressable(
+        scale: 0.95,
+        onTap: () => setState(() => _dVehicle = v),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          decoration: BoxDecoration(
+            color: on ? _lime : _tile,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: on ? _lime : _hairline),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 16, color: on ? _onLime : _mid),
+            const SizedBox(width: 5),
+            Text(v, style: _txt(12.5, weight: FontWeight.w700, color: on ? _onLime : _inkSoft)),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  IconData _vehicleIcon(String v) => switch (v) {
+        'Boda boda' => Icons.two_wheeler_rounded,
+        'Car' => Icons.directions_car_rounded,
+        'Truck' => Icons.local_shipping_rounded,
+        _ => Icons.commute_rounded,
+      };
+
+  /// Who comes for the goods: a saved delivery man, or a new one.
+  Widget _driverBox() => Container(
+        margin: const EdgeInsets.only(top: 2, bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: _tile,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Your delivery man', style: _txt(13, weight: FontWeight.w800, color: _ink)),
+            const SizedBox(height: 2),
+            Text('The store checks his name and plate before giving him the goods.',
+                style: _txt(11.5, color: _mid)),
+            const SizedBox(height: 10),
+            for (var i = 0; i < _drivers.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: _Pressable(
+                  scale: 0.99,
+                  onTap: () => setState(() => _driver = i),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _driver == i ? _brandPale : _white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _driver == i ? _brand : _hairline),
+                    ),
+                    child: Row(children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: _driver == i ? _lime : _tile,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(_vehicleIcon('${_drivers[i]['vehicle']}'),
+                            size: 17, color: _driver == i ? _onLime : _mid),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${_drivers[i]['name']}',
+                                style: _txt(13, weight: FontWeight.w700, color: _ink)),
+                            Text(
+                                '${_drivers[i]['vehicle']} · ${_drivers[i]['plate']} · ${_drivers[i]['phone']}',
+                                style: _txt(11.5, color: _mid)),
+                          ],
+                        ),
+                      ),
+                      if (_driver == i)
+                        const Icon(Icons.check_circle_rounded, size: 20, color: _brand)
+                      else
+                        GestureDetector(
+                          onTap: () async {
+                            await _Drivers.forget(_drivers[i]);
+                            final all = await _Drivers.load();
+                            setState(() {
+                              _drivers = all;
+                              _driver = all.isEmpty ? -1 : 0;
+                            });
+                          },
+                          child: const Icon(Icons.close_rounded, size: 18, color: _light),
+                        ),
+                    ]),
+                  ),
+                ),
+              ),
+            if (_drivers.isNotEmpty)
+              _Pressable(
+                scale: 0.99,
+                onTap: () => setState(() => _driver = -1),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: _driver == -1 ? _brandPale : _white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _driver == -1 ? _brand : _hairline),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.person_add_alt_rounded, size: 18, color: _brand),
+                    const SizedBox(width: 8),
+                    Text('A different delivery man',
+                        style: _txt(13, weight: FontWeight.w700, color: _brandDark)),
+                  ]),
+                ),
+              ),
+            if (_driver == -1) ...[
+              const SizedBox(height: 10),
+              _Field(
+                controller: _dName,
+                hint: 'His name',
+                capitalisation: TextCapitalization.words,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 8),
+              _Field(
+                controller: _dPhone,
+                hint: 'His phone number',
+                keyboardType: TextInputType.phone,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 10),
+              Text('What is he coming with?', style: _txt(12, weight: FontWeight.w700, color: _inkSoft)),
+              const SizedBox(height: 6),
+              Wrap(children: [
+                _vehicleChip('Boda boda', Icons.two_wheeler_rounded),
+                _vehicleChip('Car', Icons.directions_car_rounded),
+                _vehicleChip('Truck', Icons.local_shipping_rounded),
+                _vehicleChip('Other', Icons.commute_rounded),
+              ]),
+              const SizedBox(height: 4),
+              _Field(
+                controller: _dPlate,
+                hint: 'Plate number, e.g. UFA 123B',
+                capitalisation: TextCapitalization.characters,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 6),
+              Text('Saved on this phone for your next order.', style: _txt(11, color: _light)),
+            ],
+          ],
+        ),
+      );
+
   Widget _body() {
     if (!_ready) return const Center(child: CircularProgressIndicator(color: _brand));
 
@@ -1477,142 +1777,132 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
       );
     }
 
+    final hasCredit = _credit != null && _credit!['status'] != 'none';
+    final owes = hasCredit && _n(_credit!['owed']) > 0;
+
     return Column(
       children: [
         Expanded(
           child: ListView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
             children: [
-              _label('YOUR ORDER (${_CartStore().lines.length} ITEMS)'),
-              const SizedBox(height: 10),
-              for (final line in _CartStore().lines) _cartLine(line),
+              if (_Session().signedIn && owes) _loanStrip(),
 
-              // Signed out: what is in the cart, the total, and the way in.
+              _section(1, 'Your items', [
+                for (final line in _CartStore().lines) _cartLine(line),
+              ],
+                  trailing: Text('${_CartStore().count} items',
+                      style: _txt(12, weight: FontWeight.w700, color: _mid))),
+
+              // Signed out: the total, and the way in.
               if (!_Session().signedIn) ...[
-                const SizedBox(height: 10),
                 _totals(),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 _signInCard(),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  _notice(
-                      icon: Icons.error_outline_rounded,
-                      tone: _ember,
-                      bg: _emberPale,
-                      text: _error!),
+                  _notice(icon: Icons.error_outline_rounded, tone: _ember, bg: _emberPale, text: _error!),
                 ],
               ] else ...[
-              const SizedBox(height: 20),
-              _label('WHO IS ORDERING'),
-              const SizedBox(height: 10),
-              _phoneRow(),
-              const SizedBox(height: 10),
-              _Field(
-                controller: _name,
-                hint: 'Your name',
-                capitalisation: TextCapitalization.words,
-                onChanged: (_) => setState(() {}),
-              ),
-
-              const SizedBox(height: 20),
-              _label('HOW IT GETS TO YOU'),
-              const SizedBox(height: 10),
-              _deliveryOption(
-                value: 'shop_delivery',
-                icon: Icons.local_shipping_outlined,
-                title: 'We deliver it',
-                line: 'Our truck brings it to you. Free of charge.',
-              ),
-              _deliveryOption(
-                value: 'own_transport',
-                icon: Icons.two_wheeler_outlined,
-                title: 'My own delivery man collects it',
-                line: 'Your boda or truck picks it up at the shop.',
-              ),
-              _deliveryOption(
-                value: 'pickup',
-                icon: Icons.storefront_outlined,
-                title: 'I will collect it myself',
-                line: 'Come to the counter with your order number.',
-              ),
-
-              const SizedBox(height: 16),
-              _label(_needsLocation
-                  ? 'WHERE TO DELIVER'
-                  : 'WHERE IT IS GOING (OPTIONAL)'),
-              const SizedBox(height: 10),
-              _Field(
-                controller: _location,
-                hint: 'Plot 24, Bukoto · behind the fuel station',
-                maxLines: 2,
-                capitalisation: TextCapitalization.sentences,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _needsLocation
-                    ? 'A plot number and a landmark beat a road name: the '
-                        'driver will call you on arrival.'
-                    : 'Only so the shop knows where the goods are headed.',
-                style: _txt(12, color: _light, height: 1.45),
-              ),
-
-              if (_credit != null && _credit!['status'] != 'none') ...[
-                const SizedBox(height: 16),
-                _label('HOW YOU PAY'),
-                const SizedBox(height: 10),
-                _creditMini(),
-                const SizedBox(height: 10),
-                _payOption(
-                  credit: false,
-                  icon: Icons.payments_outlined,
-                  title: 'Pay at the cashier',
-                  line: 'Cash, Mobile Money or card at the counter.',
-                ),
-                _payOption(
-                  credit: true,
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: 'Buy on credit',
-                  line: _creditProblem ??
-                      (_payFirst > 0
-                          ? 'Pay ${_ugx(_payFirst)} off your credit at the shop first, then take the goods. You can order now.'
-                          : '${_ugx(_n(_credit!['available']))} left. Pay within ${_n(_credit!['termsDays'])} days.'),
-                  bad: _creditProblem != null,
-                ),
-                if (_onCredit && _payFirst > 0 && _creditProblem == null)
-                  _notice(
-                    icon: Icons.info_outline_rounded,
-                    tone: _amber,
-                    bg: _amberPale,
-                    text: 'You owe ${_ugx(_n(_credit!['owed']))} of your ${_ugx(_n(_credit!['limit']))} limit'
-                        '${_n(_credit!['overdue']) > 0 ? ', and ${_ugx(_n(_credit!['overdue']))} is late' : ''}. '
-                        'To collect or have this delivered, first pay ${_ugx(_payFirst)} at the shop. '
-                        'The cashier then puts the order on your credit.',
+                _section(2, 'Who is ordering', [
+                  _phoneRow(),
+                  const SizedBox(height: 8),
+                  _Field(
+                    controller: _name,
+                    hint: 'Your name',
+                    capitalisation: TextCapitalization.words,
+                    onChanged: (_) => setState(() {}),
                   ),
-              ],
-              const SizedBox(height: 20),
-              _totals(),
+                ]),
 
-              if (_overLimit) ...[
-                const SizedBox(height: 12),
-                _notice(
-                  icon: Icons.account_balance_wallet_outlined,
-                  tone: _ember,
-                  bg: _emberPale,
-                  text: 'This is over your spending limit of '
-                      '${_ugx(_Session().spendingLimit!)} per order. Remove '
-                      'something, or ask the company owner to raise it.',
-                ),
-              ],
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                _notice(
-                    icon: Icons.error_outline_rounded,
+                _section(3, 'How it gets to you', [
+                  _deliveryOption(
+                    value: 'shop_delivery',
+                    icon: Icons.local_shipping_outlined,
+                    title: 'We deliver it',
+                    line: 'Our truck brings it to you. Free of charge.',
+                  ),
+                  _deliveryOption(
+                    value: 'own_transport',
+                    icon: Icons.two_wheeler_outlined,
+                    title: 'My own delivery man collects it',
+                    line: 'Your boda, car or truck picks it up at the shop.',
+                  ),
+                  if (_delivery == 'own_transport') _driverBox(),
+                  _deliveryOption(
+                    value: 'pickup',
+                    icon: Icons.storefront_outlined,
+                    title: 'I will collect it myself',
+                    line: 'Come to the counter with your order number.',
+                  ),
+                  const SizedBox(height: 4),
+                  Text(_needsLocation ? 'Where to deliver' : 'Where it is going (optional)',
+                      style: _txt(12, weight: FontWeight.w700, color: _inkSoft)),
+                  const SizedBox(height: 6),
+                  _Field(
+                    controller: _location,
+                    hint: 'Plot 24, Bukoto · behind the fuel station',
+                    maxLines: 2,
+                    capitalisation: TextCapitalization.sentences,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  if (_needsLocation) ...[
+                    const SizedBox(height: 5),
+                    Text('A plot number and a landmark help: the driver calls you on arrival.',
+                        style: _txt(11, color: _light, height: 1.4)),
+                  ],
+                ]),
+
+                if (hasCredit)
+                  _section(4, 'How you pay', [
+                    _creditMini(),
+                    const SizedBox(height: 10),
+                    _payOption(
+                      credit: false,
+                      icon: Icons.payments_outlined,
+                      title: 'Pay at the cashier',
+                      line: 'Cash, Mobile Money or card at the counter.',
+                    ),
+                    _payOption(
+                      credit: true,
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Buy on credit',
+                      line: _creditProblem ??
+                          (_payFirst > 0
+                              ? 'Pay ${_ugx(_payFirst)} off your credit at the shop first, then take the goods. You can order now.'
+                              : '${_ugx(_n(_credit!['available']))} left. Pay within ${_n(_credit!['termsDays'])} days.'),
+                      bad: _creditProblem != null,
+                    ),
+                    if (_onCredit && _payFirst > 0 && _creditProblem == null)
+                      _notice(
+                        icon: Icons.info_outline_rounded,
+                        tone: _amber,
+                        bg: _amberPale,
+                        text: 'You owe ${_ugx(_n(_credit!['owed']))} of your ${_ugx(_n(_credit!['limit']))} limit'
+                            '${_n(_credit!['overdue']) > 0 ? ', and ${_ugx(_n(_credit!['overdue']))} is late' : ''}. '
+                            'To collect or have this delivered, first pay ${_ugx(_payFirst)} at the shop. '
+                            'The cashier then puts the order on your credit.',
+                      ),
+                  ]),
+
+                _totals(),
+
+                if (_overLimit) ...[
+                  const SizedBox(height: 10),
+                  _notice(
+                    icon: Icons.account_balance_wallet_outlined,
                     tone: _ember,
                     bg: _emberPale,
-                    text: _error!),
-              ],
+                    text: 'This is over your spending limit of '
+                        '${_ugx(_Session().spendingLimit!)} per order. Remove '
+                        'something, or ask the company owner to raise it.',
+                  ),
+                ],
+                if (_error != null) ...[
+                  const SizedBox(height: 10),
+                  _notice(icon: Icons.error_outline_rounded, tone: _ember, bg: _emberPale, text: _error!),
+                ],
               ],
               const SizedBox(height: 10),
             ],
@@ -1876,11 +2166,11 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
     final colour = _categoryColour(line['category'] as String?);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: _white,
-        borderRadius: BorderRadius.circular(16),
+        color: _tile,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _hairline),
       ),
       child: Row(
@@ -2138,6 +2428,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
     if (_needsLocation && _location.text.trim().isEmpty) {
       return 'Say where to deliver';
     }
+    if (!_collectorOk) return 'Add your delivery man';
     return '${_CartStore().count} items';
   }
 }

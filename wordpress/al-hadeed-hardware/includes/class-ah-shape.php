@@ -205,6 +205,8 @@ class AH_Shape {
 			'source'           => $order->get_meta( '_ah_source' ) ?: 'web',
 			'on_credit'        => 'yes' === $order->get_meta( '_ah_on_credit' ),
 			'wants_credit'     => 'yes' === $order->get_meta( '_ah_wants_credit' ),
+			// The customer's own delivery man, when they send one.
+			'collector'        => $order->get_meta( '_ah_collector' ) ?: null,
 			// What the customer must pay off first for this to go on
 			// credit. Worked out now, so it falls as they pay.
 			'credit_pay_first' => ( 'yes' === $order->get_meta( '_ah_wants_credit' ) && 'yes' !== $order->get_meta( '_ah_on_credit' ) && class_exists( 'AH_Credit' ) )

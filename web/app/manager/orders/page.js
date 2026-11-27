@@ -315,6 +315,15 @@ function OrderDialog({ id, onClose, onChanged, onDelete }) {
             </p>
           )}
 
+          {order.collector && (
+            <p className="rounded-lg border border-info/25 bg-info-bg px-3.5 py-2.5 text-[12.5px]">
+              <span className="font-semibold text-ink">Their delivery man:</span>{' '}
+              <span className="text-ink-2">
+                {order.collector.name} · {order.collector.phone} · {order.collector.vehicle} <b className="text-ink">{order.collector.plate}</b>
+              </span>
+            </p>
+          )}
+
           {order.payment && (
             <p className="text-[12px] text-ink-muted">
               <span className="font-semibold text-ink">{order.payment.receipt_no}</span>

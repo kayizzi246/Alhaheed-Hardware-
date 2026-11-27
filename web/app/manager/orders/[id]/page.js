@@ -78,6 +78,7 @@ export default function ManagerOrderDetail() {
                 <Row k="Phone"><span className="tnum">{order.ordered_by_phone || ''}</span></Row>
                 <Row k="Fulfilment">{order.fulfilment === 'delivery' ? 'Delivery' : 'Pick-up'}</Row>
                 {order.delivery_address && <Row k="Address">{order.delivery_address}</Row>}
+                {order.collector && <Row k="Delivery man">{order.collector.name} · {order.collector.phone} · {order.collector.vehicle} {order.collector.plate}</Row>}
                 <Row k="Placed"><span className="tnum">{dateTime(order.created_at)}</span></Row>
                 {order.notes && <Row k="Notes">{order.notes}</Row>}
                 {order.cancel_reason && <Row k="Cancelled because">{order.cancel_reason}</Row>}

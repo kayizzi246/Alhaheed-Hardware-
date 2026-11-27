@@ -2124,6 +2124,13 @@ class _OrderSheetState extends State<_OrderSheet> {
               _kv(Icons.phone_iphone_rounded, 'Phone', phone,
                   onTap: phone.isEmpty ? null : () => launchURL('tel:$phone')),
               _kv(Icons.location_on_outlined, 'Deliver to', o['delivery_address']),
+              if (o['collector'] is Map) ...[
+                _kv(Icons.two_wheeler_rounded, 'Delivery man',
+                    '${(o['collector'] as Map)['name']} · ${(o['collector'] as Map)['phone']}'),
+                _kv(Icons.pin_rounded, 'Vehicle',
+                    '${(o['collector'] as Map)['vehicle']} · ${(o['collector'] as Map)['plate']}',
+                    color: _brandDark),
+              ],
               _kv(Icons.sticky_note_2_outlined, 'Note', o['notes']),
               if ('${o['cancel_reason'] ?? ''}'.isNotEmpty)
                 _kv(Icons.block_rounded, 'Why cancelled', o['cancel_reason'],
@@ -5334,6 +5341,32 @@ class _DeliveryState extends State<_Delivery> {
           const SizedBox(height: 4),
           Text('${o['company_name'] ?? o['ordered_by_name'] ?? ''}',
               style: _txt(13.5, weight: FontWeight.w600)),
+          if (o['collector'] is Map) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _bluePale,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(children: [
+                const Icon(Icons.two_wheeler_rounded, size: 22, color: _blue),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Give only to: ${(o['collector'] as Map)['name']}',
+                          style: _txt(13.5, weight: FontWeight.w800, color: _ink)),
+                      Text(
+                          '${(o['collector'] as Map)['vehicle']} ${(o['collector'] as Map)['plate']} · ${(o['collector'] as Map)['phone']}',
+                          style: _txt(12.5, weight: FontWeight.w600, color: _blue)),
+                    ],
+                  ),
+                ),
+              ]),
+            ),
+          ],
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(12),
