@@ -65,13 +65,13 @@ const String _apiBase = 'https://pearlfx.online';
 //  TOKENS — identical in shop, cart, orders, company and manager.
 // ═══════════════════════════════════════════════════════════════
 const Color _white = Color(0xFFFFFFFF);
-const Color _bg = Color(0xFFF5F7FB);
+const Color _bg = Color(0xFFF3F6F4);
 const Color _ink = Color(0xFF0F1B33);
 const Color _inkSoft = Color(0xFF394862);
 const Color _mid = Color(0xFF55637D);
 const Color _light = Color(0xFF626F88);
-const Color _hairline = Color(0xFFE2E8F2);
-const Color _tile = Color(0xFFF9FAFD);
+const Color _hairline = Color(0xFFEEF2EF);
+const Color _tile = Color(0xFFF2F5F3);
 const Color _navy = Color(0xFF0E201A);
 const Color _navyDark = Color(0xFF081511);
 // #92D050 is the shop's green. It is light, so what sits on it is dark
@@ -94,7 +94,10 @@ const Cubic _ease = Cubic(0.23, 1, 0.32, 1);
 
 /// Soft depth for cards: a tight contact shadow and a wide faint one —
 /// the same layered shadow the staff panel's cards use.
-const List<BoxShadow> _cardShadow = [];
+const List<BoxShadow> _cardShadow = [
+  BoxShadow(color: Color(0x0F12301F), blurRadius: 20, offset: Offset(0, 6)),
+  BoxShadow(color: Color(0x0A12301F), blurRadius: 3, offset: Offset(0, 1)),
+];
 
 /// The brand's blue, deepening — hero cards, the header, the add button.
 const LinearGradient _heroGradient = LinearGradient(
@@ -391,11 +394,11 @@ class _Field extends StatelessWidget {
               const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: _hairline),
+            borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: _hairline),
+            borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
@@ -814,7 +817,7 @@ class _BottomBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: _white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _hairline),
+          boxShadow: _cardShadow,
         ),
         child: Row(
           children: [
@@ -1365,7 +1368,7 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
           decoration: BoxDecoration(
             color: _white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: _hairline),
+            boxShadow: _cardShadow,
           ),
           child: Row(
             children: [
@@ -1605,7 +1608,7 @@ class _ListTabState extends State<_ListTab> {
 BoxDecoration _cardBox() => BoxDecoration(
       color: _white,
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: _hairline.withOpacity(0.7)),
+      boxShadow: _cardShadow,
     );
 
 class _SmallButton extends StatelessWidget {
@@ -1927,7 +1930,7 @@ class _OrderSheetState extends State<_OrderSheet> {
                     decoration: BoxDecoration(
                       color: _how == m ? _lime : _tile,
                       borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: _hairline),
+                      boxShadow: _cardShadow,
                     ),
                     child: Text(_bMethod(m),
                         maxLines: 1,
@@ -2054,7 +2057,7 @@ class _OrderSheetState extends State<_OrderSheet> {
                 decoration: BoxDecoration(
                   color: _how == m ? _lime : _tile,
                   borderRadius: BorderRadius.circular(13),
-                  border: Border.all(color: _hairline),
+                  boxShadow: _cardShadow,
                 ),
                 child: Text(_bMethod(m),
                     maxLines: 1,
@@ -2193,7 +2196,7 @@ class _OrderSheetState extends State<_OrderSheet> {
         decoration: BoxDecoration(
           color: _white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _hairline),
+          boxShadow: _cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3259,7 +3262,7 @@ class _StockTabState extends State<_StockTab> {
                                 decoration: BoxDecoration(
                                   color: _tile,
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: _hairline),
+                                  boxShadow: _cardShadow,
                                 ),
                                 child: const Icon(Icons.sort_rounded,
                                     size: 20, color: _inkSoft),
@@ -3715,7 +3718,7 @@ class _MoveSheetState extends State<_MoveSheet> {
                 decoration: BoxDecoration(
                   color: _tile,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _hairline),
+                  boxShadow: _cardShadow,
                 ),
                 child: Row(children: [
                   Text(_kind == 'received' ? 'Delivery date' : 'Date',
@@ -4775,7 +4778,7 @@ class _WorkerSheetState extends State<_WorkerSheet> {
                   decoration: BoxDecoration(
                     color: _tile,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: _hairline),
+                    boxShadow: _cardShadow,
                   ),
                   child: Text('Give an advance',
                       style: _txt(14.5,
@@ -5203,7 +5206,7 @@ class _AccountTabState extends State<_AccountTab> {
   BoxDecoration get _box => BoxDecoration(
         color: _white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _hairline),
+        boxShadow: _cardShadow,
       );
 
   @override
@@ -6346,7 +6349,7 @@ class _LoanSheetState extends State<_LoanSheet> {
                   decoration: BoxDecoration(
                     color: _white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _hairline),
+                    boxShadow: _cardShadow,
                   ),
                   child: Column(children: [
                     for (var i = 0; i < lines.length && i < 12; i++) _line(lines[i], i > 0),
@@ -6374,7 +6377,7 @@ class _LoanSheetState extends State<_LoanSheet> {
       decoration: BoxDecoration(
         color: _white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _hairline),
+        boxShadow: _cardShadow,
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [

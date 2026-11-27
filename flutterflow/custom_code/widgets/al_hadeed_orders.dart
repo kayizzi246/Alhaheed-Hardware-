@@ -65,13 +65,13 @@ const String _apiBase = 'https://pearlfx.online';
 //  TOKENS — identical in shop, cart, orders, company and manager.
 // ═══════════════════════════════════════════════════════════════
 const Color _white = Color(0xFFFFFFFF);
-const Color _bg = Color(0xFFF5F7FB);
+const Color _bg = Color(0xFFF3F6F4);
 const Color _ink = Color(0xFF0F1B33);
 const Color _inkSoft = Color(0xFF394862);
 const Color _mid = Color(0xFF55637D);
 const Color _light = Color(0xFF626F88);
-const Color _hairline = Color(0xFFE2E8F2);
-const Color _tile = Color(0xFFF9FAFD);
+const Color _hairline = Color(0xFFEEF2EF);
+const Color _tile = Color(0xFFF2F5F3);
 const Color _navy = Color(0xFF0E201A);
 const Color _navyDark = Color(0xFF081511);
 // #92D050 is the shop's green. It is light, so what sits on it is dark
@@ -94,7 +94,10 @@ const Cubic _ease = Cubic(0.23, 1, 0.32, 1);
 
 /// Soft depth for cards: a tight contact shadow and a wide faint one —
 /// the same layered shadow the staff panel's cards use.
-const List<BoxShadow> _cardShadow = [];
+const List<BoxShadow> _cardShadow = [
+  BoxShadow(color: Color(0x0F12301F), blurRadius: 20, offset: Offset(0, 6)),
+  BoxShadow(color: Color(0x0A12301F), blurRadius: 3, offset: Offset(0, 1)),
+];
 
 /// The brand's blue, deepening — hero cards, the header, the add button.
 const LinearGradient _heroGradient = LinearGradient(
@@ -391,11 +394,11 @@ class _Field extends StatelessWidget {
               const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: _hairline),
+            borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: _hairline),
+            borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
@@ -814,7 +817,7 @@ class _BottomBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: _white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _hairline),
+          boxShadow: _cardShadow,
         ),
         child: Row(
           children: [
@@ -1276,7 +1279,7 @@ class _AlHadeedOrdersState extends State<AlHadeedOrders> {
               ? BoxDecoration(
                   color: _white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _hairline),
+                  boxShadow: _cardShadow,
                 )
               : const BoxDecoration(),
           child: Text(label,
@@ -1375,7 +1378,7 @@ class _AlHadeedOrdersState extends State<AlHadeedOrders> {
         decoration: BoxDecoration(
           color: _white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _hairline),
+          boxShadow: _cardShadow,
         ),
         child: Column(
           children: [
@@ -2086,7 +2089,7 @@ class _ConfirmSheet extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: _tile,
                         borderRadius: BorderRadius.circular(25),
-                        border: Border.all(color: _hairline),
+                        boxShadow: _cardShadow,
                       ),
                       child: Text('Keep it',
                           style: _txt(14.5,
@@ -2149,7 +2152,7 @@ Widget _docButton(IconData icon, String label, String note, VoidCallback onTap,
         decoration: BoxDecoration(
           color: _white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _hairline),
+          boxShadow: _cardShadow,
         ),
         child: Row(children: [
           Container(
