@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, setSession, getUser, clearSession } from '@/lib/api';
 import { HOME } from '@/lib/roles';
+import { Particles } from '@/components/Particles';
 
 /**
  * Signing in.
@@ -364,6 +365,7 @@ export default function LoginPage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_45%_at_90%_100%,rgba(125,211,252,.18),transparent_62%)]"
         />
+        <Particles />
 
         <div className="relative w-full max-w-[460px]">
           <OrderFlowArt />
