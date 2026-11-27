@@ -952,17 +952,12 @@ class _Header extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Al Hadeed Hardware',
+                        // Just the name, big and heavy: no second line.
+                        Text('Al Hadeed',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: _title(17,
-                                weight: FontWeight.w800, color: _onLime)),
-                        const SizedBox(height: 2),
-                        Text(subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style:
-                                _txt(12.5, color: _onLime.withOpacity(0.92))),
+                            style: _title(24,
+                                weight: FontWeight.w900, color: _onLime)),
                       ],
                     ),
                   ),
