@@ -551,32 +551,84 @@ class AH_Credit {
 		if ( $amount <= 0 ) {
 			return self::err( 'ah_no_amount', 'Type the amount paid' );
 		}
+		$receipt = self::take( $id, $amount, $method, $ref, sanitize_text_field( (string) $req->get_param( 'note' ) ), (bool) $req->get_param( 'again' ) );
+		if ( is_wp_error( $receipt ) ) {
+			return $receipt;
+		}
+		return array_merge( self::one( $req ), array( 'receiptNo' => $receipt ) );
+	}
+
+	/**
+	 * Money in against what a customer owes: the loan book, the cash book
+	 * and a receipt, all saved together or not at all. Returns the
+	 * receipt number, or why not.
+	 *
+	 * The same transaction ID never pays twice, and the same amount from
+	 * the same customer twice inside two minutes is stopped as a double
+	 * tap unless $again says it really is a second payment.
+	 */
+	public static function take( $id, $amount, $method, $ref, $note = '', $again = false, $order_id = 0 ) {
+		global $wpdb;
+		$user = get_user_by( 'id', (int) $id );
+		$ref  = trim( (string) $ref );
+		if ( ! $user ) {
+			return self::err( 'ah_not_found', 'Customer not found', 404 );
+		}
+		if ( $amount <= 0 ) {
+			return self::err( 'ah_no_amount', 'Type the amount paid' );
+		}
 		if ( ! in_array( $method, array( 'cash', 'mobile_money', 'bank', 'card', 'cheque' ), true ) ) {
 			return self::err( 'ah_bad_method', 'Choose how it was paid' );
 		}
 		if ( 'cash' !== $method && strlen( $ref ) < 3 ) {
 			return self::err( 'ah_ref_required', 'Type the transaction or cheque number' );
 		}
+		if ( '' !== $ref ) {
+			$norm = AH_Proofs::normalise_ref( $ref );
+			$used = $wpdb->get_var( $wpdb->prepare( 'SELECT receipt_no FROM ' . self::t( 'credit_entries' ) . " WHERE kind = 'payment' AND REPLACE(UPPER(ref), ' ', '') = %s LIMIT 1", $norm ) );
+			$paid = $used ? null : AH_Proofs::already_used( $norm, 0 );
+			if ( $used || $paid ) {
+				return self::err( 'ah_ref_used', sprintf( 'Transaction %s is already recorded (receipt %s). The same payment is never entered twice.', $ref, $used ?: $paid['receipt_no'] ), 409 );
+			}
+		}
+		if ( ! $again ) {
+			$twice = $wpdb->get_var( $wpdb->prepare(
+				'SELECT receipt_no FROM ' . self::t( 'credit_entries' ) . " WHERE kind = 'payment' AND customer_id = %d AND amount = %d AND created_at >= %s LIMIT 1",
+				$id, -$amount, gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - 120 )
+			) );
+			if ( $twice ) {
+				return new WP_Error( 'ah_paid_twice', sprintf( 'UGX %s from %s was just recorded (receipt %s). If this is a second payment, tick "It is a second payment".', number_format( $amount ), $user->display_name, $twice ), array( 'status' => 409, 'canRepeat' => true ) );
+			}
+		}
 		// Paying more than is owed is allowed: the extra is held for the
 		// customer and used by their next credit order (a deposit).
-
 		$me      = AH_Auth::current();
-		$receipt = AH_Flow::next_receipt_no();
-		self::entry( $id, 'payment', -$amount, array( 'method' => $method, 'ref' => $ref ?: null, 'receipt_no' => $receipt, 'note' => sanitize_text_field( (string) $req->get_param( 'note' ) ) ?: null ) );
-
-		// Real money in, so it goes in the cash book with a receipt.
-		$wpdb->insert( AH_Install::table( 'cash_book' ), array(
-			'entry_date'  => current_time( 'Y-m-d' ),
-			'details'     => sprintf( '%s · Credit payment · %s', $receipt, $user->display_name ),
-			'cash_in'     => $amount,
-			'cash_out'    => 0,
-			'method'      => $method,
-			'order_id'    => null,
-			'payment_id'  => null,
-			'recorded_by' => $me ? $me->ID : 0,
-			'created_at'  => current_time( 'mysql' ),
-		) );
-		AH_Flow::log_event( 0, 'cashier', 'credit_payment', null, null, $me ? $me->ID : null, sprintf( '%s · %s · UGX %s · %s', $receipt, $user->display_name, number_format( $amount ), $method ) );
+		$receipt = AH_Books::atomic( function () use ( $wpdb, $id, $amount, $method, $ref, $note, $user, $me, $order_id ) {
+			$receipt = AH_Flow::next_receipt_no();
+			if ( ! self::entry( $id, 'payment', -$amount, array( 'method' => $method, 'ref' => $ref ?: null, 'receipt_no' => $receipt, 'note' => $note ?: null, 'order_id' => $order_id ) ) ) {
+				return self::err( 'ah_failed', 'The payment did not save. Try again.', 500 );
+			}
+			// Real money in, so it goes in the cash book with a receipt.
+			$ok = $wpdb->insert( AH_Install::table( 'cash_book' ), array(
+				'entry_date'  => current_time( 'Y-m-d' ),
+				'details'     => sprintf( '%s · Credit payment · %s', $receipt, $user->display_name ),
+				'cash_in'     => $amount,
+				'cash_out'    => 0,
+				'method'      => $method,
+				'order_id'    => $order_id ?: null,
+				'payment_id'  => null,
+				'recorded_by' => $me ? $me->ID : 0,
+				'created_at'  => current_time( 'mysql' ),
+			) );
+			if ( ! $ok ) {
+				return self::err( 'ah_failed', 'The payment did not save. Try again.', 500 );
+			}
+			return $receipt;
+		} );
+		if ( is_wp_error( $receipt ) ) {
+			return $receipt;
+		}
+		AH_Flow::log_event( (int) $order_id, 'cashier', 'credit_payment', null, null, $me ? $me->ID : null, sprintf( '%s · %s · UGX %s · %s%s', $receipt, $user->display_name, number_format( $amount ), $method, $ref ? ' · ' . $ref : '' ) );
 
 		$left = self::balance( $id );
 		self::tell( $id, 'Payment received', $left < 0
@@ -585,7 +637,7 @@ class AH_Credit {
 		if ( class_exists( 'AH_Push' ) ) {
 			AH_Push::send( AH_Push::desk( 'manager' ), 'Credit paid UGX ' . number_format( $amount ), sprintf( '%s · now owes UGX %s', $user->display_name, number_format( max( 0, $left ) ) ), array( 'kind' => 'credit_payment' ) );
 		}
-		return array_merge( self::one( $req ), array( 'receiptNo' => $receipt ) );
+		return $receipt;
 	}
 
 	// -----------------------------------------------------------------

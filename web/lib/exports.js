@@ -186,3 +186,10 @@ export async function exportSalesReport({ from, to }) {
   await saveBook(buildSalesReport(d), name);
   return name;
 }
+
+/** A Debts & books table to Excel. */
+export async function exportBooksSheet({ title, sheet, columns, rows, file }) {
+  const { buildBooksSheet } = await import('@/lib/workbook');
+  await saveBook(buildBooksSheet({ title, sheet, columns, rows }), file);
+  return file;
+}

@@ -6,7 +6,7 @@ import { confirmAction } from '@/components/Confirm';
 import { money, list, today } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
-  Alert, Button, Card, CardHead, CardTitle, Chip, Empty, Field, Input, Loading, LoadFailed, Modal,
+  Alert, Button, Card, CardHead, CardTitle, Checkbox, Chip, Empty, Field, Input, Loading, LoadFailed, Modal,
   PageHead, Segmented, Select, Table, TableWrap, Td, Textarea, Th, Tr } from '@/components/ui';
 
 const STATUS = {
@@ -527,15 +527,18 @@ function PayBill({ bill, onClose, onDone }) {
   const [date, setDate] = useState(today());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [twice, setTwice] = useState(false);
+  const [again, setAgain] = useState(false);
   const overPay = bill.match?.state === 'over_billed';
 
   async function save() {
     setBusy(true);
     setError('');
     try {
-      await api(`/api/manager/supplier-bills/${bill.id}/pay`, { method: 'POST', body: { amount: Number(amount), method, ref, date } });
+      await api(`/api/manager/supplier-bills/${bill.id}/pay`, { method: 'POST', body: { amount: Number(amount), method, ref, date, again } });
       onDone(`${money(Number(amount))} paid to ${bill.supplier}.`);
     } catch (e) {
+      if (e.code === 'ah_paid_twice') setTwice(true);
       setError(e.message);
       setBusy(false);
     }
@@ -557,6 +560,7 @@ function PayBill({ bill, onClose, onDone }) {
           </Field>
           <Field label={method === 'cheque' ? 'Cheque no.' : 'Transaction ID'}><Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder={method === 'cash' ? 'Not needed for cash' : ''} /></Field>
         </div>
+        {twice && <Checkbox label="It is a second payment, not the same one again" checked={again} onChange={(e) => setAgain(e.target.checked)} />}
       </div>
     </Modal>
   );

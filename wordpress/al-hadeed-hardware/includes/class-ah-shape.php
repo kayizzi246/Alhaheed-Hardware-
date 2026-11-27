@@ -204,6 +204,9 @@ class AH_Shape {
 			'item_count'       => $order->get_item_count(),
 			'source'           => $order->get_meta( '_ah_source' ) ?: 'web',
 			'on_credit'        => 'yes' === $order->get_meta( '_ah_on_credit' ),
+			// Part paid at the counter on a loan sale, and its own receipt.
+			'paid_now'         => (int) $order->get_meta( '_ah_paid_now' ),
+			'paid_now_receipt' => (string) $order->get_meta( '_ah_paid_now_receipt' ),
 			'wants_credit'     => 'yes' === $order->get_meta( '_ah_wants_credit' ),
 			// The customer's own delivery man, when they send one.
 			'collector'        => $order->get_meta( '_ah_collector' ) ?: null,

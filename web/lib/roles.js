@@ -41,6 +41,7 @@ export const NAV = {
     { group: 'Shop' },
     { href: '/manager/customers', label: 'Customers', icon: 'people' },
     { href: '/manager/credit', label: 'Credit', icon: 'cash' },
+    { href: '/manager/books', label: 'Debts & books', icon: 'scales' },
     { href: '/manager/workers', label: 'Workers & pay', icon: 'people' },
     { href: '/manager/staff', label: 'Staff logins', icon: 'user' },
     { href: '/manager/expenses', label: 'Expenses', icon: 'cash' },

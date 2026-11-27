@@ -429,22 +429,36 @@ class AH_Purchasing {
 		if ( 'cash' !== $method && '' === $ref ) {
 			return self::err( 'ah_no_ref', 'Enter the transaction or cheque number' );
 		}
+		// One transaction number pays once; the same amount on the same
+		// bill twice in two minutes is a double tap.
+		if ( '' !== $ref && $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . self::t( 'bill_payments' ) . " WHERE REPLACE(UPPER(ref), ' ', '') = %s LIMIT 1", strtoupper( str_replace( ' ', '', $ref ) ) ) ) ) {
+			return self::err( 'ah_ref_used', sprintf( 'Payment %s is already recorded. The same payment is never entered twice.', $ref ), 409 );
+		}
+		if ( ! $req->get_param( 'again' ) && $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . self::t( 'bill_payments' ) . ' WHERE bill_id = %d AND amount = %d AND created_at >= %s LIMIT 1', $b['id'], $amount, gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - 120 ) ) ) ) {
+			return new WP_Error( 'ah_paid_twice', sprintf( 'UGX %s on this bill was just recorded. If this is a second payment, tick "It is a second payment".', number_format( $amount ) ), array( 'status' => 409, 'canRepeat' => true ) );
+		}
 		$user = AH_Auth::current();
-		$wpdb->insert( self::t( 'bill_payments' ), array(
-			'bill_id'    => (int) $b['id'],
-			'amount'     => $amount,
-			'method'     => $method ?: 'cash',
-			'ref'        => $ref,
-			'paid_on'    => $date,
-			'user_id'    => (int) $user->ID,
-			'user_name'  => $user->display_name,
-			'created_at' => current_time( 'mysql' ),
-		) );
-		$paid = (int) $b['paid'] + $amount;
-		$wpdb->update( self::t( 'supplier_bills' ), array(
-			'paid'   => $paid,
-			'status' => $paid >= (int) $b['amount'] ? 'paid' : 'part',
-		), array( 'id' => (int) $b['id'] ) );
+		$done = AH_Books::atomic( function () use ( $wpdb, $b, $amount, $method, $ref, $date, $user ) {
+			$ok = $wpdb->insert( self::t( 'bill_payments' ), array(
+				'bill_id'    => (int) $b['id'],
+				'amount'     => $amount,
+				'method'     => $method ?: 'cash',
+				'ref'        => $ref,
+				'paid_on'    => $date,
+				'user_id'    => (int) $user->ID,
+				'user_name'  => $user->display_name,
+				'created_at' => current_time( 'mysql' ),
+			) );
+			// Paid from what is owed now, read inside the transaction.
+			$ok = $ok && false !== $wpdb->query( $wpdb->prepare(
+				'UPDATE ' . self::t( 'supplier_bills' ) . " SET paid = paid + %d, status = IF(paid >= amount, 'paid', 'part') WHERE id = %d AND paid + %d <= amount",
+				$amount, $b['id'], $amount
+			) ) && $wpdb->rows_affected;
+			return $ok ? true : self::err( 'ah_failed', 'The payment did not save. Check what is still owed and try again.', 409 );
+		} );
+		if ( is_wp_error( $done ) ) {
+			return $done;
+		}
 		self::audit( 'bill_paid', sprintf( '%s invoice %s: UGX %s by %s%s', $b['supplier'], $b['invoice_no'], number_format( $amount ), $method ?: 'cash', $ref ? " ({$ref})" : '' ) );
 		return array( 'ok' => true );
 	}

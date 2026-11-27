@@ -146,8 +146,29 @@ class AH_Flow {
 
 		// On account: no money now. Allowed only within the customer's
 		// credit limit and terms, or by the manager with a reason.
+		// Part paid now, the rest on the loan: only the rest has to fit
+		// under the limit. Everything about the part is checked here,
+		// before anything is written.
+		$paid_now = 0;
 		if ( 'credit' === $method ) {
-			$refused = AH_Credit::check( $order, $due, $args['override'] ?? '', $cashier_id );
+			$paid_now   = max( 0, min( (int) ( $args['paid_now'] ?? 0 ), $due ) );
+			$now_method = (string) ( $args['paid_method'] ?? 'cash' ) ?: 'cash';
+			$now_ref    = trim( (string) ( $args['paid_ref'] ?? '' ) );
+			if ( $paid_now > 0 ) {
+				if ( ! in_array( $now_method, array( 'cash', 'mobile_money', 'bank', 'card', 'cheque' ), true ) ) {
+					return new WP_Error( 'ah_bad_method', 'Choose how the part was paid', array( 'status' => 400 ) );
+				}
+				if ( 'cash' !== $now_method && strlen( $now_ref ) < 3 ) {
+					return new WP_Error( 'ah_ref_required', 'Type the transaction number for the part paid now', array( 'status' => 400 ) );
+				}
+				if ( '' !== $now_ref && AH_Proofs::already_used( $now_ref, 0 ) ) {
+					return new WP_Error( 'ah_ref_used', sprintf( 'Transaction %s has already paid for something. Check the number.', $now_ref ), array( 'status' => 409 ) );
+				}
+				if ( ! $order->get_customer_id() ) {
+					return new WP_Error( 'ah_no_customer', 'This sale has no customer. Choose the customer first.', array( 'status' => 400 ) );
+				}
+			}
+			$refused = AH_Credit::check( $order, $due - $paid_now, $args['override'] ?? '', $cashier_id );
 			if ( $refused ) {
 				return $refused;
 			}
@@ -187,14 +208,29 @@ class AH_Flow {
 		// The cash book is the thing the shop reconciles at close of
 		// day, so the money is entered the moment it is taken. A credit
 		// sale takes no money, so it goes on the customer's account.
+		$part_receipt = '';
 		if ( 'credit' === $method ) {
 			AH_Credit::charge( $order, $due, $receipt_no );
+			if ( $paid_now > 0 ) {
+				$part_receipt = AH_Credit::take( (int) $order->get_customer_id(), $paid_now, $now_method, $now_ref, 'Paid at the counter for order ' . AH_Shape::order_no( $order ), true, $order->get_id() );
+				if ( is_wp_error( $part_receipt ) ) {
+					// The sale is on the loan in full; the part can still be
+					// taken on the Credit page. Said, not hidden.
+					$order->add_order_note( 'Part payment not saved: ' . $part_receipt->get_error_message() );
+					$part_receipt = '';
+				} else {
+					$order->update_meta_data( '_ah_paid_now', $paid_now );
+					$order->update_meta_data( '_ah_paid_now_receipt', $part_receipt );
+				}
+			}
 		} else $wpdb->insert(
 			AH_Install::table( 'cash_book' ),
 			array(
 				'entry_date'  => current_time( 'Y-m-d' ),
 				'details'     => sprintf( '%s · Order %s', $receipt_no, AH_Shape::order_no( $order ) ),
-				'cash_in'     => $paid,
+				// Cash handed over above the bill went back as change: the
+				// drawer keeps only what was due.
+				'cash_in'     => 'cash' === $method ? min( $paid, $due ) : $paid,
 				'cash_out'    => 0,
 				'method'      => $method,
 				'order_id'    => $order->get_id(),
@@ -273,7 +309,7 @@ class AH_Flow {
 						'entry_date'  => current_time( 'Y-m-d' ),
 						'details'     => sprintf( 'Reversal · %s · %s', $payment['receipt_no'], $remarks ? $remarks : 'payment not matched' ),
 						'cash_in'     => 0,
-						'cash_out'    => (int) $payment['amount_paid'],
+						'cash_out'    => 'cash' === $payment['method'] ? min( (int) $payment['amount_paid'], (int) $payment['amount_due'] ) : (int) $payment['amount_paid'],
 						'method'      => $payment['method'],
 						'order_id'    => $order->get_id(),
 						'payment_id'  => $payment['id'],

@@ -186,7 +186,7 @@ class AH_Rest_Desks {
 		}
 
 		return array(
-			'receipt' => array(
+			'receipt' => array_merge( array(
 				'receiptNo'      => $row['receipt_no'],
 				'orderNo'        => AH_Shape::order_no( $order ),
 				'shop'           => AH_Sms::shop_name(),
@@ -202,7 +202,16 @@ class AH_Rest_Desks {
 				'amountPaid'     => (int) $row['amount_paid'],
 				'change'         => max( 0, (int) $row['amount_paid'] - (int) $row['amount_due'] ),
 				'cashier'        => $row['cashier_name'],
-			),
+			), 'credit' === $row['method'] ? array(
+				// A loan sale: what was paid now, what went on the loan,
+				// and what the customer owes in all after it.
+				'paidNow'        => (int) $order->get_meta( '_ah_paid_now' ),
+				'paidNowReceipt' => (string) $order->get_meta( '_ah_paid_now_receipt' ),
+				'onLoan'         => (int) $row['amount_due'] - (int) $order->get_meta( '_ah_paid_now' ),
+				'owesNow'        => class_exists( 'AH_Credit' ) && $order->get_customer_id() ? AH_Credit::balance( (int) $order->get_customer_id() ) : null,
+				'amountPaid'     => (int) $order->get_meta( '_ah_paid_now' ),
+				'change'         => 0,
+			) : array() ),
 		);
 	}
 

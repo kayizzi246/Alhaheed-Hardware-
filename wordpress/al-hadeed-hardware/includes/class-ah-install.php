@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.10.0';
+	const DB_VERSION = '1.11.0';
 
 	public static function activate() {
 		self::tables();
@@ -447,6 +447,44 @@ class AH_Install {
 			KEY entry_date (entry_date)
 		) {$charset};";
 
+		// The books in double entry. Every money or stock line the shop
+		// keeps (cash book, loan book, supplier bills and payments, stock
+		// book) becomes one balanced journal entry here, once. An entry is
+		// never changed: a source line that goes away is undone by a
+		// second entry that turns it around.
+		$sql[] = "CREATE TABLE {$p}ah_gl_accounts (
+			code          VARCHAR(8)      NOT NULL,
+			name          VARCHAR(120)    NOT NULL,
+			type          VARCHAR(12)     NOT NULL,
+			PRIMARY KEY (code)
+		) {$charset};";
+
+		$sql[] = "CREATE TABLE {$p}ah_journal (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			entry_date    DATE            NOT NULL,
+			source        VARCHAR(12)     NOT NULL,
+			source_id     BIGINT UNSIGNED NOT NULL,
+			memo          VARCHAR(255)    NOT NULL,
+			amount        BIGINT          NOT NULL DEFAULT 0,
+			user_name     VARCHAR(191)    NULL,
+			voided        TINYINT         NOT NULL DEFAULT 0,
+			created_at    DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY source (source, source_id),
+			KEY entry_date (entry_date)
+		) {$charset};";
+
+		$sql[] = "CREATE TABLE {$p}ah_journal_lines (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			journal_id    BIGINT UNSIGNED NOT NULL,
+			account       VARCHAR(8)      NOT NULL,
+			debit         BIGINT          NOT NULL DEFAULT 0,
+			credit        BIGINT          NOT NULL DEFAULT 0,
+			PRIMARY KEY (id),
+			KEY journal_id (journal_id),
+			KEY account (account)
+		) {$charset};";
+
 		// One-time codes for phone login, for customers who order on the
 		// app rather than through the website checkout.
 		$sql[] = "CREATE TABLE {$p}ah_otp (
@@ -475,6 +513,9 @@ class AH_Install {
 		self::open_the_books();
 		self::track_everything();
 		self::one_figure();
+		if ( class_exists( 'AH_Books' ) ) {
+			AH_Books::seed_accounts();
+		}
 		update_option( 'ah_db_version', self::DB_VERSION );
 	}
 

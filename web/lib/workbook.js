@@ -575,3 +575,23 @@ export function buildSalesReport(d) {
   trackerSheet(book, 'Credit Sale', cols, d.credit, 3);
   return book;
 }
+
+/**
+ * Any table from Debts & books, in the tracker's look. columns:
+ * [{ h, key, fmt: 'money'|'date'|'text', total, w, get }]
+ */
+export function buildBooksSheet({ title, sheet, columns, rows }) {
+  const book = new ExcelJS.Workbook();
+  book.title = title;
+  trackerSheet(book, sheet || 'Report', columns.map((c) => ({
+    h: c.h,
+    w: c.w || (c.fmt === 'money' ? 15 : c.fmt === 'date' ? 11.5 : 18),
+    fmt: c.fmt === 'money' ? 'money' : c.fmt === 'date' ? 'date' : undefined,
+    total: !!c.total,
+    get: (r) => {
+      const v = c.text ? c.text(r) : r[c.key];
+      return v === null || v === undefined ? '' : v;
+    },
+  })), rows, 1);
+  return book;
+}

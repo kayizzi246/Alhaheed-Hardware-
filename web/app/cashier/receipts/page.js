@@ -166,7 +166,16 @@ function ReceiptModal({ receiptNo, onClose }) {
           <Row k="Subtotal" v={money(receipt.subtotal)} />
           {receipt.deliveryFee > 0 && <Row k="Delivery" v={money(receipt.deliveryFee)} />}
           <Row k="Total" v={<strong className="font-bold text-ink">{money(receipt.total)}</strong>} />
-          <Row k={`Paid (${methodLabel(receipt.method)})`} v={money(receipt.amountPaid)} />
+          {receipt.method === 'credit' ? (
+            <>
+              <Row k="Paid now" v={money(receipt.paidNow || 0)} />
+              {receipt.paidNowReceipt && <Row k="Receipt for that" v={receipt.paidNowReceipt} />}
+              <Row k="On loan (left to pay)" v={<strong className="font-bold text-ink">{money(receipt.onLoan)}</strong>} />
+              {receipt.owesNow != null && <Row k="Customer owes in all" v={money(Math.max(0, receipt.owesNow))} />}
+            </>
+          ) : (
+            <Row k={`Paid (${methodLabel(receipt.method)})`} v={money(receipt.amountPaid)} />
+          )}
           {receipt.change > 0 && <Row k="Change" v={money(receipt.change)} />}
           {receipt.transactionRef && <Row k="Reference" v={receipt.transactionRef} />}
         </dl>

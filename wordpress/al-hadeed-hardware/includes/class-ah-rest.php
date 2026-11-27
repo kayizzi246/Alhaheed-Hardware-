@@ -434,6 +434,7 @@ class AH_Rest {
 		AH_Tracker::routes();
 		AH_Push::routes();
 		AH_Credit::routes();
+		AH_Books::routes();
 
 		// Writing to suppliers from inside the shop, instead of the
 		// cashier opening a mail app and typing it out again.
@@ -1416,6 +1417,9 @@ class AH_Rest {
 				'transaction_ref' => $req->get_param( 'transactionRef' ),
 				'proof_file'      => $proof,
 				'override'        => (string) $req->get_param( 'creditOverride' ),
+				'paid_now'        => (int) $req->get_param( 'paidNow' ),
+				'paid_method'     => (string) $req->get_param( 'paidMethod' ),
+				'paid_ref'        => (string) $req->get_param( 'paidRef' ),
 			),
 			$user->ID
 		);

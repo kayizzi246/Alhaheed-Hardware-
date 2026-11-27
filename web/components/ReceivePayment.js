@@ -64,7 +64,12 @@ export default function ReceivePayment({ order, onClose, onDone }) {
     }
   }
   const onCredit = method === 'credit';
-  const after = credit ? credit.owed + order.total : 0;
+  // Part paid now on a loan sale: only the rest goes on the loan.
+  const [part, setPart] = useState({ amount: '', method: 'cash', ref: '' });
+  const partNow = Math.min(order.total, Number(part.amount || 0));
+  const onLoan = order.total - partNow;
+  const partOk = !partNow || part.method === 'cash' || part.ref.trim().length >= 3;
+  const after = credit ? credit.owed + onLoan : 0;
   // The same rules the server applies, said before Confirm is pressed.
   const blocked = !credit ? null
     : credit.status === 'hold' ? 'Credit is stopped for this customer.'
@@ -168,9 +173,18 @@ export default function ReceivePayment({ order, onClose, onDone }) {
       if (onCredit) {
         const res = await api(`/api/cashier/orders/${order.id}/payment`, {
           method: 'POST',
-          body: { method: 'credit', creditOverride: blocked ? override.trim() : '' },
+          body: {
+            method: 'credit',
+            creditOverride: blocked ? override.trim() : '',
+            paidNow: partNow,
+            paidMethod: part.method,
+            paidRef: part.ref.trim(),
+          },
         });
-        onDone(res.order?.payment?.receipt_no || '');
+        const no = res.order?.payment?.receipt_no || '';
+        onDone(partNow
+          ? `${no}. Total ${money(order.total)}, paid now ${money(partNow)}${res.order?.paid_now_receipt ? ` (receipt ${res.order.paid_now_receipt})` : ''}, ${money(onLoan)} on the loan`
+          : no);
         return;
       }
       const fields = {
@@ -219,10 +233,10 @@ export default function ReceivePayment({ order, onClose, onDone }) {
             type="submit"
             form="pay"
             disabled={onCredit
-              ? busy || (blocked && !(isManager && override.trim().length >= 5))
+              ? busy || !partOk || (blocked && !(isManager && override.trim().length >= 5))
               : busy || reading !== null || paid < order.total || (needsRef && (!normaliseRef(ref) || dupe))}
           >
-            {busy ? 'Recording…' : onCredit ? 'Put on credit & send to Accounts' : 'Confirm & send to Accounts'}
+            {busy ? 'Recording…' : onCredit ? (partNow ? `Take ${money(partNow)}, ${money(onLoan)} on loan` : 'Put on loan & send to Accounts') : 'Confirm & send to Accounts'}
           </Button>
         </>
       }
@@ -244,7 +258,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
             label="Payment method"
             value={method}
             onChange={setMethod}
-            options={credit ? [...METHODS, { value: 'credit', label: 'On credit' }] : METHODS}
+            options={credit ? [...METHODS, { value: 'credit', label: 'On loan' }] : METHODS}
           />
         </Field>
 
@@ -255,21 +269,34 @@ export default function ReceivePayment({ order, onClose, onDone }) {
         {onCredit && credit && (
           <div className="space-y-3 rounded-xl border border-line bg-surface-2 p-4">
             <div className="grid grid-cols-3 gap-3 text-[12px]">
-              <div><span className="block text-ink-muted">Owes now</span><b className="tnum text-[14px] text-ink">{money(credit.owed)}</b></div>
+              <div><span className="block text-ink-muted">{credit.owed < 0 ? 'Paid ahead' : 'Owes now'}</span><b className={cn('tnum text-[14px]', credit.owed < 0 ? 'text-ok' : 'text-ink')}>{money(Math.abs(credit.owed))}</b></div>
               <div><span className="block text-ink-muted">Limit</span><b className="tnum text-[14px] text-ink">{money(credit.limit)}</b></div>
               <div><span className="block text-ink-muted">After this</span><b className={cn('tnum text-[14px]', blocked ? 'text-bad' : 'text-ink')}>{money(after)}</b></div>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-line">
               <div className={cn('h-full rounded-full', after > credit.limit ? 'bg-bad' : after > credit.limit * 0.8 ? 'bg-warn' : 'bg-[#92D050]')} style={{ width: `${Math.min(100, credit.limit ? (after / credit.limit) * 100 : 100)}%` }} />
             </div>
-            <p className="text-[12px] text-ink-muted">To pay within {credit.termsDays} days. No money goes in the cash book now.</p>
+            <div className="space-y-2 rounded-lg border border-line bg-surface p-3">
+              <p className="text-[13px] font-bold text-ink">Paid now <span className="font-normal text-ink-muted">(leave empty if nothing)</span></p>
+              <div className="flex flex-wrap items-end gap-2">
+                <Input className="tnum w-[150px]" inputMode="numeric" value={part.amount} placeholder="0" onChange={(e) => setPart((x) => ({ ...x, amount: e.target.value.replace(/D/g, '') }))} />
+                <Segmented label="Paid by" value={part.method} onChange={(v) => setPart((x) => ({ ...x, method: v }))} options={[{ value: 'cash', label: 'Cash' }, { value: 'mobile_money', label: 'MoMo' }, { value: 'bank', label: 'Bank' }]} />
+                {part.method !== 'cash' && <Input className="w-[160px]" value={part.ref} placeholder="Transaction ID" onChange={(e) => setPart((x) => ({ ...x, ref: e.target.value }))} />}
+              </div>
+              <div className="grid grid-cols-3 gap-2 rounded-md bg-surface-2 px-3 py-2 text-[12px]">
+                <div><span className="block text-ink-muted">Total</span><b className="tnum text-ink">{money(order.total)}</b></div>
+                <div><span className="block text-ink-muted">Paid now</span><b className="tnum text-ok">{money(partNow)}</b></div>
+                <div><span className="block text-ink-muted">On the loan</span><b className="tnum text-ink">{money(onLoan)}</b></div>
+              </div>
+            </div>
+            <p className="text-[12px] text-ink-muted">The loan is paid within {credit.termsDays} days. {partNow ? 'What is paid now gets its own receipt and goes in the cash book.' : 'No money goes in the cash book now.'}</p>
             {first.done && <p className="rounded-lg bg-ok-bg px-3 py-2 text-[12.5px] font-semibold text-ok">{first.done}</p>}
             {blocked && payFirst > 0 && (
               <div className="space-y-2 rounded-lg border border-warn/30 bg-warn-bg/60 p-3">
                 <p className="text-[13px] font-bold text-ink">Take {money(payFirst)} from them first</p>
                 <p className="text-[12px] text-ink-2">That pays what is late and brings them under the limit. Then put this order on credit.</p>
                 <div className="flex flex-wrap items-end gap-2">
-                  <Input className="w-[140px]" inputMode="numeric" value={first.amount} placeholder={String(payFirst)} onChange={(e) => setFirst((x) => ({ ...x, amount: e.target.value.replace(/[^d]/g, '') }))} />
+                  <Input className="w-[140px]" inputMode="numeric" value={first.amount} placeholder={String(payFirst)} onChange={(e) => setFirst((x) => ({ ...x, amount: e.target.value.replace(/D/g, '') }))} />
                   <Segmented label="Paid by" value={first.method} onChange={(v) => setFirst((x) => ({ ...x, method: v }))} options={[{ value: 'cash', label: 'Cash' }, { value: 'mobile_money', label: 'MoMo' }, { value: 'bank', label: 'Bank' }]} />
                   {first.method !== 'cash' && <Input className="w-[150px]" value={first.ref} placeholder="Transaction ID" onChange={(e) => setFirst((x) => ({ ...x, ref: e.target.value }))} />}
                   <Button type="button" size="sm" disabled={first.busy || !(Number(first.amount) > 0) || (first.method !== 'cash' && first.ref.trim().length < 3)} onClick={takeFirst}>

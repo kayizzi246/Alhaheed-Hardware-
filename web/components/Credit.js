@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn';
 import { Icon } from '@/components/icons';
 import { MoneyField } from '@/components/Fields';
 import {
-  Alert, Button, Card, CardHead, CardTitle, Empty, Field, Input, Loading, LoadFailed, Modal, PageHead,
+  Alert, Button, Card, Checkbox, CardHead, CardTitle, Empty, Field, Input, Loading, LoadFailed, Modal, PageHead,
   Segmented, Select, Stat, Table, TableWrap, Td, Th, Tr,
 } from '@/components/ui';
 
@@ -445,6 +445,9 @@ function TakePayment({ a, onClose, onDone }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Set when the server stops what looks like the same payment twice.
+  const [twice, setTwice] = useState(false);
+  const [again, setAgain] = useState(false);
   const n = Number(amount || 0);
   const needRef = method !== 'cash';
 
@@ -452,9 +455,10 @@ function TakePayment({ a, onClose, onDone }) {
     setBusy(true);
     setError('');
     try {
-      const r = await api(`/api/credit/${a.customerId}/payment`, { method: 'POST', body: { amount: n, method, ref, note } });
+      const r = await api(`/api/credit/${a.customerId}/payment`, { method: 'POST', body: { amount: n, method, ref, note, again } });
       onDone(`${a.name} paid ${money(n)}. Receipt ${r.receiptNo}. Now owes ${money(r.account.owed)}.`);
     } catch (e) {
+      if (e.code === 'ah_paid_twice') setTwice(true);
       setError(e.message);
       setBusy(false);
     }
@@ -488,6 +492,7 @@ function TakePayment({ a, onClose, onDone }) {
           </Field>
         )}
         <Field label="Note (optional)"><Input value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+        {twice && <Checkbox label="It is a second payment, not the same one again" checked={again} onChange={(e) => setAgain(e.target.checked)} />}
         {n > 0 && (
           <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">
             {a.owed - n >= 0
