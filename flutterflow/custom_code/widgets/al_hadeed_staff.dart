@@ -1231,6 +1231,12 @@ class _AlHadeedStaffState extends State<AlHadeedStaff> {
             )
           ),
           (
+            'Loans',
+            Icons.account_balance_wallet_outlined,
+            Icons.account_balance_wallet_rounded,
+            const _LoansTab()
+          ),
+          (
             'Expenses',
             Icons.request_quote_outlined,
             Icons.request_quote_rounded,
@@ -1800,6 +1806,12 @@ class _OrderSheetState extends State<_OrderSheet> {
   String? _error;
   final Set<int> _picked = {};
 
+  // On loan: the customer's account, and what is paid now.
+  Map<String, dynamic>? _loan;
+  final _part = TextEditingController();
+  final _partRef = TextEditingController();
+  String _partHow = 'cash';
+
   int get _id => _int(widget.order['id']);
 
   @override
@@ -1811,6 +1823,8 @@ class _OrderSheetState extends State<_OrderSheet> {
   @override
   void dispose() {
     _text.dispose();
+    _part.dispose();
+    _partRef.dispose();
     super.dispose();
   }
 
@@ -1822,6 +1836,19 @@ class _OrderSheetState extends State<_OrderSheet> {
         _full = (r['order'] as Map).cast<String, dynamic>();
         _error = null;
       });
+      final cid = _int(_full?['customer_id']);
+      if (widget.action == 'pay' && cid > 0) {
+        try {
+          final c = await _apiGet('/api/credit/$cid');
+          final a = (c['account'] as Map?)?.cast<String, dynamic>();
+          if (mounted && a != null && a['status'] != 'none') {
+            setState(() {
+              _loan = a;
+              if (_full?['wants_credit'] == true) _how = 'credit';
+            });
+          }
+        } on _ApiError {/* no loan: cash, MoMo or card only */}
+      }
     } on _ApiError catch (e) {
       if (mounted) setState(() => _error = e.message);
     }
@@ -1876,12 +1903,18 @@ class _OrderSheetState extends State<_OrderSheet> {
           ),
         ];
       case 'pay':
+        if (_how == 'credit' && _loan != null) return _loanPay();
         final needsRef = _how != 'cash';
         final ok = _full != null &&
             (!needsRef || _text.text.trim().length >= 4);
         return [
           Row(children: [
-            for (final m in const ['cash', 'mobile_money', 'card']) ...[
+            for (final m in [
+              'cash',
+              'mobile_money',
+              'card',
+              if (_loan != null) 'credit',
+            ]) ...[
               Expanded(
                 child: _Pressable(
                   scale: 0.96,
@@ -1894,7 +1927,7 @@ class _OrderSheetState extends State<_OrderSheet> {
                       borderRadius: BorderRadius.circular(13),
                       border: Border.all(color: _hairline),
                     ),
-                    child: Text(_method(m),
+                    child: Text(_bMethod(m),
                         maxLines: 1,
                         style: _txt(12.5,
                             weight: FontWeight.w700,
@@ -1902,7 +1935,7 @@ class _OrderSheetState extends State<_OrderSheet> {
                   ),
                 ),
               ),
-              if (m != 'card') const SizedBox(width: 8),
+              if (m != (_loan != null ? 'credit' : 'card')) const SizedBox(width: 8),
             ],
           ]),
           if (needsRef) ...[
@@ -1973,6 +2006,139 @@ class _OrderSheetState extends State<_OrderSheet> {
         ];
     }
     return const [];
+  }
+
+  /// Paying on loan: what they owe, what is paid now, and what is left
+  /// on the loan. Only what is left must fit under the limit.
+  List<Widget> _loanPay() {
+    final a = _loan!;
+    final total = _int(_full?['total'] ?? widget.order['total']);
+    final part = _int(_part.text.replaceAll(RegExp(r'[^0-9]'), '')).clamp(0, total);
+    final onLoan = total - part;
+    final owed = _int(a['owed']);
+    final limit = _int(a['limit']);
+    final after = owed + onLoan;
+    final late = _int(a['overdue']);
+    final blocked = a['status'] == 'hold'
+        ? 'The loan is stopped for this customer.'
+        : a['status'] == 'closed'
+            ? 'This loan account is closed.'
+            : late > 0
+                ? '${_ugx(late)} is late. They must pay that first.'
+                : after > limit
+                    ? 'That makes ${_ugx(after)} owed. The limit is ${_ugx(limit)}. Take more now, or ask the manager.'
+                    : null;
+    final refOk = part == 0 || _partHow == 'cash' || _partRef.text.trim().length >= 3;
+    Widget fig(String k, String v, Color c) => Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(k, style: _txt(11, color: _mid)),
+            Text(v, maxLines: 1, style: _txt(13.5, weight: FontWeight.w800, color: c)),
+          ]),
+        );
+    return [
+      Row(children: [
+        for (final m in const ['cash', 'mobile_money', 'card', 'credit']) ...[
+          Expanded(
+            child: _Pressable(
+              scale: 0.96,
+              onTap: () => setState(() => _how = m),
+              child: Container(
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _how == m ? _lime : _tile,
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: _hairline),
+                ),
+                child: Text(_bMethod(m),
+                    maxLines: 1,
+                    style: _txt(12.5, weight: FontWeight.w700, color: _how == m ? _onLime : _inkSoft)),
+              ),
+            ),
+          ),
+          if (m != 'credit') const SizedBox(width: 8),
+        ],
+      ]),
+      const SizedBox(height: 12),
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: _tile, borderRadius: BorderRadius.circular(14), border: Border.all(color: _hairline)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            fig(owed < 0 ? 'Paid ahead' : 'Owes now', _shortUgx(owed.abs()), owed < 0 ? _green : _ink),
+            fig('Limit', _shortUgx(limit), _ink),
+            fig('After this', _shortUgx(after), blocked != null ? _ember : _ink),
+          ]),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: limit > 0 ? (after / limit).clamp(0.0, 1.0).toDouble() : 1,
+              minHeight: 7,
+              backgroundColor: _hairline,
+              color: after > limit ? _ember : after > limit * 0.8 ? _amber : _lime,
+            ),
+          ),
+        ]),
+      ),
+      const SizedBox(height: 12),
+      Text('Paid now (leave empty if nothing)', style: _txt(12.5, weight: FontWeight.w700, color: _mid)),
+      const SizedBox(height: 6),
+      _Field(
+        controller: _part,
+        hint: '0',
+        keyboardType: TextInputType.number,
+        onChanged: (_) => setState(() {}),
+      ),
+      if (part > 0) ...[
+        const SizedBox(height: 8),
+        _bChoice(const [('cash', 'Cash'), ('mobile_money', 'Mobile Money'), ('bank', 'Bank')], _partHow,
+            (v) => setState(() => _partHow = v)),
+        if (_partHow != 'cash') ...[
+          const SizedBox(height: 8),
+          _Field(
+            controller: _partRef,
+            hint: 'Transaction ID',
+            capitalisation: TextCapitalization.characters,
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+      ],
+      const SizedBox(height: 10),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(color: _brandPale, borderRadius: BorderRadius.circular(12)),
+        child: Row(children: [
+          fig('Total', _ugx(total), _ink),
+          fig('Paid now', _ugx(part), _green),
+          fig('On the loan', _ugx(onLoan), _ink),
+        ]),
+      ),
+      if (blocked != null) ...[
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: _emberPale, borderRadius: BorderRadius.circular(12)),
+          child: Text(blocked, style: _txt(12.5, weight: FontWeight.w600, color: _ember)),
+        ),
+      ],
+      const SizedBox(height: 12),
+      _BigButton(
+        part > 0 ? 'Take ${_shortUgx(part)}, ${_shortUgx(onLoan)} on loan' : 'Put ${_shortUgx(total)} on loan',
+        _full != null && blocked == null && refOk
+            ? () => _send('/api/cashier/orders/$_id/payment', {
+                  'method': 'credit',
+                  'paidNow': part,
+                  'paidMethod': _partHow,
+                  'paidRef': _partHow == 'cash' ? '' : _partRef.text.trim(),
+                })
+            : null,
+        busy: _busy,
+      ),
+      const SizedBox(height: 6),
+      Text('The loan is paid within ${_int(a['termsDays'])} days. What is paid now gets its own receipt.',
+          textAlign: TextAlign.center, style: _txt(11, color: _mid)),
+    ];
   }
 
   String _act(String a) => switch (a) {
@@ -5508,3 +5674,816 @@ void _toast(BuildContext context, String message, {bool bad = false}) =>
         content: Text(message, style: _txt(13.5, color: _white)),
       ),
     );
+
+// ═══════════════════════════════════════════════════════════════
+//  LOANS — who owes the shop, and taking a payment on a loan.
+//
+//  The same in al_hadeed_manager.dart and al_hadeed_staff.dart: the
+//  manager opens it from Debts & books, the cashier from the Loans tab.
+// ═══════════════════════════════════════════════════════════════
+
+int _bn(Object? v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}') ?? 0;
+
+/// "27 Nov 2026" from "2026-11-27".
+String _bDay(Object? iso) {
+  final s = '${iso ?? ''}';
+  if (s.length < 10) return '';
+  const m = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  final mo = int.tryParse(s.substring(5, 7)) ?? 1;
+  return '${int.tryParse(s.substring(8, 10)) ?? ''} ${m[(mo - 1).clamp(0, 11)]} ${s.substring(0, 4)}';
+}
+
+String _bToday() {
+  final n = DateTime.now();
+  return '${n.year}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
+}
+
+String _bMethod(Object? m) => switch ('${m ?? ''}') {
+      'cash' => 'Cash',
+      'mobile_money' => 'Mobile Money',
+      'mtn_momo' => 'MTN MoMo',
+      'airtel_money' => 'Airtel Money',
+      'bank' => 'Bank',
+      'cheque' => 'Cheque',
+      'card' => 'Card',
+      'credit' => 'On loan',
+      final o => o,
+    };
+
+/// Paid, Partly paid, Unpaid, Overdue: one look everywhere.
+(String, Color, Color) _bStatus(String s) => switch (s) {
+      'paid' => ('Paid', _green, _greenPale),
+      'part' => ('Partly paid', _blue, _bluePale),
+      'overdue' => ('Overdue', _ember, _emberPale),
+      _ => ('Unpaid', _amber, _amberPale),
+    };
+
+Widget _bPill(String label, Color fg, Color bg) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Text(label, style: _txt(10.5, weight: FontWeight.w800, color: fg)),
+    );
+
+/// A loan account's state in one word, coloured.
+(String, Color, Color) _bLoanState(Map<String, dynamic> a) {
+  final owed = _bn(a['owed']);
+  final limit = _bn(a['limit']);
+  if (a['status'] == 'hold') return ('Stopped', _ember, _emberPale);
+  if (a['status'] == 'closed') return ('Closed', _mid, _tile);
+  if (a['status'] == 'none') return ('No account', _mid, _tile);
+  if (_bn(a['overdue']) > 0) return ('Late', _ember, _emberPale);
+  if (owed > limit) return ('Over limit', _ember, _emberPale);
+  if (limit > 0 && owed >= limit * 0.8) return ('Near limit', _amber, _amberPale);
+  if (owed <= 0) return ('Nothing owed', _green, _greenPale);
+  return ('Good', _green, _greenPale);
+}
+
+Widget _bChoice(List<(String, String)> options, String value,
+        ValueChanged<String> onPick) =>
+    Wrap(spacing: 6, runSpacing: 6, children: [
+      for (final (k, l) in options)
+        _Pressable(
+          scale: 0.95,
+          onTap: () => onPick(k),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: value == k ? _lime : _tile,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: value == k ? _lime : _hairline),
+            ),
+            child: Text(l,
+                style: _txt(12.5,
+                    weight: FontWeight.w700,
+                    color: value == k ? _onLime : _inkSoft)),
+          ),
+        ),
+    ]);
+
+Widget _bButton(String label, VoidCallback? onTap,
+        {bool busy = false, Color tint = _lime}) =>
+    _Pressable(
+      scale: 0.98,
+      onTap: busy ? null : onTap,
+      child: Opacity(
+        opacity: onTap == null && !busy ? 0.45 : 1,
+        child: Container(
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+              color: tint, borderRadius: BorderRadius.circular(23)),
+          child: busy
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: tint == _lime ? _onLime : _white))
+              : Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _txt(14.5,
+                      weight: FontWeight.w700,
+                      color: tint == _lime ? _onLime : _white)),
+        ),
+      ),
+    );
+
+String _bInitials(String name) {
+  final w = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((x) => x.isNotEmpty)
+      .take(2)
+      .toList();
+  return w.isEmpty ? '?' : w.map((x) => x.characters.first.toUpperCase()).join();
+}
+
+Widget _bHead(String t, {String? trailing}) => Padding(
+      padding: const EdgeInsets.fromLTRB(2, 16, 2, 8),
+      child: Row(children: [
+        Text(t, style: _txt(11.5, weight: FontWeight.w800, color: _light)),
+        const Spacer(),
+        if (trailing != null) Text(trailing, style: _txt(11.5, color: _mid)),
+      ]),
+    );
+
+/// A tick box that reads as a sentence.
+Widget _bTick(String label, bool on, VoidCallback onTap) => _Pressable(
+      scale: 0.98,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(children: [
+          Icon(on ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+              size: 22, color: on ? _brand : _light),
+          const SizedBox(width: 8),
+          Expanded(child: Text(label, style: _txt(13, color: _ink))),
+        ]),
+      ),
+    );
+
+/// The dark loan card: what is owed against the limit.
+Widget _bLoanCard(Map<String, dynamic> a) {
+  final owed = _bn(a['owed']);
+  final limit = _bn(a['limit']);
+  final late = _bn(a['overdue']);
+  final used = limit > 0 ? owed / limit : (owed > 0 ? 1.0 : 0.0);
+  final (label, fg, bg) = _bLoanState(a);
+  Widget fig(String k, String v, Color c) => Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(k, style: _txt(10.5, color: _white.withOpacity(0.6))),
+          const SizedBox(height: 2),
+          Text(v,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _txt(13.5, weight: FontWeight.w800, color: c)),
+        ]),
+      );
+  return Container(
+    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+    decoration: BoxDecoration(color: _navy, borderRadius: BorderRadius.circular(20)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Text('Loan account', style: _txt(12.5, weight: FontWeight.w700, color: _white.withOpacity(0.8))),
+        const Spacer(),
+        _bPill(label, fg, bg),
+      ]),
+      const SizedBox(height: 10),
+      Text(owed < 0 ? 'Paid ahead' : 'Owes (debit)',
+          style: _txt(11.5, color: _white.withOpacity(0.6))),
+      Text(_ugx(owed.abs()), style: _title(27, weight: FontWeight.w800, color: _white)),
+      const SizedBox(height: 12),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(5),
+        child: LinearProgressIndicator(
+          value: used.clamp(0.0, 1.0).toDouble(),
+          minHeight: 8,
+          backgroundColor: _white.withOpacity(0.14),
+          color: owed > limit
+              ? _ember
+              : used >= 0.8
+                  ? const Color(0xFFE0A030)
+                  : _lime,
+        ),
+      ),
+      const SizedBox(height: 6),
+      Text(
+          limit > 0
+              ? '${(used * 100).clamp(0, 999).round()}% of the ${_shortUgx(limit)} limit'
+              : 'No limit set',
+          style: _txt(11, color: _white.withOpacity(0.65))),
+      const SizedBox(height: 12),
+      Row(children: [
+        fig('Left to use', _shortUgx(_bn(a['available'])), _lime),
+        fig('Late', late > 0 ? _shortUgx(late) : 'Nothing',
+            late > 0 ? const Color(0xFFFF8A80) : _lime),
+        fig('Days to pay', '${_bn(a['termsDays'])}', _white),
+      ]),
+    ]),
+  );
+}
+
+/// Everyone with a loan: search, filter, tap to see and take a payment.
+class _LoansList extends StatefulWidget {
+  const _LoansList({this.top = const [], this.summary = true});
+
+  /// Shown above the list, inside the same scroll.
+  final List<Widget> top;
+
+  /// The three boxes of totals; off where the page already shows them.
+  final bool summary;
+
+  @override
+  State<_LoansList> createState() => _LoansListState();
+}
+
+class _LoansListState extends State<_LoansList> {
+  Map<String, dynamic>? _d;
+  String? _error;
+  String _show = 'owing';
+  final _q = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _q.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final r = await _apiGet('/api/credit');
+      if (mounted) setState(() {
+        _d = r;
+        _error = null;
+      });
+    } on _ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    }
+  }
+
+  Future<void> _open(Map<String, dynamic> a) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LoanSheet(customerId: _bn(a['customerId']), name: '${a['name']}'),
+    );
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final all = ((_d?['accounts'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .toList();
+    final s = (_d?['summary'] as Map?)?.cast<String, dynamic>();
+    bool keep(Map<String, dynamic> a, String k) => switch (k) {
+          'owing' => _bn(a['owed']) > 0,
+          'late' => _bn(a['overdue']) > 0,
+          _ => true,
+        };
+    final q = _q.text.trim().toLowerCase();
+    final rows = all
+        .where((a) => keep(a, _show))
+        .where((a) => q.isEmpty || '${a['name']} ${a['phone']}'.toLowerCase().contains(q))
+        .toList();
+
+    return RefreshIndicator(
+      color: _brand,
+      onRefresh: _load,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+        children: [
+          ...widget.top,
+          if (s != null && widget.summary) ...[
+            Row(children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: _navy, borderRadius: BorderRadius.circular(16)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Customers owe', style: _txt(11, color: _white.withOpacity(0.65))),
+                    const SizedBox(height: 2),
+                    Text(_shortUgx(_bn(s['owed'])), style: _title(19, weight: FontWeight.w800, color: _white)),
+                    Text('${_bn(s['owing'])} customers', style: _txt(10.5, color: _white.withOpacity(0.6))),
+                  ]),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _bn(s['overdue']) > 0 ? _emberPale : _greenPale,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Late', style: _txt(11, color: _mid)),
+                    const SizedBox(height: 2),
+                    Text(_shortUgx(_bn(s['overdue'])),
+                        style: _title(19, weight: FontWeight.w800, color: _bn(s['overdue']) > 0 ? _ember : _green)),
+                    Text('${_bn(s['overdueCount'])} past their days', style: _txt(10.5, color: _mid)),
+                  ]),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: _white, borderRadius: BorderRadius.circular(16), border: Border.all(color: _hairline)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Paid in today', style: _txt(11, color: _mid)),
+                    const SizedBox(height: 2),
+                    Text(_shortUgx(_bn(s['paidToday'])), style: _title(19, weight: FontWeight.w800, color: _green)),
+                    Text('${_shortUgx(_bn(s['soldToday']))} sold on loan', style: _txt(10.5, color: _mid)),
+                  ]),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 12),
+          ],
+          _Field(
+            controller: _q,
+            hint: 'Search name or phone',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 10),
+          _bChoice([
+            ('owing', 'Owing ${all.where((a) => keep(a, 'owing')).length}'),
+            ('late', 'Late ${all.where((a) => keep(a, 'late')).length}'),
+            ('all', 'All ${all.length}'),
+          ], _show, (v) => setState(() => _show = v)),
+          const SizedBox(height: 10),
+          if (_d == null && _error == null)
+            const Padding(
+              padding: EdgeInsets.all(30),
+              child: Center(child: CircularProgressIndicator(color: _brand)),
+            ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(_error!, style: _txt(13, color: _ember)),
+            ),
+          if (_d != null && rows.isEmpty)
+            _Empty(
+              icon: Icons.account_balance_wallet_outlined,
+              title: all.isEmpty ? 'No loans yet' : 'Nobody here',
+              line: all.isEmpty ? 'The manager opens loans on the panel.' : 'Try another filter.',
+            ),
+          for (final a in rows) _row(a),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(Map<String, dynamic> a) {
+    final owed = _bn(a['owed']);
+    final limit = _bn(a['limit']);
+    final (label, fg, bg) = _bLoanState(a);
+    final used = limit > 0 ? (owed / limit).clamp(0.0, 1.0).toDouble() : 0.0;
+    return _Pressable(
+      scale: 0.98,
+      onTap: () => _open(a),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _bn(a['overdue']) > 0 ? _ember.withOpacity(0.3) : _hairline),
+        ),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+            child: Text(_bInitials('${a['name']}'),
+                style: _txt(13, weight: FontWeight.w800, color: fg)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(
+                  child: Text('${a['name']}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _txt(13.5, weight: FontWeight.w700, color: _ink)),
+                ),
+                Text(owed < 0 ? '+${_shortUgx(-owed)}' : _ugx(owed),
+                    style: _txt(13.5, weight: FontWeight.w800, color: owed < 0 ? _green : _ink)),
+              ]),
+              const SizedBox(height: 5),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: used,
+                  minHeight: 5,
+                  backgroundColor: _hairline,
+                  color: owed > limit || _bn(a['overdue']) > 0 ? _ember : used >= 0.8 ? _amber : _lime,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Row(children: [
+                Expanded(
+                  child: Text(
+                      [
+                        if (limit > 0) 'Limit ${_shortUgx(limit)}',
+                        if (_bn(a['overdue']) > 0) '${_shortUgx(_bn(a['overdue']))} late',
+                        if (a['nextDue'] != null && _bn(a['overdue']) == 0) 'Due ${_bDay(a['nextDue'])}',
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _txt(11, color: _mid)),
+                ),
+                _bPill(label, fg, bg),
+              ]),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// One customer's loan: the card, bills not paid, every line, and
+/// taking a payment.
+class _LoanSheet extends StatefulWidget {
+  const _LoanSheet({required this.customerId, required this.name});
+  final int customerId;
+  final String name;
+
+  @override
+  State<_LoanSheet> createState() => _LoanSheetState();
+}
+
+class _LoanSheetState extends State<_LoanSheet> {
+  Map<String, dynamic>? _d;
+  String? _error;
+  bool _taking = false;
+  final _amount = TextEditingController();
+  final _ref = TextEditingController();
+  final _note = TextEditingController();
+  String _how = 'cash';
+  bool _busy = false;
+  String? _formError;
+  String? _done;
+  bool _twice = false;
+  bool _again = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _ref.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final r = await _apiGet('/api/credit/${widget.customerId}');
+      if (mounted) setState(() => _d = r);
+    } on _ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    }
+  }
+
+  int get _n => _bn(_amount.text.replaceAll(RegExp(r'[^0-9]'), ''));
+
+  Future<void> _pay() async {
+    setState(() {
+      _busy = true;
+      _formError = null;
+    });
+    try {
+      final r = await _apiPost('/api/credit/${widget.customerId}/payment', {
+        'amount': _n,
+        'method': _how,
+        'ref': _how == 'cash' ? '' : _ref.text.trim(),
+        'note': _note.text.trim(),
+        'again': _again,
+      });
+      HapticFeedback.mediumImpact();
+      if (!mounted) return;
+      final left = _bn((r['account'] as Map?)?['owed']);
+      setState(() {
+        _d = r;
+        _busy = false;
+        _taking = false;
+        _twice = false;
+        _again = false;
+        _done = 'Received ${_ugx(_n)}. Receipt ${r['receiptNo']}. '
+            '${left > 0 ? 'Now owes ${_ugx(left)}.' : left < 0 ? 'Owes nothing, ${_ugx(-left)} paid ahead.' : 'Owes nothing now.'}';
+        _amount.clear();
+        _ref.clear();
+        _note.clear();
+      });
+    } on _ApiError catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _formError = e.message;
+        if (e.code == 'ah_paid_twice') _twice = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = (_d?['account'] as Map?)?.cast<String, dynamic>();
+    final bills = ((_d?['bills'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .toList();
+    final lines = ((_d?['statement'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .toList();
+    final today = _bToday();
+
+    return _Sheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 4, 16, MediaQuery.paddingOf(context).bottom + 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(color: _lime, shape: BoxShape.circle),
+                child: Text(_bInitials(widget.name),
+                    style: _title(15, weight: FontWeight.w800, color: _onLime)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(widget.name, style: _title(18, weight: FontWeight.w800)),
+                  if ('${a?['phone'] ?? ''}'.isNotEmpty)
+                    Text('${a!['phone']}', style: _txt(12, color: _mid)),
+                ]),
+              ),
+            ]),
+            const SizedBox(height: 12),
+            if (_d == null && _error == null)
+              const Padding(
+                padding: EdgeInsets.all(30),
+                child: Center(child: CircularProgressIndicator(color: _brand)),
+              ),
+            if (_error != null) Text(_error!, style: _txt(13, color: _ember)),
+            if (a != null) ...[
+              _bLoanCard(a),
+              if (_done != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: _greenPale, borderRadius: BorderRadius.circular(14)),
+                  child: Row(children: [
+                    const Icon(Icons.check_circle_rounded, size: 20, color: _green),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_done!, style: _txt(12.5, weight: FontWeight.w600, color: _green))),
+                  ]),
+                ),
+              ],
+              if ('${a['blocked'] ?? ''}'.isNotEmpty && _bn(a['owed']) > 0) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: _emberPale, borderRadius: BorderRadius.circular(14)),
+                  child: Text('${a['blocked']}', style: _txt(12.5, weight: FontWeight.w600, color: _ember)),
+                ),
+              ],
+              const SizedBox(height: 12),
+              if (!_taking)
+                _bButton('Take a payment', () => setState(() {
+                      _taking = true;
+                      _done = null;
+                    }))
+              else
+                _payForm(a),
+              if (bills.isNotEmpty) ...[
+                _bHead('BILLS NOT YET PAID', trailing: 'oldest paid first'),
+                for (final b in bills)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: _white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: '${b['due']}'.compareTo(today) < 0 ? _ember.withOpacity(0.4) : _hairline),
+                    ),
+                    child: Row(children: [
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('${_bDay(b['date'])}${b['ref'] != null ? ' · ${b['ref']}' : ''}',
+                              style: _txt(12.5, weight: FontWeight.w700, color: _ink)),
+                          Text(
+                              '${b['due']}'.compareTo(today) < 0
+                                  ? 'Late since ${_bDay(b['due'])}'
+                                  : 'Pay by ${_bDay(b['due'])}',
+                              style: _txt(11.5, color: '${b['due']}'.compareTo(today) < 0 ? _ember : _mid)),
+                        ]),
+                      ),
+                      Text(_ugx(_bn(b['left'])), style: _txt(13, weight: FontWeight.w800, color: _ink)),
+                    ]),
+                  ),
+              ],
+              if (lines.isNotEmpty) ...[
+                _bHead('LATEST', trailing: '${lines.length} lines'),
+                Container(
+                  decoration: BoxDecoration(
+                    color: _white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _hairline),
+                  ),
+                  child: Column(children: [
+                    for (var i = 0; i < lines.length && i < 12; i++) _line(lines[i], i > 0),
+                  ]),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _payForm(Map<String, dynamic> a) {
+    final owed = _bn(a['owed']);
+    final late = _bn(a['overdue']);
+    final quick = <(String, int)>[
+      if (owed > 0) ('All', owed),
+      if (late > 0 && late != owed) ('Late part', late),
+      if (owed > 1) ('Half', (owed / 2).round()),
+    ];
+    final ok = !_busy && _n > 0 && (_how == 'cash' || _ref.text.trim().length >= 3);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _hairline),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Text('Payment', style: _title(16, weight: FontWeight.w800)),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => setState(() => _taking = false),
+            child: Text('Cancel', style: _txt(13, weight: FontWeight.w700, color: _mid)),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        _Field(
+          controller: _amount,
+          hint: 'Amount paid (UGX)',
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          onChanged: (_) => setState(() {}),
+        ),
+        if (quick.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            for (final (k, v) in quick)
+              _Pressable(
+                scale: 0.95,
+                onTap: () => setState(() => _amount.text = '$v'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _brandPale,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text('$k · ${_shortUgx(v)}',
+                      style: _txt(11.5, weight: FontWeight.w700, color: _brandDark)),
+                ),
+              ),
+          ]),
+        ],
+        const SizedBox(height: 12),
+        Text('How did they pay?', style: _txt(12.5, weight: FontWeight.w700, color: _mid)),
+        const SizedBox(height: 6),
+        _bChoice(const [
+          ('cash', 'Cash'),
+          ('mobile_money', 'Mobile Money'),
+          ('bank', 'Bank'),
+          ('cheque', 'Cheque'),
+        ], _how, (v) => setState(() => _how = v)),
+        if (_how != 'cash') ...[
+          const SizedBox(height: 10),
+          _Field(
+            controller: _ref,
+            hint: _how == 'cheque' ? 'Cheque number' : 'Transaction ID',
+            capitalisation: TextCapitalization.characters,
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+        const SizedBox(height: 10),
+        _Field(controller: _note, hint: 'Note (optional)'),
+        if (_n > 0) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(color: _tile, borderRadius: BorderRadius.circular(12)),
+            child: Text(
+                owed - _n >= 0
+                    ? 'After this they owe ${_ugx(owed - _n)}.'
+                    : 'They owe nothing, and ${_ugx(_n - owed)} is kept for their next loan order.',
+                style: _txt(12.5, color: _inkSoft)),
+          ),
+        ],
+        if (_formError != null) ...[
+          const SizedBox(height: 10),
+          Text(_formError!, style: _txt(12.5, color: _ember, height: 1.4)),
+        ],
+        if (_twice)
+          _bTick('It is a second payment, not the same one again', _again,
+              () => setState(() => _again = !_again)),
+        const SizedBox(height: 12),
+        _bButton(_n > 0 ? 'Receive ${_ugx(_n)}' : 'Type the amount', ok ? _pay : null, busy: _busy),
+        const SizedBox(height: 6),
+        Text('A receipt is made and it goes in the cash book. The customer gets an SMS.',
+            textAlign: TextAlign.center, style: _txt(11, color: _mid)),
+      ]),
+    );
+  }
+
+  Widget _line(Map<String, dynamic> l, bool rule) {
+    final paid = _bn(l['credit']) > 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        border: rule ? const Border(top: BorderSide(color: _hairline)) : null,
+      ),
+      child: Row(children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(color: paid ? _greenPale : _amberPale, shape: BoxShape.circle),
+          child: Icon(paid ? Icons.south_west_rounded : Icons.north_east_rounded,
+              size: 14, color: paid ? _green : _amber),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${l['what']}', style: _txt(12.5, weight: FontWeight.w700, color: _ink)),
+            Text(
+                [
+                  _bDay(l['date']),
+                  if (l['orderNo'] != null) '${l['orderNo']}',
+                  if (l['ref'] != null) '${l['ref']}',
+                  if ('${l['by'] ?? ''}'.isNotEmpty) '${l['by']}',
+                ].join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _txt(10.5, color: _mid)),
+          ]),
+        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(paid ? '-${_ugx(_bn(l['credit']))}' : '+${_ugx(_bn(l['debit']))}',
+              style: _txt(12.5, weight: FontWeight.w800, color: paid ? _green : _ink)),
+          Text('Owed ${_shortUgx(_bn(l['balance']))}', style: _txt(10, color: _light)),
+        ]),
+      ]),
+    );
+  }
+}
+
+
+/// The cashier's Loans tab: everyone who owes, and taking a payment.
+class _LoansTab extends StatelessWidget {
+  const _LoansTab();
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        _Header(subtitle: '${_deskName(_Session().role)} · ${_Session().fullName}'),
+        Expanded(
+          child: _LoansList(top: [
+            Text('Loans', style: _title(20, weight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text('Tap a customer to take a payment on their loan.', style: _txt(12.5, color: _mid)),
+            const SizedBox(height: 12),
+          ]),
+        ),
+      ]);
+}

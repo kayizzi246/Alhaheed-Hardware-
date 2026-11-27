@@ -466,6 +466,9 @@ class AH_Books {
 				'due'    => $x['due_date'],
 				'billed' => max( 0, (int) $x['amount'] ),
 				'paid'   => max( 0, -(int) $x['amount'] ),
+				// So a bill can be paid from the statement.
+				'billId' => 'bill' === $x['kind'] ? (int) $x['id'] : null,
+				'left'   => 'bill' === $x['kind'] ? (int) $x['amount'] - (int) $x['paid'] : 0,
 				'by'     => (string) $x['created_name'],
 				'sort'   => $x['bill_date'] . $x['created_at'] . 'a',
 			);
@@ -479,6 +482,8 @@ class AH_Books {
 				'due'    => null,
 				'billed' => 0,
 				'paid'   => (int) $x['amount'],
+				'billId' => null,
+				'left'   => 0,
 				'by'     => (string) $x['user_name'],
 				'sort'   => $x['paid_on'] . $x['created_at'] . 'b',
 			);
