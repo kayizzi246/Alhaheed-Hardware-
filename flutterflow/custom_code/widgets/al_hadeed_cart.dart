@@ -1562,6 +1562,8 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
                 const SizedBox(height: 16),
                 _label('HOW YOU PAY'),
                 const SizedBox(height: 10),
+                _creditMini(),
+                const SizedBox(height: 10),
                 _payOption(
                   credit: false,
                   icon: Icons.payments_outlined,
@@ -1755,6 +1757,59 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
     );
   }
 
+  /// What the customer owes against the limit, at a glance.
+  Widget _creditMini() {
+    final c = _credit!;
+    final owed = _n(c['owed']);
+    final limit = _n(c['limit']);
+    final late = _n(c['overdue']);
+    final used = limit > 0 ? (owed / limit).clamp(0.0, 1.0) : 1.0;
+    final over = owed > limit;
+    Widget fig(String k, String v, Color col) => Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(k, style: _txt(10.5, color: _white.withOpacity(0.6))),
+              const SizedBox(height: 1),
+              Text(v, style: _txt(13, weight: FontWeight.w800, color: col)),
+            ],
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(color: _navy, borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.account_balance_wallet_rounded, size: 16, color: _lime),
+            const SizedBox(width: 7),
+            Text('My credit', style: _txt(12.5, weight: FontWeight.w700, color: _white)),
+            const Spacer(),
+            Text(owed < 0 ? 'In advance ${_ugx(-owed)}' : 'Owe ${_ugx(owed)}',
+                style: _txt(13, weight: FontWeight.w800, color: _white)),
+          ]),
+          const SizedBox(height: 9),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: used,
+              minHeight: 7,
+              backgroundColor: _white.withOpacity(0.14),
+              color: over ? _ember : (used >= 0.8 ? const Color(0xFFE0A030) : _lime),
+            ),
+          ),
+          const SizedBox(height: 9),
+          Row(children: [
+            fig('Limit', _shortUgx(limit), _white),
+            fig('Left', _shortUgx(_n(c['available'])), _n(c['available']) > 0 ? _lime : _white.withOpacity(0.5)),
+            fig('Late', late > 0 ? _shortUgx(late) : 'Nothing', late > 0 ? const Color(0xFFFF8A80) : _lime),
+          ]),
+        ],
+      ),
+    );
+  }
+
   Widget _payOption({
     required bool credit,
     required IconData icon,
@@ -1927,6 +1982,42 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
               Text(_ugx(subtotal), style: _title(20, weight: FontWeight.w800)),
             ],
           ),
+          if (_onCredit && _credit != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _tile,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _hairline),
+              ),
+              child: Column(children: [
+                _totalRow('You owe now', _ugx(_n(_credit!['owed']))),
+                const SizedBox(height: 7),
+                _totalRow('This order', '+${_ugx(subtotal)}'),
+                if (_payFirst > 0) ...[
+                  const SizedBox(height: 7),
+                  _totalRow('Pay first at the shop', '-${_ugx(_payFirst)}', good: true),
+                ],
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 9),
+                  child: Divider(height: 1, thickness: 1, color: _hairline),
+                ),
+                Row(children: [
+                  Text('You will owe', style: _txt(13.5, weight: FontWeight.w700, color: _ink)),
+                  const Spacer(),
+                  Text(_ugx(_n(_credit!['owed']) + subtotal - _payFirst),
+                      style: _txt(14.5, weight: FontWeight.w800, color: _ink)),
+                ]),
+                const SizedBox(height: 3),
+                Row(children: [
+                  Text('Your limit', style: _txt(12, color: _mid)),
+                  const Spacer(),
+                  Text(_ugx(_n(_credit!['limit'])), style: _txt(12, color: _mid)),
+                ]),
+              ]),
+            ),
+          ],
         ],
       ),
     );
