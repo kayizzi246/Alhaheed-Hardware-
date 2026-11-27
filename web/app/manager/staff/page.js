@@ -118,7 +118,7 @@ export default function ManagerStaff() {
                         </Button>
                         <Link
                           href={`/manager/staff/${s.id}`}
-                          className="inline-flex h-8 items-center rounded-sm bg-fill px-3 text-[12px] font-semibold text-on-fill hover:bg-fill-dark"
+                          className="inline-flex h-8 items-center rounded-sm bg-fill px-3 text-[11.5px] font-semibold text-on-fill hover:bg-fill-dark"
                         >
                           Open
                         </Link>
@@ -260,7 +260,7 @@ function HireDialog({ onClose, onDone }) {
           <>
             <Link
               href={`/manager/staff/${hired.id}`}
-              className="inline-flex h-10 items-center rounded-sm border border-line px-4 text-[13px] font-semibold text-ink hover:bg-surface-2"
+              className="inline-flex h-10 items-center rounded-sm border border-line px-4 text-[12.5px] font-semibold text-ink hover:bg-surface-2"
             >
               Open their page
             </Link>
@@ -271,7 +271,7 @@ function HireDialog({ onClose, onDone }) {
         {hired.password ? (
           <SignInCard phone={hired.phone} password={hired.password} />
         ) : (
-          <p className="text-[12.5px] leading-relaxed text-ink-2">
+          <p className="text-[12px] leading-relaxed text-ink-2">
             They sign in with <strong className="tnum">{hired.phone}</strong> and a code texted to that phone.
             This site is on an older version of the plugin, which does not take a password from here.
             Upload the latest one to set passwords when hiring.
@@ -322,7 +322,7 @@ function HireDialog({ onClose, onDone }) {
           <Input value={form.fullName} onChange={set('fullName')} placeholder="Aisha Nakabugo" />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Phone" hint="They sign in with this.">
             <Input value={form.phone} onChange={set('phone')} placeholder="0772 500 100" inputMode="tel" className="tnum" />
           </Field>
@@ -406,7 +406,7 @@ function ChangeDialog({ person, onClose, onDone }) {
           </Select>
         </Field>
 
-        <p className="text-[12px] leading-relaxed text-ink-muted">
+        <p className="text-[11.5px] leading-relaxed text-ink-muted">
           Suspending stops them signing in until you let them back. For somebody who
           has left for good, use Delete on the list instead.
         </p>
@@ -448,7 +448,7 @@ function DeleteDialog({ person, onClose, onDone }) {
         </>
       }
     >
-      <div className="space-y-3 text-[12.5px] leading-relaxed text-ink">
+      <div className="space-y-3 text-[12px] leading-relaxed text-ink">
         <Alert>{error}</Alert>
         <p>They are signed out now and can never sign in again. This cannot be undone.</p>
         <p className="text-ink-muted">

@@ -53,7 +53,7 @@ export default function ReceiptsPage() {
       <Card>
         <CardHead>
           <CardTitle>Issued receipts</CardTitle>
-          <span className="tnum text-[12px] text-ink-muted">{money(total)}</span>
+          <span className="tnum text-[11.5px] text-ink-muted">{money(total)}</span>
         </CardHead>
 
         {!receipts ? (
@@ -125,7 +125,7 @@ function ReceiptModal({ receiptNo, onClose }) {
         </>
       }
     >
-      <div id="printable-receipt" className="text-[12px]">
+      <div id="printable-receipt" className="text-[11.5px]">
         <div className="mb-4 text-center">
           <div className="font-display text-base font-bold text-ink">{receipt.shop}</div>
           <div className="text-[11.5px] text-ink-muted">Kampala, Uganda</div>
@@ -141,7 +141,7 @@ function ReceiptModal({ receiptNo, onClose }) {
         </dl>
 
         <TableWrap>
-          <Table className="text-[12px]">
+          <Table className="text-[11.5px]">
             <thead>
               <tr><Th>Item</Th><Th num>Qty</Th><Th num>Total</Th></tr>
             </thead>
@@ -162,7 +162,7 @@ function ReceiptModal({ receiptNo, onClose }) {
           </Table>
         </TableWrap>
 
-        <dl className="mt-4 grid gap-1 text-[12px]">
+        <dl className="mt-4 grid gap-1 text-[11.5px]">
           <Row k="Subtotal" v={money(receipt.subtotal)} />
           {receipt.deliveryFee > 0 && <Row k="Delivery" v={money(receipt.deliveryFee)} />}
           <Row k="Total" v={<strong className="font-bold text-ink">{money(receipt.total)}</strong>} />

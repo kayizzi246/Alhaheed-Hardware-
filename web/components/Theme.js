@@ -86,7 +86,7 @@ export function ThemeChoice() {
                 on ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink',
               ].join(' ')}
             >
-              <b className="text-[12px] font-normal leading-none" aria-hidden="true">{glyph}</b>
+              <b className="text-[11.5px] font-normal leading-none" aria-hidden="true">{glyph}</b>
               {label}
             </button>
           );
@@ -117,7 +117,7 @@ export function ThemeToggle() {
       aria-label={label}
       title={label}
       className={[
-        'grid size-9 place-items-center rounded-sm border border-line bg-surface text-[13px] text-ink-2',
+        'grid size-9 place-items-center rounded-sm border border-line bg-surface text-[12.5px] text-ink-2',
         'transition-[border-color,color,transform] duration-150 ease-out',
         'hover:border-line-firm hover:text-ink active:scale-95',
       ].join(' ')}

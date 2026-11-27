@@ -138,7 +138,7 @@ function WorkersTab({ data, error, reload, say }) {
         </div>
       </CardHead>
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3 sm:px-4">
         <Input
           type="search"
           value={q}
@@ -339,7 +339,7 @@ function WorkerForm({ worker, desks, onClose, onDone, onDelete, onAdvance }) {
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Alert>{error}</Alert>
 
         <Section title="The person">
@@ -381,7 +381,7 @@ function WorkerForm({ worker, desks, onClose, onDone, onDelete, onAdvance }) {
               <Field label="Bank"><Input value={f.bankName} onChange={set('bankName')} maxLength={120} /></Field>
             )}
           </div>
-          <p className="rounded-xl bg-surface-2 px-4 py-3 text-[12.5px] text-ink-2">
+          <p className="rounded-xl bg-surface-2 px-4 py-3 text-[12px] text-ink-2">
             About <b className="tnum text-ink">{money(monthly)}</b> a month
             {daily ? ' at 26 days' : ''}, before overtime, bonuses and deductions.
           </p>
@@ -422,11 +422,11 @@ function WorkerForm({ worker, desks, onClose, onDone, onDelete, onAdvance }) {
             {!history ? (
               <Loading>Loading their pay…</Loading>
             ) : list(history.payslips).length === 0 && list(history.payments).length === 0 ? (
-              <p className="text-[12.5px] text-ink-muted">No payslips or advances yet.</p>
+              <p className="text-[12px] text-ink-muted">No payslips or advances yet.</p>
             ) : (
               <div className="space-y-3">
                 {worker.advanceOwed > 0 && (
-                  <p className="text-[12.5px] text-warn">Still owes <b className="tnum">{money(worker.advanceOwed)}</b> in advances.</p>
+                  <p className="text-[12px] text-warn">Still owes <b className="tnum">{money(worker.advanceOwed)}</b> in advances.</p>
                 )}
                 <TableWrap className="rounded-xl border border-line">
                   <Table>
@@ -506,7 +506,7 @@ function AdvanceDialog({ worker, onClose, onDone }) {
       <div className="space-y-4">
         <Alert>{error}</Alert>
         {worker.advanceOwed > 0 && (
-          <p className="rounded-xl bg-warn-bg px-4 py-3 text-[12.5px] text-warn">
+          <p className="rounded-xl bg-warn-bg px-4 py-3 text-[12px] text-warn">
             They already owe <b className="tnum">{money(worker.advanceOwed)}</b>.
           </p>
         )}
@@ -570,7 +570,7 @@ function DeleteWorkers({ workers, onClose, onDone }) {
         </>
       }
     >
-      <div className="space-y-4 text-[13px] text-ink-2">
+      <div className="space-y-4 text-[12.5px] text-ink-2">
         <Alert>{error}</Alert>
         <ul className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-line bg-surface-2 px-4 py-3">
           {workers.map((w) => (
@@ -674,7 +674,7 @@ function PayrollTab({ workers, reload, say }) {
         </Empty>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 border-b border-line px-4 py-3 text-[12px] sm:grid-cols-4 sm:px-5">
+          <div className="grid grid-cols-2 gap-3 border-b border-line px-4 py-3 text-[11.5px] sm:grid-cols-4 sm:px-4">
             <Total label="Gross" value={t.gross} />
             <Total label="Deductions and advances" value={(t.deductions || 0) + (t.advances || 0)} />
             <Total label="Net to pay" value={t.net} strong />
@@ -719,7 +719,7 @@ function PayrollTab({ workers, reload, say }) {
             </Table>
           </TableWrap>
           {missing.length > 0 && (
-            <p className="border-t border-line px-4 py-3 text-[12px] text-ink-muted sm:px-5">
+            <p className="border-t border-line px-4 py-3 text-[11.5px] text-ink-muted sm:px-4">
               No payslip yet for {missing.map((w) => w.fullName).join(', ')}.
             </p>
           )}
@@ -757,7 +757,7 @@ function Total({ label, value, strong }) {
   return (
     <div className="min-w-0">
       <span className="block text-ink-muted">{label}</span>
-      <span className={cn('tnum text-[13.5px]', strong ? 'font-bold text-brand-dark' : 'font-semibold text-ink')}>{money(value)}</span>
+      <span className={cn('tnum text-[13px]', strong ? 'font-bold text-brand-dark' : 'font-semibold text-ink')}>{money(value)}</span>
     </div>
   );
 }
@@ -823,7 +823,7 @@ function SlipDialog({ slip, owed, onClose, onDone }) {
         </div>
       }
     >
-      <div className="space-y-5">
+      <div className="space-y-4">
         <Alert>{error}</Alert>
         <div className="grid gap-3 sm:grid-cols-3">
           {daily ? (
@@ -844,12 +844,12 @@ function SlipDialog({ slip, owed, onClose, onDone }) {
           </Field>
         </div>
         <Field label="Note on the payslip"><Textarea rows={2} value={f.note} onChange={set('note')} /></Field>
-        <div className="grid grid-cols-3 gap-3 rounded-xl bg-surface-2 px-4 py-3 text-[12px]">
+        <div className="grid grid-cols-3 gap-3 rounded-xl bg-surface-2 px-4 py-3 text-[11.5px]">
           <Total label="Gross" value={gross} />
           <Total label="Taken off" value={num(f.deductions) + num(f.advanceRecovered)} />
           <Total label="Net pay" value={net} strong />
         </div>
-        {net < 0 && <p className="text-[12px] font-medium text-bad">What is taken off is more than the pay.</p>}
+        {net < 0 && <p className="text-[11.5px] font-medium text-bad">What is taken off is more than the pay.</p>}
       </div>
     </Modal>
   );
@@ -885,7 +885,7 @@ function ApproveDialog({ period, drafts, onClose, onDone }) {
         </>
       }
     >
-      <div className="space-y-4 text-[13px] text-ink-2">
+      <div className="space-y-4 text-[12.5px] text-ink-2">
         <Alert>{error}</Alert>
         <Segmented
           label="Who pays"

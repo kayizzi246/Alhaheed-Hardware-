@@ -87,7 +87,7 @@ export default function CashBookTable({ date }) {
             <Td />
             <Td num className="font-bold text-ok">{totalIn.toLocaleString('en-UG')}</Td>
             <Td num className="font-bold text-bad">{totalOut.toLocaleString('en-UG')}</Td>
-            <Td num className="font-display text-[13.5px] font-extrabold text-ink">{money(book.closing)}</Td>
+            <Td num className="font-display text-[13px] font-extrabold text-ink">{money(book.closing)}</Td>
           </tr>
         </tfoot>
       </Table>

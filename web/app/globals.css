@@ -19,6 +19,7 @@
   :root {
     /* ── Brand ─────────────────────────────────────────────────────── */
     color-scheme: light;
+    --lime:        146 208 80;
     --navy:        14 32 26;   /* the slab: a deep forest slate under the green */
     --navy-deep:   8 21 17;
     --navy-soft:   26 52 43;
@@ -186,7 +187,7 @@
 
   body {
     @apply bg-bg text-ink font-sans;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.5;
     font-feature-settings: 'cv11', 'ss01';
   }

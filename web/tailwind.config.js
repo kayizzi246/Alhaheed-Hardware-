@@ -36,6 +36,8 @@ export default {
           dark: 'rgb(var(--fill-dark) / <alpha-value>)',
         },
         'on-fill': 'rgb(var(--on-fill) / <alpha-value>)',
+        // The shop's green as figures on the dark slab: fixed in every theme.
+        lime: 'rgb(var(--lime) / <alpha-value>)',
         navy: {
           DEFAULT: 'rgb(var(--navy) / <alpha-value>)',
           deep: 'rgb(var(--navy-deep) / <alpha-value>)',

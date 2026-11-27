@@ -66,7 +66,7 @@ export function ConfirmHost() {
             'fixed left-1/2 top-1/2 z-[60] w-[min(420px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2',
             // Centred on the page, beside the menu, like every other pop-up.
             'lg:left-[calc(50%+var(--sidebar-w)/2)]',
-            'rounded-2xl border border-line/80 bg-surface px-6 pb-6 pt-7 text-center',
+            'rounded-2xl border border-line/80 bg-surface px-4 pb-6 pt-7 text-center',
             'shadow-[0_24px_64px_-16px_rgb(15_27_51/0.35),0_4px_12px_-4px_rgb(15_27_51/0.12)]',
             'data-[state=open]:animate-dialog-in'
           )}
@@ -76,12 +76,12 @@ export function ConfirmHost() {
               <span className={cn('mx-auto grid size-12 place-items-center rounded-full', danger ? 'bg-bad-bg text-bad' : 'bg-brand-soft text-brand')}>
                 {danger ? <Bin /> : <Question />}
               </span>
-              <DialogPrimitive.Title className="mt-4 text-[15px] font-bold leading-snug text-ink">{ask.title}</DialogPrimitive.Title>
+              <DialogPrimitive.Title className="mt-4 text-[14px] font-bold leading-snug text-ink">{ask.title}</DialogPrimitive.Title>
               {ask.body && (
-                <DialogPrimitive.Description className="mt-1.5 text-[12.5px] leading-relaxed text-ink-muted">{ask.body}</DialogPrimitive.Description>
+                <DialogPrimitive.Description className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">{ask.body}</DialogPrimitive.Description>
               )}
               {ask.points?.length > 0 && (
-                <ul className="mx-auto mt-4 max-w-[320px] space-y-1.5 rounded-xl bg-surface-2 px-4 py-3 text-left text-[12px] text-ink-2">
+                <ul className="mx-auto mt-4 max-w-[320px] space-y-1.5 rounded-xl bg-surface-2 px-4 py-3 text-left text-[11.5px] text-ink-2">
                   {ask.points.map((p, i) => (
                     <li key={i} className="flex gap-2">
                       <span aria-hidden="true" className={cn('mt-[7px] size-1.5 shrink-0 rounded-full', danger ? 'bg-bad' : 'bg-brand')} />
@@ -90,7 +90,7 @@ export function ConfirmHost() {
                   ))}
                 </ul>
               )}
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mt-4 grid grid-cols-2 gap-3">
                 <Button ref={cancelRef} variant="outline" onClick={() => finish(false)}>{ask.cancel}</Button>
                 <Button
                   onClick={() => finish(true)}

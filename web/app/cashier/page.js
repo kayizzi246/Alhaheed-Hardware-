@@ -88,7 +88,7 @@ export default function CashierQueue() {
       <Card className="mb-4">
         <CardHead>
           <CardTitle>Waiting for payment</CardTitle>
-          <span className="text-[12px] text-ink-muted">
+          <span className="text-[11.5px] text-ink-muted">
             {orders.length === 0 ? 'nothing waiting' : `${orders.length} in the queue`}
           </span>
         </CardHead>
@@ -100,33 +100,33 @@ export default function CashierQueue() {
         ) : (
           <ul className="divide-y divide-line">
             {orders.map((o) => (
-              <li key={o.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-5">
+              <li key={o.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-4">
                 {/* Wide enough before it wraps that the customer's name is
                     never squeezed down to one letter on a phone. */}
                 <div className="min-w-[13rem] flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     {/* The order number is read across a desk, so it is
                         the biggest thing in the row after the amount. */}
-                    <span className="tnum font-display text-[14.5px] font-bold text-ink">{o.order_no}</span>
-                    {o.credit_approval?.status === 'pending' && <span className="ml-2 rounded-full bg-[#e8f3fb] px-2 py-0.5 text-[10.5px] font-bold text-[#0b658d]">Waiting for the owner</span>}
+                    <span className="tnum font-display text-[14px] font-bold text-ink">{o.order_no}</span>
+                    {o.credit_approval?.status === 'pending' && <span className="ml-2 rounded-full bg-info-bg px-2 py-0.5 text-[10.5px] font-bold text-info">Waiting for the owner</span>}
                     {o.credit_approval?.status === 'rejected' && <span className="ml-2 rounded-full bg-bad-bg px-2 py-0.5 text-[10.5px] font-bold text-bad" title={o.credit_approval.note || ''}>Loan refused</span>}
                     {o.wants_credit && !o.credit_approval && <span className="ml-2 rounded-full bg-warn-bg px-2 py-0.5 text-[10.5px] font-bold text-warn">{o.credit_pay_first > 0 ? `Credit · pay ${money(o.credit_pay_first)} first` : 'Wants credit'}</span>}
                     <StatusChip status={o.status}>Pending</StatusChip>
                   </div>
-                  <p className="mt-0.5 truncate text-[13px] font-medium text-ink-2">
+                  <p className="mt-0.5 truncate text-[12.5px] font-medium text-ink-2">
                     {o.company_name || o.ordered_by_name}
                     {o.company_name && (
                       <em className="not-italic text-ink-muted"> · ordered by {o.ordered_by_name}</em>
                     )}
                   </p>
-                  <p className="mt-0.5 text-[12px] text-ink-muted">
+                  <p className="mt-0.5 text-[11.5px] text-ink-muted">
                     {o.item_count} {o.item_count === 1 ? 'item' : 'items'} · {time(o.created_at)}
                     {o.fulfilment === 'delivery' && ' · delivery'}
                   </p>
                 </div>
 
                 <div className="flex w-full shrink-0 items-center justify-between gap-3 sm:w-auto sm:justify-end">
-                  <span className="tnum font-display text-[15px] font-bold text-ink">{money(o.total)}</span>
+                  <span className="tnum font-display text-[14px] font-bold text-ink">{money(o.total)}</span>
                   <Button onClick={() => setPaying(o)}>Receive payment</Button>
                 </div>
               </li>
@@ -146,7 +146,7 @@ export default function CashierQueue() {
         ) : (
           <ul className="divide-y divide-line">
             {recent.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 sm:px-6 py-3 text-[12.5px]">
+              <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 sm:px-4 py-3 text-[12px]">
                 <span className="tnum font-bold text-ink">{r.order_no}</span>
                 <span className="min-w-0 flex-1 truncate text-ink-muted">
                   {r.receipt_no} · {methodLabel(r.method)}

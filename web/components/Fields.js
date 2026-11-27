@@ -30,7 +30,7 @@ export function MoneyField({ value, onChange, placeholder = '0', strong, classNa
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, '').replace(/^0+(?=\d)/, ''))}
         className={cn(
-          'tnum h-full min-w-0 flex-1 bg-transparent px-2.5 text-right text-[13.5px] text-ink outline-none placeholder:text-ink-faint',
+          'tnum h-full min-w-0 flex-1 bg-transparent px-2.5 text-right text-[13px] text-ink outline-none placeholder:text-ink-faint',
           strong && 'font-bold'
         )}
       />
@@ -40,7 +40,7 @@ export function MoneyField({ value, onChange, placeholder = '0', strong, classNa
           tabIndex={-1}
           aria-label="Clear"
           onClick={() => onChange('')}
-          className="mr-1.5 grid size-6 shrink-0 place-items-center rounded-md text-[15px] leading-none text-ink-faint opacity-0 transition-opacity hover:bg-surface-2 hover:text-ink group-focus-within:opacity-100 group-hover:opacity-100"
+          className="mr-1.5 grid size-6 shrink-0 place-items-center rounded-md text-[14px] leading-none text-ink-faint opacity-0 transition-opacity hover:bg-surface-2 hover:text-ink group-focus-within:opacity-100 group-hover:opacity-100"
         >
           ×
         </button>
@@ -65,9 +65,9 @@ export function MeasureField({ value, onChange, unit, placeholder, className, ..
           if (dot !== -1) v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, '');
           onChange(v);
         }}
-        className="tnum h-full min-w-0 flex-1 bg-transparent px-3 text-[13.5px] text-ink outline-none placeholder:text-ink-faint"
+        className="tnum h-full min-w-0 flex-1 bg-transparent px-3 text-[13px] text-ink outline-none placeholder:text-ink-faint"
       />
-      <span className="shrink-0 select-none pr-3 text-[12px] font-semibold text-ink-muted">{unit}</span>
+      <span className="shrink-0 select-none pr-3 text-[11.5px] font-semibold text-ink-muted">{unit}</span>
     </div>
   );
 }

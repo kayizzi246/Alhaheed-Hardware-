@@ -15,13 +15,13 @@ export default function SaleBlocked({ error, busy, onOverride, onCancel }) {
   const can = !!error?.data?.canOverride;
 
   return (
-    <div className="space-y-3 rounded-sm border border-bad/25 bg-bad-bg px-3.5 py-3 text-[12.5px]">
+    <div className="space-y-3 rounded-sm border border-bad/25 bg-bad-bg px-3.5 py-3 text-[12px]">
       <p className="font-semibold text-bad">This sale needs the manager.</p>
       <ul className="space-y-1.5 text-ink">
         {problems.length ? problems.map((p, i) => (
           <li key={i}>
             <b>{p.name}</b>: {p.rule === 'negative_stock' ? 'not enough in stock' : 'below cost'}
-            <span className="block text-[12px] text-ink-2">{p.detail}</span>
+            <span className="block text-[11.5px] text-ink-2">{p.detail}</span>
           </li>
         )) : <li>{error?.message}</li>}
       </ul>
@@ -42,7 +42,7 @@ export default function SaleBlocked({ error, busy, onOverride, onCancel }) {
           </div>
         </>
       ) : (
-        <p className="text-[12px] text-ink-2">Only the manager can override this. Change the sale, or ask the manager to sell it from their login.</p>
+        <p className="text-[11.5px] text-ink-2">Only the manager can override this. Change the sale, or ask the manager to sell it from their login.</p>
       )}
     </div>
   );

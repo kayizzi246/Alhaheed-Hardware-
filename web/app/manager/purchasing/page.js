@@ -83,7 +83,7 @@ export default function Purchasing() {
           ].map(([k, v, c]) => (
             <div key={k} className="rounded-xl border border-line bg-surface px-4 py-3">
               <p className="text-[11.5px] text-ink-muted">{k}</p>
-              <p className={cn('tnum text-[16px] font-bold text-ink', c)}>{v}</p>
+              <p className={cn('tnum text-[15px] font-bold text-ink', c)}>{v}</p>
             </div>
           ))}
         </div>
@@ -297,15 +297,15 @@ function NewPo({ suppliers, products, onClose, onDone }) {
 
   return (
     <Modal wide title="New purchase order" description="What you are asking the supplier for, at the agreed price." onClose={onClose}
-      footer={<><span className="mr-auto self-center text-[13px] font-semibold text-ink">Total {money(total)}</span><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!ok || busy} onClick={save}>{busy ? 'Saving…' : 'Save the order'}</Button></>}>
+      footer={<><span className="mr-auto self-center text-[12.5px] font-semibold text-ink">Total {money(total)}</span><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!ok || busy} onClick={save}>{busy ? 'Saving…' : 'Save the order'}</Button></>}>
       <div className="space-y-4">
         <Alert>{error}</Alert>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Supplier"><SupplierField suppliers={suppliers} value={supplier} onChange={pickSupplier} /></Field>
           <Field label="Expected on (optional)"><Input type="date" value={expected} onChange={(e) => setExpected(e.target.value)} /></Field>
         </div>
         {supplier && (
-          <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">
+          <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12px] text-ink-2">
             {auto
               ? <>{auto} {auto === 1 ? 'item comes' : 'items come'} from {supplier}. Items running low already have a number. Type how many of the others you want; <b>leave it empty to skip it</b>.</>
               : <>No items are linked to {supplier} yet. Choose them below. Next time they fill in by themselves.</>}
@@ -323,7 +323,7 @@ function NewPo({ suppliers, products, onClose, onDone }) {
                 return (
                   <li key={l.productId} className={cn('grid grid-cols-[minmax(0,1fr)_96px_130px_28px] items-center gap-2 px-3 py-1.5', Number(l.qty) > 0 && 'bg-brand-soft/40')}>
                     <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-semibold text-ink">{p?.name}</span>
+                      <span className="block truncate text-[12.5px] font-semibold text-ink">{p?.name}</span>
                       <span className="text-[11px] text-ink-muted">
                         {p?.code} · {p ? `${p.stock_available} ${p.unit} left` : ''}
                         {p && (p.state === 'out' || p.state === 'low') && <b className="ml-1 text-warn">{p.state === 'out' ? 'Out' : 'Low'}</b>}
@@ -331,7 +331,7 @@ function NewPo({ suppliers, products, onClose, onDone }) {
                     </span>
                     <Input type="number" min="0" step="any" inputMode="decimal" value={l.qty} placeholder="0" onChange={(e) => set(i, 'qty', e.target.value)} className="tnum h-8 text-right" />
                     <Input type="number" min="1" inputMode="numeric" value={l.unitCost} onChange={(e) => set(i, 'unitCost', e.target.value)} className="tnum h-8 text-right" />
-                    <button type="button" aria-label="Remove" onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))} className="text-[16px] leading-none text-ink-faint hover:text-bad">×</button>
+                    <button type="button" aria-label="Remove" onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))} className="text-[15px] leading-none text-ink-faint hover:text-bad">×</button>
                   </li>
                 );
               })}
@@ -422,11 +422,11 @@ function ShowPo({ id, onClose, onBill }) {
       {!po ? (error ? <Alert>{error}</Alert> : <Loading>Opening…</Loading>) : (
         <div className="space-y-4">
           <Alert>{error}</Alert>
-          <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
+          <div className="flex flex-wrap items-center gap-2 text-[12px]">
             <span>Ordered <b>{money(po.ordered)}</b></span>·<span>Delivered <b>{money(po.received)}</b></span>·<span>Billed <b>{money(po.billed)}</b></span><Match m={po.match} />
           </div>
           {open && (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Delivery note (FDN) no."><Input value={fdn} onChange={(e) => setFdn(e.target.value)} placeholder="FDN 10422" /></Field>
               <Field label="Delivery date"><Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} /></Field>
             </div>
@@ -457,7 +457,7 @@ function ShowPo({ id, onClose, onBill }) {
           {!!list(po.deliveries).length && (
             <div>
               <h3 className="mb-1 text-[11.5px] font-bold uppercase tracking-[0.06em] text-ink-muted">Deliveries</h3>
-              <ul className="space-y-0.5 text-[12px] text-ink-2">
+              <ul className="space-y-0.5 text-[11.5px] text-ink-2">
                 {po.deliveries.map((d) => <li key={d.id}>{d.day} · {d.ref} · {d.qty} {d.name} · {d.user_name}</li>)}
               </ul>
             </div>
@@ -504,14 +504,14 @@ function NewBill({ po, suppliers, orders, onClose, onDone }) {
           </Select>
         </Field>
         {!poId && <Field label="Supplier"><SupplierField suppliers={suppliers} value={supplier} onChange={setSupplier} /></Field>}
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Their invoice no."><Input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} /></Field>
           <Field label="Amount on the invoice (UGX)"><Input type="number" min="1" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} className="tnum" /></Field>
           <Field label="Invoice date"><Input type="date" value={billDate} max={today()} onChange={(e) => setBillDate(e.target.value)} /></Field>
           <Field label="Pay by (optional)"><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></Field>
         </div>
         {diff !== null && diff !== 0 && (
-          <p className={cn('rounded-sm px-3 py-2 text-[12px]', diff > 0 ? 'bg-bad-bg text-bad' : 'bg-warn-bg text-warn')}>
+          <p className={cn('rounded-sm px-3 py-2 text-[11.5px]', diff > 0 ? 'bg-bad-bg text-bad' : 'bg-warn-bg text-warn')}>
             {diff > 0 ? `This bill is ${money(diff)} more than the goods that arrived. Pay only for what came.` : `This bill is ${money(-diff)} less than the goods that arrived.`}
           </p>
         )}
@@ -551,8 +551,8 @@ function PayBill({ bill, onClose, onDone }) {
       footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={busy || !(Number(amount) > 0) || (method !== 'cash' && !ref.trim())} onClick={save}>{busy ? 'Saving…' : 'Record the payment'}</Button></>}>
       <div className="space-y-4">
         <Alert>{error}</Alert>
-        {overPay && <p className="rounded-sm bg-bad-bg px-3 py-2 text-[12px] text-bad">This bill charges {money(bill.match.diff)} more than was delivered. Pay only for what came.</p>}
-        <div className="grid gap-4 sm:grid-cols-2">
+        {overPay && <p className="rounded-sm bg-bad-bg px-3 py-2 text-[11.5px] text-bad">This bill charges {money(bill.match.diff)} more than was delivered. Pay only for what came.</p>}
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Amount (UGX)"><Input type="number" min="1" max={bill.owed} value={amount} onChange={(e) => setAmount(e.target.value)} className="tnum" /></Field>
           <Field label="Date paid"><Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} /></Field>
           <Field label="How">
@@ -597,7 +597,7 @@ function ReturnGoods({ suppliers, products, onClose, onDone }) {
       <div className="space-y-4">
         <Alert>{error}</Alert>
         <Field label="Item"><ProductPick products={products} value={productId} onChange={setProductId} /></Field>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label={`How many${p ? ` ${p.unit}` : ''}`} hint={p ? `${p.stock_available ?? 0} in stock` : undefined}><Input type="number" min="0" step="any" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum" /></Field>
           <Field label="Date"><Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} /></Field>
           <Field label="Supplier"><SupplierField suppliers={suppliers} value={supplier} onChange={setSupplier} /></Field>

@@ -10,18 +10,18 @@ export const metadata = {
 };
 
 const Section = ({ title, children }) => (
-  <section className="mt-6">
-    <h2 className="text-[15px] font-bold text-ink">{title}</h2>
-    <div className="mt-2 space-y-2 text-[13.5px] leading-relaxed text-ink-2">{children}</div>
+  <section className="mt-4">
+    <h2 className="text-[14px] font-bold text-ink">{title}</h2>
+    <div className="mt-2 space-y-2 text-[13px] leading-relaxed text-ink-2">{children}</div>
   </section>
 );
 
 export default function Privacy() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12 sm:py-16">
-      <p className="text-[12px] font-semibold text-brand-dark">Al Hadeed Hardware, Kampala</p>
-      <h1 className="mt-1 text-[24px] leading-tight text-ink">Privacy policy</h1>
-      <p className="mt-2 text-[12.5px] text-ink-muted">Last updated 26 November 2026</p>
+      <p className="text-[11.5px] font-semibold text-brand-dark">Al Hadeed Hardware, Kampala</p>
+      <h1 className="mt-1 text-[22px] leading-tight text-ink">Privacy policy</h1>
+      <p className="mt-2 text-[12px] text-ink-muted">Last updated 26 November 2026</p>
 
       <Section title="Who we are">
         <p>

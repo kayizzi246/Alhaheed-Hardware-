@@ -77,7 +77,7 @@ export default function Categories() {
 
       <Card>
         <form
-          className="flex flex-wrap items-center gap-3 p-4 sm:p-5"
+          className="flex flex-wrap items-center gap-3 p-3 sm:p-4"
           onSubmit={async (e) => { e.preventDefault(); if (await add(newTop)) setNewTop(''); }}
         >
           <Input value={newTop} onChange={(e) => setNewTop(e.target.value)} placeholder="New main category, e.g. Roofing" className="min-w-[220px] flex-1" />
@@ -90,15 +90,15 @@ export default function Categories() {
       ) : (
         tree.map((c) => (
           <Card key={c.id}>
-            <div className="flex flex-wrap items-center gap-4 border-b border-line p-4 sm:p-5">
+            <div className="flex flex-wrap items-center gap-3 border-b border-line p-3 sm:p-4">
               <Picture category={c} size="lg" onSaved={load} onError={setError} />
               <div className="min-w-[160px] flex-1">
                 <Name category={c} onSave={(name) => rename(c, name, c.parent)} big />
-                <p className="text-[12px] text-ink-muted">{c.products} {c.products === 1 ? 'product' : 'products'} directly · {c.children.length} sub-{c.children.length === 1 ? 'category' : 'categories'}</p>
+                <p className="text-[11.5px] text-ink-muted">{c.products} {c.products === 1 ? 'product' : 'products'} directly · {c.children.length} sub-{c.children.length === 1 ? 'category' : 'categories'}</p>
               </div>
               <Button variant="ghost" size="sm" className="text-bad hover:bg-bad-bg" onClick={() => remove(c)}>Delete</Button>
             </div>
-            <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
+            <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-3">
               {c.children.map((s) => (
                 <div key={s.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
                   <Picture category={s} onSaved={load} onError={setError} />
@@ -106,7 +106,7 @@ export default function Categories() {
                     <Name category={s} onSave={(name) => rename(s, name, c.id)} />
                     <p className="text-[11.5px] text-ink-muted">{s.products} {s.products === 1 ? 'product' : 'products'}</p>
                   </div>
-                  <button type="button" onClick={() => remove(s)} className="text-[12px] font-semibold text-bad hover:underline">Delete</button>
+                  <button type="button" onClick={() => remove(s)} className="text-[11.5px] font-semibold text-bad hover:underline">Delete</button>
                 </div>
               ))}
               <AddSub onAdd={(name) => add(name, c.id)} parent={c.name} />
@@ -144,7 +144,7 @@ function Name({ category, onSave, big }) {
     );
   }
   return (
-    <button type="button" onClick={() => setEditing(true)} title="Rename" className={cn('text-left font-bold text-ink hover:text-brand', big ? 'text-[15px]' : 'text-[13px]')}>
+    <button type="button" onClick={() => setEditing(true)} title="Rename" className={cn('text-left font-bold text-ink hover:text-brand', big ? 'text-[14px]' : 'text-[12.5px]')}>
       {category.name}
     </button>
   );

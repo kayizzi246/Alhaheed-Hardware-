@@ -150,7 +150,7 @@ export default function MonthlyReport() {
             <Stat label="Orders placed" icon={Icon.receipt()} value={t.orders} note={`average receipt ${money(t.average)}`} />
           </Stats>
 
-          <div className="mb-4 grid gap-4 xl:grid-cols-2">
+          <div className="mb-4 grid gap-3 xl:grid-cols-2">
             <Card>
               <CardHead><CardTitle>Cash book for the month</CardTitle></CardHead>
               <TableWrap>
@@ -210,7 +210,7 @@ export default function MonthlyReport() {
           <Card className="mb-4">
             <CardHead>
               <CardTitle>Takings by day</CardTitle>
-              <span className="text-[12px] text-ink-muted">
+              <span className="text-[11.5px] text-ink-muted">
                 {byDay.length} {byDay.length === 1 ? 'day' : 'days'} with money in
               </span>
             </CardHead>
@@ -230,7 +230,7 @@ export default function MonthlyReport() {
                     <span className="tnum w-[64px] shrink-0 text-right text-[11.5px] text-ink-muted">
                       {d.receipts} rcpt
                     </span>
-                    <span className="tnum w-[120px] shrink-0 text-right text-[13px] font-semibold text-ink">
+                    <span className="tnum w-[120px] shrink-0 text-right text-[12.5px] font-semibold text-ink">
                       {money(d.total)}
                     </span>
                   </div>
@@ -242,7 +242,7 @@ export default function MonthlyReport() {
           <Card className="mb-4">
             <CardHead>
               <CardTitle>Internal spending</CardTitle>
-              <span className="text-[12px] text-ink-muted">
+              <span className="text-[11.5px] text-ink-muted">
                 {money(t.expenses)} paid
                 {openSpend.length > 0 && ` · ${openSpend.length} still open`}
               </span>
@@ -296,28 +296,28 @@ export default function MonthlyReport() {
               </TableWrap>
             )}
             {list(data.spentBy).length > 0 && (
-              <div className="border-t border-line px-4 py-4 sm:px-6">
-                <p className="text-[12px] font-semibold text-ink-2">How it was paid</p>
+              <div className="border-t border-line px-4 py-4 sm:px-4">
+                <p className="text-[11.5px] font-semibold text-ink-2">How it was paid</p>
                 <dl className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
                   {list(data.spentBy).map((m) => (
                     <div key={m.method} className="flex items-baseline justify-between gap-3">
-                      <dt className="text-[12.5px] text-ink-2">
+                      <dt className="text-[12px] text-ink-2">
                         {methodLabel(m.method)} <span className="text-ink-muted">({m.payments})</span>
                       </dt>
-                      <dd className="tnum text-[13px] font-semibold text-ink">{money(m.total)}</dd>
+                      <dd className="tnum text-[12.5px] font-semibold text-ink">{money(m.total)}</dd>
                     </div>
                   ))}
                 </dl>
               </div>
             )}
-            <CardNote className="px-4 pb-5 sm:px-6">
+            <CardNote className="px-4 pb-5 sm:px-4">
               Only the {paidSpend.length} paid {paidSpend.length === 1 ? 'row counts' : 'rows count'} towards
               the month&apos;s spending. Requests waiting on approval are shown so
               nothing is forgotten, not because they have cost anything yet.
             </CardNote>
           </Card>
 
-          <div className="mb-4 grid gap-4 xl:grid-cols-2">
+          <div className="mb-4 grid gap-3 xl:grid-cols-2">
             <Card>
               <CardHead><CardTitle>Best selling items</CardTitle></CardHead>
               {list(data.products).length === 0 ? (
@@ -369,7 +369,7 @@ export default function MonthlyReport() {
           <Card className="mb-4">
             <CardHead>
               <CardTitle>Every order this month</CardTitle>
-              <span className="text-[12px] text-ink-muted">
+              <span className="text-[11.5px] text-ink-muted">
                 {orders.length} {orders.length === 1 ? 'order' : 'orders'}
                 {orders.length > SHOWN && ` · first ${SHOWN} shown`}
               </span>
@@ -411,7 +411,7 @@ export default function MonthlyReport() {
           <Card>
             <CardHead>
               <CardTitle>Who did the work</CardTitle>
-              <span className="text-[12px] text-ink-muted">{data.staff.length} on the floor</span>
+              <span className="text-[11.5px] text-ink-muted">{data.staff.length} on the floor</span>
             </CardHead>
             {list(data.staff).length === 0 ? (
               <Empty title="No recorded staff activity this month" />

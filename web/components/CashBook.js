@@ -124,7 +124,7 @@ function AddEntry({ date, onClose, onDone }) {
           <Segmented label="Direction" value={direction} onChange={setDirection} options={DIRECTIONS} />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Amount (UGX)">
             <Input
               type="number"

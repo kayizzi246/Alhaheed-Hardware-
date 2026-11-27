@@ -53,9 +53,9 @@ const buttonVariants = cva(
           'hover:brightness-110',
       },
       size: {
-        sm: 'h-8 px-2.5 text-[12px]',
-        md: 'h-9 px-3.5 text-[13px]',
-        lg: 'h-12 px-6 text-[13.5px]',
+        sm: 'h-8 px-2.5 text-[11.5px]',
+        md: 'h-9 px-3.5 text-[12.5px]',
+        lg: 'h-12 px-4 text-[13px]',
         icon: 'h-9 w-9',
       },
       block: { true: 'w-full' },
@@ -118,15 +118,15 @@ export const CardHead = ({ className, children, ...props }) => (
 );
 
 export const CardTitle = ({ className, ...props }) => (
-  <h2 className={cn('text-[14px] font-bold text-ink', className)} {...props} />
+  <h2 className={cn('text-[13.5px] font-bold text-ink', className)} {...props} />
 );
 
 export const CardNote = ({ className, ...props }) => (
-  <p className={cn('mt-0.5 text-[12px] text-ink-muted', className)} {...props} />
+  <p className={cn('mt-0.5 text-[11.5px] text-ink-muted', className)} {...props} />
 );
 
 export const CardBody = ({ className, ...props }) => (
-  <div className={cn('p-4', className)} {...props} />
+  <div className={cn('p-3', className)} {...props} />
 );
 
 /* ── Chip ────────────────────────────────────────────────────────── */
@@ -179,7 +179,7 @@ export const StatusChip = ({ status, children }) => (
 // the layout sideways on every phone. 16px on a phone, back to 14px
 // from the small breakpoint up, where no browser does this.
 const fieldBase =
-  'w-full rounded-lg border border-line-firm/80 bg-surface px-3 text-base sm:text-[13px] text-ink ' +
+  'w-full rounded-lg border border-line-firm/80 bg-surface px-3 text-base sm:text-[12.5px] text-ink ' +
   'placeholder:text-ink-faint transition-[border-color,box-shadow] duration-150 ease-out ' +
   'focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/20 ' +
   'disabled:cursor-not-allowed disabled:opacity-60';
@@ -266,7 +266,7 @@ export const Select = React.forwardRef(
                   value={enc(o.value)}
                   disabled={o.disabled}
                   className={cn(
-                    'relative flex min-h-10 cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-[13px] outline-none',
+                    'relative flex min-h-10 cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-[12.5px] outline-none',
                     'transition-colors duration-100',
                     'data-[highlighted]:bg-surface-2 data-[state=checked]:font-semibold data-[state=checked]:text-brand-dark',
                     'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-45'
@@ -295,22 +295,22 @@ export const Textarea = React.forwardRef(({ className, ...props }, ref) => (
 Textarea.displayName = 'Textarea';
 
 export const Label = ({ className, ...props }) => (
-  <label className={cn('mb-2 block text-[12px] font-semibold text-ink-2', className)} {...props} />
+  <label className={cn('mb-2 block text-[11.5px] font-semibold text-ink-2', className)} {...props} />
 );
 
 export const Field = ({ label, hint, error, children, className }) => (
   <div className={cn('min-w-0', className)}>
     {label && <Label>{label}</Label>}
     {children}
-    {hint && !error && <p className="mt-1.5 text-[12px] text-ink-muted">{hint}</p>}
-    {error && <p className="mt-1.5 text-[12px] font-medium text-bad">{error}</p>}
+    {hint && !error && <p className="mt-1.5 text-[11.5px] text-ink-muted">{hint}</p>}
+    {error && <p className="mt-1.5 text-[11.5px] font-medium text-bad">{error}</p>}
   </div>
 );
 
 /** A checkbox that looks the same in every browser. */
 export function Checkbox({ label, className, ...props }) {
   return (
-    <label className={cn('inline-flex cursor-pointer select-none items-center gap-2 text-[12.5px] text-ink-2', className)}>
+    <label className={cn('inline-flex cursor-pointer select-none items-center gap-2 text-[12px] text-ink-2', className)}>
       <span className="relative grid place-items-center">
         <input type="checkbox" className="peer sr-only" {...props} />
         <span
@@ -354,7 +354,7 @@ export function Segmented({ value, onChange, options, label }) {
             aria-checked={on}
             onClick={() => onChange(o.value)}
             className={cn(
-              'rounded-[7px] px-3.5 py-2 text-[12px] font-semibold transition-colors duration-150 ease-out',
+              'rounded-[7px] px-3.5 py-2 text-[11.5px] font-semibold transition-colors duration-150 ease-out',
               on ? 'bg-surface text-ink ring-1 ring-line' : 'text-ink-muted hover:text-ink'
             )}
           >
@@ -374,14 +374,14 @@ export const TableWrap = ({ className, ...props }) => (
 );
 
 export const Table = ({ className, ...props }) => (
-  <table className={cn('w-full border-collapse text-[13px]', className)} {...props} />
+  <table className={cn('w-full border-collapse text-[12.5px]', className)} {...props} />
 );
 
 export const Th = ({ className, num, ...props }) => (
   <th
     className={cn(
-      'whitespace-nowrap border-b border-line bg-surface-2 px-3.5 py-2 sm:first:pl-5 sm:last:pr-5',
-      'text-[11px] font-bold uppercase tracking-[.06em] text-ink-muted',
+      'whitespace-nowrap border-b border-line bg-surface-2 px-3 py-1.5 sm:first:pl-4 sm:last:pr-4',
+      'text-[10.5px] font-bold uppercase tracking-[.06em] text-ink-muted',
       num ? 'text-right' : 'text-left',
       className
     )}
@@ -391,7 +391,7 @@ export const Th = ({ className, num, ...props }) => (
 
 export const Td = ({ className, num, ...props }) => (
   <td
-    className={cn('border-b border-line px-3.5 py-2.5 align-middle text-[13px] sm:first:pl-5 sm:last:pr-5 text-ink-2', num && 'tnum text-right', className)}
+    className={cn('border-b border-line px-3 py-1.5 align-middle text-[12px] sm:first:pl-4 sm:last:pr-4 text-ink-2', num && 'tnum text-right', className)}
     {...props}
   />
 );
@@ -403,7 +403,7 @@ export const Tr = ({ className, ...props }) => (
 /* ── States ──────────────────────────────────────────────────────── */
 
 export const Empty = ({ title, children, action, icon }) => (
-  <div className="px-6 py-12 text-center">
+  <div className="px-4 py-12 text-center">
     <span
       aria-hidden="true"
       className="mx-auto mb-4 grid size-12 place-items-center rounded-2xl bg-surface-2 text-ink-faint ring-1 ring-inset ring-line [&>svg]:size-[22px]"
@@ -411,7 +411,7 @@ export const Empty = ({ title, children, action, icon }) => (
       {icon || Icon.queue()}
     </span>
     {title && <p className="text-base font-semibold text-ink">{title}</p>}
-    {children && <p className="mx-auto mt-1.5 max-w-sm text-[12.5px] leading-relaxed text-ink-muted">{children}</p>}
+    {children && <p className="mx-auto mt-1.5 max-w-sm text-[12px] leading-relaxed text-ink-muted">{children}</p>}
     {action && <div className="mt-5">{action}</div>}
   </div>
 );
@@ -425,9 +425,9 @@ export const Empty = ({ title, children, action, icon }) => (
  * nothing. A failure is said to be a failure, with the way to retry.
  */
 export const LoadFailed = ({ children, onRetry, title = 'This could not be loaded' }) => (
-  <div role="alert" className="px-6 py-12 text-center">
+  <div role="alert" className="px-4 py-12 text-center">
     <p className="text-base font-semibold text-ink">{title}</p>
-    <p className="mx-auto mt-1.5 max-w-sm text-[12.5px] leading-relaxed text-ink-muted">
+    <p className="mx-auto mt-1.5 max-w-sm text-[12px] leading-relaxed text-ink-muted">
       {children || 'The shop could not be reached.'} Nothing has been changed.
     </p>
     {onRetry && (
@@ -457,7 +457,7 @@ export function Alert({ kind = 'bad', children, onDone }) {
     <div
       role={kind === 'bad' ? 'alert' : 'status'}
       className={cn(
-        'mb-6 animate-rise-in rounded-sm border px-4 py-3 text-[12.5px]',
+        'mb-4 animate-rise-in rounded-sm border px-4 py-3 text-[12px]',
         kind === 'bad' && 'border-bad/25 bg-bad-bg text-bad',
         kind === 'ok' && 'border-ok/25 bg-ok-bg text-ok',
         kind === 'warn' && 'border-warn/25 bg-warn-bg text-warn'
@@ -469,7 +469,7 @@ export function Alert({ kind = 'bad', children, onDone }) {
 }
 
 export const Loading = ({ children = 'Loading…' }) => (
-  <div className="px-6 py-14 text-center text-[12.5px] text-ink-muted">{children}</div>
+  <div className="px-4 py-14 text-center text-[12px] text-ink-muted">{children}</div>
 );
 
 export const Spinner = ({ className }) => (
@@ -488,8 +488,8 @@ export const Spinner = ({ className }) => (
 export const PageHead = ({ title, sub, children }) => (
   <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
     <div className="min-w-0">
-      <h1 className="text-[20px] leading-tight tracking-[-0.02em] text-ink">{title}</h1>
-      {sub && <p className="mt-1 text-[13px] text-ink-muted">{sub}</p>}
+      <h1 className="text-[18px] leading-tight tracking-[-0.02em] text-ink">{title}</h1>
+      {sub && <p className="mt-1 text-[12.5px] text-ink-muted">{sub}</p>}
     </div>
     {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
   </header>
@@ -556,7 +556,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
         )}
         <span
           className={cn(
-            'min-w-0 flex-1 text-[12px] font-semibold leading-tight [overflow-wrap:anywhere]',
+            'min-w-0 flex-1 text-[11.5px] font-semibold leading-tight [overflow-wrap:anywhere]',
             
             big ? 'text-on-fill/80' : 'text-ink-muted'
           )}
@@ -614,7 +614,7 @@ export function Stat({ label, value, note, lead, hero, tone, icon, href, delta, 
 // Two across even on a phone. One per row filled the whole first screen
 // with figures and pushed the actual work — the queue — out of sight.
 export const Stats = ({ children, className }) => (
-  <div className={cn('mb-5 grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-4', className)}>{children}</div>
+  <div className={cn('mb-4 grid grid-cols-2 gap-3 lg:gap-3 xl:grid-cols-4', className)}>{children}</div>
 );
 
 /** When the screen last checked. It polls; it does not pretend to push. */
@@ -664,11 +664,11 @@ export const DialogContent = React.forwardRef(
         )}
         {...props}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-6">
+        <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-4">
           <div className="min-w-0">
             <DialogPrimitive.Title className="text-base font-bold text-ink">{title}</DialogPrimitive.Title>
             {description && (
-              <DialogPrimitive.Description className="mt-1 text-[12px] leading-relaxed text-ink-muted">
+              <DialogPrimitive.Description className="mt-1 text-[11.5px] leading-relaxed text-ink-muted">
                 {description}
               </DialogPrimitive.Description>
             )}
@@ -685,11 +685,11 @@ export const DialogContent = React.forwardRef(
 DialogContent.displayName = 'DialogContent';
 
 export const DialogBody = ({ className, ...props }) => (
-  <div className={cn('px-4 py-5 sm:px-6', className)} {...props} />
+  <div className={cn('px-4 py-4 sm:px-4', className)} {...props} />
 );
 
 export const DialogFoot = ({ className, ...props }) => (
-  <div className={cn('sticky bottom-0 z-10 flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2 px-4 py-4 sm:px-6', className)} {...props} />
+  <div className={cn('sticky bottom-0 z-10 flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2 px-4 py-4 sm:px-4', className)} {...props} />
 );
 
 /**
@@ -729,7 +729,7 @@ export const TabsList = ({ className, ...props }) => (
 export const TabsTrigger = ({ className, ...props }) => (
   <TabsPrimitive.Trigger
     className={cn(
-      'rounded-[7px] px-3.5 py-1.5 text-[12px] font-semibold text-ink-muted transition-colors duration-150',
+      'rounded-[7px] px-3.5 py-1.5 text-[11.5px] font-semibold text-ink-muted transition-colors duration-150',
       'data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:ring-1 data-[state=active]:ring-line',
       className
     )}

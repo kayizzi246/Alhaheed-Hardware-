@@ -129,7 +129,7 @@ export default function Customers({ canAdd = false, from = '/api/customers', can
           <button
             type="button"
             onClick={() => setNameless(true)}
-            className="inline-flex items-center gap-2 rounded-sm border border-line bg-surface px-3 py-2 text-left text-[12px] text-ink hover:bg-surface-2"
+            className="inline-flex items-center gap-2 rounded-sm border border-line bg-surface px-3 py-2 text-left text-[11.5px] text-ink hover:bg-surface-2"
           >
             <span className="font-semibold">Walk-ins who gave no name</span>
             <span className="tnum text-ink-muted">{walkIns.sales} {walkIns.sales === 1 ? 'sale' : 'sales'} · {money(walkIns.spent)}</span>
@@ -157,7 +157,7 @@ export default function Customers({ canAdd = false, from = '/api/customers', can
         ) : (
           <TableWrap>
             {canDelete && picked.size > 0 && (
-              <div className="flex flex-wrap items-center gap-3 border-b border-line bg-surface-2 px-4 py-2.5 text-[12.5px] sm:px-6">
+              <div className="flex flex-wrap items-center gap-3 border-b border-line bg-surface-2 px-4 py-2.5 text-[12px] sm:px-4">
                 <span className="font-semibold text-ink">{picked.size} selected</span>
                 <Button size="sm" variant="danger" onClick={() => setDeleting(true)}>Delete {picked.size}</Button>
                 <button type="button" onClick={() => setPicked(new Set())} className="font-semibold text-ink-muted hover:text-ink">Clear</button>
@@ -487,11 +487,11 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
         </>
       }
     >
-      <form id="counter-sale" onSubmit={save} className="space-y-5">
+      <form id="counter-sale" onSubmit={save} className="space-y-4">
         <Alert>{error}</Alert>
         {blocked && <SaleBlocked error={blocked} busy={busy} onOverride={overrideSale} onCancel={() => setBlocked(null)} />}
         {existing && (
-          <div className="-mt-2 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[12.5px]">
+          <div className="-mt-2 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[12px]">
             <span>
               <strong className="text-ink">{existing.fullName}</strong>
               <span className="tnum text-ink-muted"> · {existing.phone}</span>
@@ -503,14 +503,14 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
         )}
 
         {known ? (
-          <p className="flex flex-wrap items-center gap-x-2 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[12.5px]">
+          <p className="flex flex-wrap items-center gap-x-2 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[12px]">
             <strong className="text-ink">{known.fullName}</strong>
             {known.phone && <span className="tnum text-ink-muted">{known.phone}</span>}
           </p>
         ) : (
           <section className="space-y-4">
             <h3 className="text-[11.5px] font-bold uppercase tracking-[.08em] text-ink-muted">The customer</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Name">
                 <Input value={form.fullName} onChange={set('fullName')} placeholder="Ssebunya Moses" autoFocus={!start.phone} />
               </Field>
@@ -540,7 +540,7 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
                 <Textarea rows={2} value={form.notes} onChange={set('notes')} placeholder="Builds rentals, buys cement every month" />
               </Field>
             ) : (
-              <button type="button" onClick={() => setMore(true)} className="block text-[12px] font-semibold text-brand hover:underline">
+              <button type="button" onClick={() => setMore(true)} className="block text-[11.5px] font-semibold text-brand hover:underline">
                 Add where they are, email or notes
               </button>
             )}
@@ -555,7 +555,7 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
         <section className="space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="text-[11.5px] font-bold uppercase tracking-[.08em] text-ink-muted">What they are buying</h3>
-            <span className="tnum text-[12px] text-ink-muted">{count} {count === 1 ? 'item' : 'items'}</span>
+            <span className="tnum text-[11.5px] text-ink-muted">{count} {count === 1 ? 'item' : 'items'}</span>
           </div>
 
           <div className="grid h-[460px] grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-[minmax(0,1fr)_340px]">
@@ -627,9 +627,9 @@ function CustomerHistory({ customer, canSell, onClose, onSell }) {
       {!data ? (
         error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading what they have bought…</Loading>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           {(c.address || c.notes) && (
-            <div className="space-y-1 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[12.5px]">
+            <div className="space-y-1 rounded-sm border border-line bg-surface-2 px-3 py-2.5 text-[12px]">
               {c.address && <p><span className="text-ink-muted">Lives at </span><span className="text-ink">{c.address}</span></p>}
               {c.notes && <p className="text-ink">{c.notes}</p>}
             </div>
@@ -643,11 +643,11 @@ function CustomerHistory({ customer, canSell, onClose, onSell }) {
             >
               <span>
                 <span className="block text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">Credit</span>
-                <span className="tnum text-[15px] font-bold text-ink">Owes {money(credit.owed)}</span>
-                <span className="tnum ml-2 text-[12px] text-ink-muted">of {money(credit.limit)} · {credit.termsDays} days</span>
-                {credit.overdue > 0 && <span className="ml-2 text-[12px] font-semibold text-bad">{money(credit.overdue)} late</span>}
+                <span className="tnum text-[14px] font-bold text-ink">Owes {money(credit.owed)}</span>
+                <span className="tnum ml-2 text-[11.5px] text-ink-muted">of {money(credit.limit)} · {credit.termsDays} days</span>
+                {credit.overdue > 0 && <span className="ml-2 text-[11.5px] font-semibold text-bad">{money(credit.overdue)} late</span>}
               </span>
-              <span className="text-[12.5px] font-semibold text-brand-dark">Open →</span>
+              <span className="text-[12px] font-semibold text-brand-dark">Open →</span>
             </button>
           )}
 
@@ -662,7 +662,7 @@ function CustomerHistory({ customer, canSell, onClose, onSell }) {
               <h3 className="mb-2 text-[11.5px] font-bold uppercase tracking-[.08em] text-ink-muted">What they buy most</h3>
               <ul className="flex flex-wrap gap-2">
                 {data.topItems.map((t) => (
-                  <li key={t.name} className="rounded-full border border-line px-3 py-1 text-[12px] text-ink">
+                  <li key={t.name} className="rounded-full border border-line px-3 py-1 text-[11.5px] text-ink">
                     {t.name} <span className="tnum text-ink-muted">· {t.quantity} {t.unit}</span>
                   </li>
                 ))}
@@ -673,7 +673,7 @@ function CustomerHistory({ customer, canSell, onClose, onSell }) {
           <section>
             <h3 className="mb-2 text-[11.5px] font-bold uppercase tracking-[.08em] text-ink-muted">Every sale</h3>
             {orders.length === 0 ? (
-              <p className="rounded-sm border border-dashed border-line px-4 py-8 text-center text-[12.5px] text-ink-muted">
+              <p className="rounded-sm border border-dashed border-line px-4 py-8 text-center text-[12px] text-ink-muted">
                 Nothing bought yet.{canSell ? ' Use New sale for them to ring up what they are taking.' : ''}
               </p>
             ) : (
@@ -697,16 +697,16 @@ function SaleList({ orders }) {
                   return (
                     <li key={o.id} className="px-3 py-3">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <span className="tnum text-[12.5px] font-bold text-ink">{o.order_no}</span>
+                        <span className="tnum text-[12px] font-bold text-ink">{o.order_no}</span>
                         <StatusChip status={o.status}>{statusLabel(o.status)}</StatusChip>
                         <span className="text-[11.5px] text-ink-muted">
                           {dateTime(o.created_at)} · {o.source === 'counter' ? 'At the counter' : 'On the app'}
                         </span>
-                        <span className="tnum ml-auto text-[13px] font-bold text-ink">{money(o.total)}</span>
+                        <span className="tnum ml-auto text-[12.5px] font-bold text-ink">{money(o.total)}</span>
                       </div>
                       <ul className="mt-1.5 space-y-0.5">
                         {(shut ? list(o.items).slice(0, 3) : list(o.items)).map((it) => (
-                          <li key={it.id} className="flex gap-2 text-[12px]">
+                          <li key={it.id} className="flex gap-2 text-[11.5px]">
                             <span className="tnum w-14 shrink-0 text-ink-muted">{it.quantity} {it.unit}</span>
                             <span className="min-w-0 flex-1 truncate text-ink">{it.product_name}</span>
                             <span className="tnum shrink-0 text-ink-muted">{money(it.line_total)}</span>
@@ -714,7 +714,7 @@ function SaleList({ orders }) {
                         ))}
                       </ul>
                       {shut && (
-                        <button type="button" onClick={() => setOpen(o.id)} className="mt-1 text-[12px] font-semibold text-brand hover:underline">
+                        <button type="button" onClick={() => setOpen(o.id)} className="mt-1 text-[11.5px] font-semibold text-brand hover:underline">
                           {list(o.items).length - 3} more
                         </button>
                       )}
@@ -729,7 +729,7 @@ function Figure({ label, value, warn }) {
   return (
     <div className="min-w-0 rounded-sm border border-line px-3 py-2.5">
       <p className="truncate text-[11.5px] font-semibold text-ink-muted">{label}</p>
-      <p className={cn('tnum truncate text-[14.5px] font-extrabold', warn ? 'text-warn' : 'text-ink')}>{value}</p>
+      <p className={cn('tnum truncate text-[14px] font-extrabold', warn ? 'text-warn' : 'text-ink')}>{value}</p>
     </div>
   );
 }
@@ -763,7 +763,7 @@ function NamelessSales({ onClose }) {
       {!orders ? (
         error ? <LoadFailed onRetry={load}>{error}</LoadFailed> : <Loading>Loading the sales…</Loading>
       ) : orders.length === 0 ? (
-        <p className="py-8 text-center text-[12.5px] text-ink-muted">No sales without a name yet.</p>
+        <p className="py-8 text-center text-[12px] text-ink-muted">No sales without a name yet.</p>
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
@@ -807,8 +807,8 @@ function DeleteCustomers({ people, onClose, onDone }) {
     return (
       <Modal title={`${kept.deleted} deleted`} onClose={() => onDone(`${kept.deleted} deleted, ${kept.kept.length} kept.`)}
         footer={<Button onClick={() => onDone(`${kept.deleted} deleted, ${kept.kept.length} kept.`)}>OK</Button>}>
-        <p className="mb-3 text-[13px] text-ink">These were kept:</p>
-        <ul className="space-y-2 text-[12.5px]">
+        <p className="mb-3 text-[12.5px] text-ink">These were kept:</p>
+        <ul className="space-y-2 text-[12px]">
           {kept.kept.map((k) => <li key={k.id}><b className="text-ink">{k.name}</b><span className="block text-ink-muted">{k.why}</span></li>)}
         </ul>
       </Modal>
@@ -822,10 +822,10 @@ function DeleteCustomers({ people, onClose, onDone }) {
       onClose={onClose}
       footer={<><Button variant="outline" onClick={onClose}>Keep them</Button><Button variant="danger" disabled={busy} onClick={go}>{busy ? 'Deleting…' : one ? 'Delete' : `Delete ${people.length}`}</Button></>}
     >
-      <div className="space-y-3 text-[13px] leading-relaxed text-ink">
+      <div className="space-y-3 text-[12.5px] leading-relaxed text-ink">
         <Alert>{error}</Alert>
         {!one && (
-          <ul className="max-h-[180px] overflow-y-auto rounded-sm border border-line px-3 py-2 text-[12.5px]">
+          <ul className="max-h-[180px] overflow-y-auto rounded-sm border border-line px-3 py-2 text-[12px]">
             {people.map((p) => <li key={p.id}>{p.fullName} <span className="tnum text-ink-muted">{p.phone}</span></li>)}
           </ul>
         )}

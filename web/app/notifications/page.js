@@ -94,11 +94,11 @@ export default function NotificationsPage() {
           </label>
           {picked.size > 0 ? (
             <span className="flex items-center gap-3">
-              <span className="text-[12px] font-semibold text-ink">{picked.size} selected</span>
+              <span className="text-[11.5px] font-semibold text-ink">{picked.size} selected</span>
               <Button size="sm" variant="danger" disabled={busy} onClick={() => remove({ ids: [...picked] })}>Delete {picked.size}</Button>
             </span>
           ) : (
-            <span className="text-[12px] text-ink-muted">{rows.length} shown</span>
+            <span className="text-[11.5px] text-ink-muted">{rows.length} shown</span>
           )}
         </CardHead>
 
@@ -124,13 +124,13 @@ export default function NotificationsPage() {
                     difference everyone can see. */}
                 {!n.read && <span className="absolute left-10 top-[21px] size-1.5 rounded-full bg-brand" />}
                 <div className="min-w-0 flex-1">
-                  <strong className="block text-[13px] font-semibold text-ink">{n.title}</strong>
-                  {!!n.body && <span className="mt-0.5 block text-[12px] text-ink-muted">{n.body}</span>}
+                  <strong className="block text-[12.5px] font-semibold text-ink">{n.title}</strong>
+                  {!!n.body && <span className="mt-0.5 block text-[11.5px] text-ink-muted">{n.body}</span>}
                 </div>
                 <div className="shrink-0 text-right">
-                  <span className="tnum block text-[12px] text-ink-muted">{dateTime(n.created_at)}</span>
+                  <span className="tnum block text-[11.5px] text-ink-muted">{dateTime(n.created_at)}</span>
                   {!!n.order_no && <span className="tnum block text-[11.5px] text-ink-faint">{n.order_no}</span>}
-                  <button type="button" disabled={busy} onClick={() => remove({ ids: [n.id] })} className="mt-1 text-[12px] font-semibold text-bad hover:underline">
+                  <button type="button" disabled={busy} onClick={() => remove({ ids: [n.id] })} className="mt-1 text-[11.5px] font-semibold text-bad hover:underline">
                     Delete
                   </button>
                 </div>
@@ -139,7 +139,7 @@ export default function NotificationsPage() {
           </ul>
         )}
       </Card>
-      <p className="text-[12px] text-ink-muted">Deleting an alert only clears it from your list. The Audit Trail keeps a record of everything, so nothing can be hidden by deleting it.</p>
+      <p className="text-[11.5px] text-ink-muted">Deleting an alert only clears it from your list. The Audit Trail keeps a record of everything, so nothing can be hidden by deleting it.</p>
     </>
   );
 }

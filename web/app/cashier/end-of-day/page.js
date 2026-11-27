@@ -65,7 +65,7 @@ export default function EndOfDayPage() {
                   <Tr><Td>Card</Td><Td num>{money(data.card)}</Td></Tr>
                   <tr className="bg-surface-2">
                     <Td className="font-bold text-ink">Total</Td>
-                    <Td num className="font-display text-[13.5px] font-extrabold text-ink">{blind ? '' : money(data.total)}</Td>
+                    <Td num className="font-display text-[13px] font-extrabold text-ink">{blind ? '' : money(data.total)}</Td>
                   </tr>
                 </tbody>
               </Table>
@@ -113,20 +113,20 @@ function CloseTill({ onState }) {
   return (
     <Card>
       <CardHead><CardTitle>Count the cash</CardTitle></CardHead>
-      <div className="space-y-4 p-4 sm:p-6">
+      <div className="space-y-4 p-3 sm:p-4">
         <Alert>{error}</Alert>
         {c ? (
-          <div className={`rounded-sm border px-4 py-3 text-[13px] ${c.overShort < 0 ? 'border-bad/25 bg-bad-bg text-bad' : c.overShort > 0 ? 'border-warn/30 bg-warn-bg text-warn' : 'border-ok/25 bg-ok-bg text-ok'}`}>
+          <div className={`rounded-sm border px-4 py-3 text-[12.5px] ${c.overShort < 0 ? 'border-bad/25 bg-bad-bg text-bad' : c.overShort > 0 ? 'border-warn/30 bg-warn-bg text-warn' : 'border-ok/25 bg-ok-bg text-ok'}`}>
             <b>Closed.</b> Counted {money(c.counted)} against {money(c.expected)} expected:{' '}
             {c.overShort === 0 ? 'exact.' : c.overShort < 0 ? `short by ${money(-c.overShort)}.` : `over by ${money(c.overShort)}.`}
-            {c.note && <span className="block text-[12px] text-ink-2">&ldquo;{c.note}&rdquo;</span>}
+            {c.note && <span className="block text-[11.5px] text-ink-2">&ldquo;{c.note}&rdquo;</span>}
           </div>
         ) : (
           <>
-            <p className="text-[12.5px] text-ink-2">Count all the cash in the drawer. Type the total. You cannot change it later.</p>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <p className="text-[12px] text-ink-2">Count all the cash in the drawer. Type the total. You cannot change it later.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Cash in the drawer (UGX)">
-                <Input type="number" inputMode="numeric" min="0" value={counted} onChange={(e) => setCounted(e.target.value)} className="tnum text-[16px] font-semibold" />
+                <Input type="number" inputMode="numeric" min="0" value={counted} onChange={(e) => setCounted(e.target.value)} className="tnum text-[15px] font-semibold" />
               </Field>
               <Field label="Note" hint="Needed if the cash is not right.">
                 <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />

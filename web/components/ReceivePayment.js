@@ -253,7 +253,7 @@ export default function ReceivePayment({ order, onClose, onDone, initialMethod }
           <span className="block text-[11px] font-bold uppercase tracking-[.07em] text-ink-muted">
             Amount due
           </span>
-          <strong className="tnum mt-1 block font-display text-[22px] font-extrabold leading-none text-ink">
+          <strong className="tnum mt-1 block font-display text-[20px] font-extrabold leading-none text-ink">
             {money(order.total)}
           </strong>
         </div>
@@ -278,34 +278,34 @@ export default function ReceivePayment({ order, onClose, onDone, initialMethod }
           <Alert>The owner refused this loan{order.credit_approval.note ? `: “${order.credit_approval.note}”` : '.'} Take payment another way.</Alert>
         )}
         {onCredit && credit && (
-          <div className="space-y-3 rounded-xl border border-line bg-surface-2 p-4">
-            <div className="grid grid-cols-3 gap-3 text-[12px]">
-              <div><span className="block text-ink-muted">{credit.owed < 0 ? 'Paid ahead' : 'Owes now'}</span><b className={cn('tnum text-[14px]', credit.owed < 0 ? 'text-ok' : 'text-ink')}>{money(Math.abs(credit.owed))}</b></div>
-              <div><span className="block text-ink-muted">Limit</span><b className="tnum text-[14px] text-ink">{money(credit.limit)}</b></div>
-              <div><span className="block text-ink-muted">After this</span><b className={cn('tnum text-[14px]', blocked ? 'text-bad' : 'text-ink')}>{money(after)}</b></div>
+          <div className="space-y-3 rounded-xl border border-line bg-surface-2 p-3">
+            <div className="grid grid-cols-3 gap-3 text-[11.5px]">
+              <div><span className="block text-ink-muted">{credit.owed < 0 ? 'Paid ahead' : 'Owes now'}</span><b className={cn('tnum text-[13.5px]', credit.owed < 0 ? 'text-ok' : 'text-ink')}>{money(Math.abs(credit.owed))}</b></div>
+              <div><span className="block text-ink-muted">Limit</span><b className="tnum text-[13.5px] text-ink">{money(credit.limit)}</b></div>
+              <div><span className="block text-ink-muted">After this</span><b className={cn('tnum text-[13.5px]', blocked ? 'text-bad' : 'text-ink')}>{money(after)}</b></div>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-line">
-              <div className={cn('h-full rounded-full', after > credit.limit ? 'bg-bad' : after > credit.limit * 0.8 ? 'bg-warn' : 'bg-[#92D050]')} style={{ width: `${Math.min(100, credit.limit ? (after / credit.limit) * 100 : 100)}%` }} />
+              <div className={cn('h-full rounded-full', after > credit.limit ? 'bg-bad' : after > credit.limit * 0.8 ? 'bg-warn' : 'bg-fill')} style={{ width: `${Math.min(100, credit.limit ? (after / credit.limit) * 100 : 100)}%` }} />
             </div>
             <div className="space-y-2 rounded-lg border border-line bg-surface p-3">
-              <p className="text-[13px] font-bold text-ink">Paid now <span className="font-normal text-ink-muted">(leave empty if nothing)</span></p>
+              <p className="text-[12.5px] font-bold text-ink">Paid now <span className="font-normal text-ink-muted">(leave empty if nothing)</span></p>
               <div className="flex flex-wrap items-end gap-2">
                 <Input className="tnum w-[150px]" inputMode="numeric" value={part.amount} placeholder="0" onChange={(e) => setPart((x) => ({ ...x, amount: e.target.value.replace(/D/g, '') }))} />
                 <Segmented label="Paid by" value={part.method} onChange={(v) => setPart((x) => ({ ...x, method: v }))} options={[{ value: 'cash', label: 'Cash' }, { value: 'mobile_money', label: 'MoMo' }, { value: 'bank', label: 'Bank' }]} />
                 {part.method !== 'cash' && <Input className="w-[160px]" value={part.ref} placeholder="Transaction ID" onChange={(e) => setPart((x) => ({ ...x, ref: e.target.value }))} />}
               </div>
-              <div className="grid grid-cols-3 gap-2 rounded-md bg-surface-2 px-3 py-2 text-[12px]">
+              <div className="grid grid-cols-3 gap-2 rounded-md bg-surface-2 px-3 py-2 text-[11.5px]">
                 <div><span className="block text-ink-muted">Total</span><b className="tnum text-ink">{money(order.total)}</b></div>
                 <div><span className="block text-ink-muted">Paid now</span><b className="tnum text-ok">{money(partNow)}</b></div>
                 <div><span className="block text-ink-muted">On the loan</span><b className="tnum text-ink">{money(onLoan)}</b></div>
               </div>
             </div>
-            <p className="text-[12px] text-ink-muted">The loan is paid within {credit.termsDays} days. {partNow ? 'What is paid now gets its own receipt and goes in the cash book.' : 'No money goes in the cash book now.'}</p>
-            {first.done && <p className="rounded-lg bg-ok-bg px-3 py-2 text-[12.5px] font-semibold text-ok">{first.done}</p>}
+            <p className="text-[11.5px] text-ink-muted">The loan is paid within {credit.termsDays} days. {partNow ? 'What is paid now gets its own receipt and goes in the cash book.' : 'No money goes in the cash book now.'}</p>
+            {first.done && <p className="rounded-lg bg-ok-bg px-3 py-2 text-[12px] font-semibold text-ok">{first.done}</p>}
             {blocked && payFirst > 0 && (
               <div className="space-y-2 rounded-lg border border-warn/30 bg-warn-bg/60 p-3">
-                <p className="text-[13px] font-bold text-ink">Take {money(payFirst)} from them first</p>
-                <p className="text-[12px] text-ink-2">That pays what is late and brings them under the limit. Then put this order on credit.</p>
+                <p className="text-[12.5px] font-bold text-ink">Take {money(payFirst)} from them first</p>
+                <p className="text-[11.5px] text-ink-2">That pays what is late and brings them under the limit. Then put this order on credit.</p>
                 <div className="flex flex-wrap items-end gap-2">
                   <Input className="w-[140px]" inputMode="numeric" value={first.amount} placeholder={String(payFirst)} onChange={(e) => setFirst((x) => ({ ...x, amount: e.target.value.replace(/D/g, '') }))} />
                   <Segmented label="Paid by" value={first.method} onChange={(v) => setFirst((x) => ({ ...x, method: v }))} options={[{ value: 'cash', label: 'Cash' }, { value: 'mobile_money', label: 'MoMo' }, { value: 'bank', label: 'Bank' }]} />
@@ -313,19 +313,19 @@ export default function ReceivePayment({ order, onClose, onDone, initialMethod }
                   <Button type="button" size="sm" disabled={first.busy || !(Number(first.amount) > 0) || (first.method !== 'cash' && first.ref.trim().length < 3)} onClick={takeFirst}>
                     {first.busy ? 'Saving…' : 'Receive'}
                   </Button>
-                  <button type="button" className="text-[12px] font-semibold text-brand hover:underline" onClick={() => setFirst((x) => ({ ...x, amount: String(payFirst) }))}>Fill {money(payFirst)}</button>
+                  <button type="button" className="text-[11.5px] font-semibold text-brand hover:underline" onClick={() => setFirst((x) => ({ ...x, amount: String(payFirst) }))}>Fill {money(payFirst)}</button>
                 </div>
               </div>
             )}
             {blocked && (
               <div className="space-y-2">
-                <p className="rounded-lg bg-bad-bg px-3 py-2 text-[12.5px] font-semibold text-bad">{blocked}</p>
+                <p className="rounded-lg bg-bad-bg px-3 py-2 text-[12px] font-semibold text-bad">{blocked}</p>
                 {isManager ? (
                   <Field label="Allow it anyway? Say why" hint="Written in History with your name.">
                     <Input value={override} onChange={(e) => setOverride(e.target.value)} placeholder="Ben pays on Friday, agreed by phone" />
                   </Field>
                 ) : (
-                  <p className="text-[12px] text-ink-muted">Ask them to pay some first, take cash, or call the manager.</p>
+                  <p className="text-[11.5px] text-ink-muted">Ask them to pay some first, take cash, or call the manager.</p>
                 )}
               </div>
             )}
@@ -347,7 +347,7 @@ export default function ReceivePayment({ order, onClose, onDone, initialMethod }
             onFocus={(e) => e.target.select()}
             autoFocus
             required
-            className="tnum text-[15px] font-semibold"
+            className="tnum text-[14px] font-semibold"
           />
         </Field>
 
@@ -361,7 +361,7 @@ export default function ReceivePayment({ order, onClose, onDone, initialMethod }
                 <label
                   className={cn(
                     'flex cursor-pointer items-center justify-center gap-2 rounded-sm border border-dashed border-line-firm',
-                    'bg-surface px-4 py-4 text-[12.5px] font-semibold text-brand transition-colors duration-150',
+                    'bg-surface px-4 py-4 text-[12px] font-semibold text-brand transition-colors duration-150',
                     'hover:border-brand hover:bg-brand-soft active:scale-[0.99]'
                   )}
                 >
@@ -379,7 +379,7 @@ export default function ReceivePayment({ order, onClose, onDone, initialMethod }
                   <button type="button" onClick={() => setBig((b) => !b)} title={big ? 'Hide the picture' : 'Show the picture'} className="shrink-0">
                     <img src={preview} alt="Payment screenshot" className="h-16 w-12 rounded-[3px] border border-line object-cover object-center" />
                   </button>
-                  <div className="min-w-0 flex-1 text-[12px]">
+                  <div className="min-w-0 flex-1 text-[11.5px]">
                     {reading ? (
                       <>
                         <span className="block font-medium text-ink">
@@ -452,7 +452,7 @@ export default function ReceivePayment({ order, onClose, onDone, initialMethod }
             </Field>
 
             {amountMismatch && (
-              <p className="rounded-sm border border-warn/30 bg-warn-bg px-3 py-2 text-[12px] text-warn">
+              <p className="rounded-sm border border-warn/30 bg-warn-bg px-3 py-2 text-[11.5px] text-warn">
                 The message says <strong className="tnum">{money(found.amount)}</strong>, but{' '}
                 <strong className="tnum">{money(Math.trunc(paid))}</strong> is entered as received.
                 Check before confirming.

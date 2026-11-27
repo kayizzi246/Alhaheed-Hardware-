@@ -49,7 +49,7 @@ export function TrackerExport() {
           <div className="space-y-4">
             <Alert>{error}</Alert>
             {done && <Alert kind="ok">{done}</Alert>}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Field label="From">
                 <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
               </Field>
@@ -57,7 +57,7 @@ export function TrackerExport() {
                 <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
               </Field>
             </div>
-            <p className="text-[12.5px] text-ink-muted">
+            <p className="text-[12px] text-ink-muted">
               Purchases and sales are for these dates. The stock and price sheets are as they are today.
             </p>
           </div>

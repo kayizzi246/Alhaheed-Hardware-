@@ -64,7 +64,7 @@ export default function StockControl() {
     : null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <PageHead title="Stock" sub="Your stock, what to buy, and what is lost.">
         <TrackerExport />
         <Button asChild size="sm"><Link href="/manager/stock/count">Count stock</Link></Button>
@@ -75,18 +75,18 @@ export default function StockControl() {
         <CardHead>
           <CardTitle>Check these</CardTitle>
           {todo.length ? (
-            <button type="button" onClick={() => hide(todo.map((t) => t.text))} className="text-[12px] font-semibold text-ink-muted hover:text-bad hover:underline">Remove all</button>
+            <button type="button" onClick={() => hide(todo.map((t) => t.text))} className="text-[11.5px] font-semibold text-ink-muted hover:text-bad hover:underline">Remove all</button>
           ) : (
-            <span className="text-[12px] text-ink-muted">all clear</span>
+            <span className="text-[11.5px] text-ink-muted">all clear</span>
           )}
         </CardHead>
         {!todo.length ? (
-          <p className="px-4 py-5 text-[13px] text-ok sm:px-6">Nothing needs you now.</p>
+          <p className="px-4 py-4 text-[12.5px] text-ok sm:px-4">Nothing needs you now.</p>
         ) : (
           <ul className="divide-y divide-line">
             {todo.map((t) => (
               <li key={t.text} className="flex items-stretch">
-                <a href={t.link} className="flex min-w-0 flex-1 items-center gap-2.5 px-4 py-1.5 text-[13px] text-ink hover:bg-surface-2">
+                <a href={t.link} className="flex min-w-0 flex-1 items-center gap-2.5 px-4 py-1.5 text-[12.5px] text-ink hover:bg-surface-2">
                   <span aria-hidden="true" className={cn('grid size-5 shrink-0 place-items-center rounded-md text-[11px] font-extrabold', t.level === 'bad' ? 'bg-bad-bg text-bad' : t.level === 'warn' ? 'bg-warn-bg text-warn' : 'bg-info-bg text-info')}>
                     {t.level === 'bad' ? '!' : 'i'}
                   </span>
@@ -98,7 +98,7 @@ export default function StockControl() {
             ))}
           </ul>
         )}
-        <details className="border-t border-line px-4 py-3 text-[12px] text-ink-2 sm:px-6">
+        <details className="border-t border-line px-4 py-3 text-[11.5px] text-ink-2 sm:px-4">
           <summary className="cursor-pointer font-semibold text-ink">How stock is counted</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5 leading-relaxed">
             <li><b>Stock = bought − sold.</b> The system adds it up. Nobody types it.</li>
@@ -112,7 +112,7 @@ export default function StockControl() {
       </Card>
 
       {m.alert.raised && (
-        <div className="rounded-sm border border-bad/25 bg-bad-bg px-4 py-3 text-[12.5px] text-bad">
+        <div className="rounded-sm border border-bad/25 bg-bad-bg px-4 py-3 text-[12px] text-bad">
           <b>Margin is falling.</b> This month is {m.alert.current}%, against a six-month average of {m.alert.average}%.{' '}
           <Link href="/manager/margins" className="font-semibold underline">See the sales below cost</Link>
         </div>
@@ -156,12 +156,12 @@ export default function StockControl() {
         </Card>
       )}
 
-      <div className="grid items-start gap-5 xl:grid-cols-2">
+      <div className="grid items-start gap-4 xl:grid-cols-2">
         <Card id="reorder">
           <CardHead>
             <CardTitle>Buy again</CardTitle>
             {list(data.reorder).length > 0
-              ? <span className="text-[12px] font-semibold text-ink">{money(s.reorderCost)}</span>
+              ? <span className="text-[11.5px] font-semibold text-ink">{money(s.reorderCost)}</span>
               : <Count n={0} />}
           </CardHead>
           {!list(data.reorder).length ? (
@@ -216,14 +216,14 @@ export default function StockControl() {
           <CardHead>
             <CardTitle>Not selling</CardTitle>
             {list(data.slow).length > 0
-              ? <span className="text-[12px] font-semibold text-ink">{money(s.slowValue)}</span>
+              ? <span className="text-[11.5px] font-semibold text-ink">{money(s.slowValue)}</span>
               : <Count n={0} />}
           </CardHead>
           {!list(data.slow).length ? (
             <AllClear>Everything is selling.</AllClear>
           ) : (
             <>
-              <div className="border-b border-line px-4 py-3 sm:px-6">
+              <div className="border-b border-line px-4 py-3 sm:px-4">
                 <Segmented
                   label="Show"
                   value={slowShow}
@@ -251,7 +251,7 @@ export default function StockControl() {
                 </Table>
               </TableWrap>
               {slow.length > 8 && (
-                <button type="button" onClick={() => setSlowAll((v) => !v)} className="w-full border-t border-line px-4 py-3 text-[12px] font-semibold text-brand hover:bg-surface-2">
+                <button type="button" onClick={() => setSlowAll((v) => !v)} className="w-full border-t border-line px-4 py-3 text-[11.5px] font-semibold text-brand hover:bg-surface-2">
                   {slowAll ? 'Show less' : `Show all ${slow.length}`}
                 </button>
               )}
@@ -263,7 +263,7 @@ export default function StockControl() {
           <CardHead>
             <CardTitle>Lost stock</CardTitle>
             {list(data.losses?.lines).length > 0
-              ? <span className="text-[12px] font-semibold text-bad">{money(data.losses.monthValue)} this month</span>
+              ? <span className="text-[11.5px] font-semibold text-bad">{money(data.losses.monthValue)} this month</span>
               : <Count n={0} />}
           </CardHead>
           {!list(data.losses?.lines).length ? (
@@ -301,7 +301,7 @@ export default function StockControl() {
           ) : (
             <ul className="divide-y divide-line">
               {list(data.overrides).map((o) => (
-                <li key={o.id} className="px-4 py-3 text-[12.5px] sm:px-6">
+                <li key={o.id} className="px-4 py-3 text-[12px] sm:px-4">
                   <p className="font-semibold text-ink">{o.rule === 'below_cost' ? 'Sold below buy price' : 'Sold more than the stock'}</p>
                   <p className="text-ink-2">{o.detail}</p>
                   <p className="text-ink-2">Why: &ldquo;{o.reason}&rdquo;</p>
@@ -315,9 +315,9 @@ export default function StockControl() {
         <Card>
           <CardHead>
             <CardTitle>Sold and bought</CardTitle>
-            <span className="text-[12px] text-ink-muted">each month, without VAT</span>
+            <span className="text-[11.5px] text-ink-muted">each month, without VAT</span>
           </CardHead>
-          <div className="px-4 pb-4 pt-3 sm:px-6"><MonthChart months={list(data.months).slice(-6)} /></div>
+          <div className="px-4 pb-4 pt-3 sm:px-4"><MonthChart months={list(data.months).slice(-6)} /></div>
         </Card>
       </div>
     </div>
@@ -341,7 +341,7 @@ function Count({ n, tone = 'bad' }) {
 /** One green line instead of a big empty box. */
 function AllClear({ children }) {
   return (
-    <p className="flex items-center gap-2.5 px-4 py-4 text-[13px] font-medium text-ok sm:px-6">
+    <p className="flex items-center gap-2.5 px-4 py-4 text-[12.5px] font-medium text-ok sm:px-4">
       <svg viewBox="0 0 20 20" aria-hidden="true" className="size-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="10" cy="10" r="8" />
         <path d="M6.5 10.2l2.3 2.3 4.7-5" />
@@ -367,7 +367,7 @@ function MonthChart({ months }) {
   const H = 120;
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-4 text-[12px] text-ink-2">
+      <div className="mb-3 flex flex-wrap gap-3 text-[11.5px] text-ink-2">
         <span className="inline-flex items-center gap-1.5"><i className="inline-block size-3 rounded-sm bg-fill" />Sales</span>
         <span className="inline-flex items-center gap-1.5"><i className="inline-block size-3 rounded-sm bg-ink-faint/60" />Purchases</span>
       </div>

@@ -12,13 +12,13 @@ export default function NotFound() {
     <div className="flex min-h-[70vh] items-center justify-center px-4">
       <div className="max-w-md rounded-lg border border-line bg-surface px-7 py-8 text-center shadow-sm">
         <p className="text-[11.5px] font-bold uppercase tracking-[.08em] text-ink-muted">Page not found</p>
-        <h1 className="mt-2 text-[20px] font-extrabold text-ink">There is nothing at this address</h1>
-        <p className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-ink-muted">
+        <h1 className="mt-2 text-[18px] font-extrabold text-ink">There is nothing at this address</h1>
+        <p className="mx-auto mt-2 max-w-sm text-[12.5px] leading-relaxed text-ink-muted">
           The link may be old, or mistyped. Nothing has been changed.
         </p>
         <Link
           href="/"
-          className="mt-5 inline-flex h-10 items-center rounded-sm bg-fill px-4 sm:px-6 text-[13px] font-semibold text-on-fill hover:bg-fill-dark"
+          className="mt-5 inline-flex h-10 items-center rounded-sm bg-fill px-4 sm:px-4 text-[12.5px] font-semibold text-on-fill hover:bg-fill-dark"
         >
           Go to my desk
         </Link>

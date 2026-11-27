@@ -77,13 +77,13 @@ export function PosShelf({ products, basket, onAdd, searchRef, loading, error, o
             onKeyDown={enter}
             placeholder="Type or scan a code, then Enter · or search a name"
             aria-label="Find an item"
-            className="h-10 w-full rounded-lg border border-line bg-surface pl-9 pr-3 text-[13px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            className="h-10 w-full rounded-lg border border-line bg-surface pl-9 pr-3 text-[12.5px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
           />
         </div>
         <button
           type="button"
           onClick={() => setInStock((v) => !v)}
-          className={cn('h-10 shrink-0 rounded-lg border px-3 text-[12px] font-semibold', inStock ? 'border-brand bg-brand-soft text-brand-dark' : 'border-line bg-surface text-ink-muted')}
+          className={cn('h-10 shrink-0 rounded-lg border px-3 text-[11.5px] font-semibold', inStock ? 'border-brand bg-brand-soft text-brand-dark' : 'border-line bg-surface text-ink-muted')}
         >
           In stock
         </button>
@@ -97,8 +97,8 @@ export function PosShelf({ products, basket, onAdd, searchRef, loading, error, o
             type="button"
             onClick={() => setCat(c)}
             className={cn(
-              'shrink-0 rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors',
-              cat === c ? 'bg-[#0E201A] text-[#92D050]' : 'bg-surface-sunk text-ink-2 hover:bg-line'
+              'shrink-0 rounded-md px-3 py-1.5 text-[11.5px] font-semibold transition-colors',
+              cat === c ? 'bg-navy text-lime' : 'bg-surface-sunk text-ink-2 hover:bg-line'
             )}
           >
             {c || 'All'} <span className="tnum opacity-60">{n}</span>
@@ -109,11 +109,11 @@ export function PosShelf({ products, basket, onAdd, searchRef, loading, error, o
       {/* The keys. */}
       <div className="min-h-0 flex-1 overflow-y-auto bg-surface-2 p-2.5">
         {loading ? (
-          <p className="p-6 text-center text-[12.5px] text-ink-muted">Loading the shelf…</p>
+          <p className="p-4 text-center text-[12px] text-ink-muted">Loading the shelf…</p>
         ) : error ? (
-          <div className="p-6 text-center text-[12.5px] text-bad">{error} {onRetry && <button type="button" onClick={onRetry} className="ml-1 font-semibold underline">Try again</button>}</div>
+          <div className="p-4 text-center text-[12px] text-bad">{error} {onRetry && <button type="button" onClick={onRetry} className="ml-1 font-semibold underline">Try again</button>}</div>
         ) : !shown.length ? (
-          <p className="p-6 text-center text-[12.5px] text-ink-muted">Nothing matches. Try fewer letters, or the code.</p>
+          <p className="p-4 text-center text-[12px] text-ink-muted">Nothing matches. Try fewer letters, or the code.</p>
         ) : (
           <div className={cn('grid gap-2', dense ? 'grid-cols-[repeat(auto-fill,minmax(128px,1fr))]' : 'grid-cols-[repeat(auto-fill,minmax(148px,1fr))]')}>
             {shown.map((p) => {
@@ -140,19 +140,19 @@ export function PosShelf({ products, basket, onAdd, searchRef, loading, error, o
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.picture_small || p.picture} alt="" loading="lazy" className="size-9 shrink-0 rounded-md border border-line object-cover" />
                     ) : (
-                      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-[#0E201A] text-[11px] font-extrabold text-[#92D050]">{short(p.name)}</span>
+                      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-navy text-[11px] font-extrabold text-lime">{short(p.name)}</span>
                     )}
                     <span className="tnum mt-0.5 truncate text-[10.5px] font-semibold text-ink-muted">{p.code}</span>
                   </div>
-                  <span className="mt-1.5 line-clamp-2 text-[12.5px] font-semibold leading-snug text-ink">{p.name}</span>
+                  <span className="mt-1.5 line-clamp-2 text-[12px] font-semibold leading-snug text-ink">{p.name}</span>
                   <span className="mt-auto flex flex-wrap items-end justify-between gap-x-1 gap-y-0.5 pt-1.5">
-                    <span className={cn('tnum text-[13.5px] font-extrabold', noPrice ? 'text-warn' : 'text-ink')}>{noPrice ? 'No price' : money(p.price)}</span>
+                    <span className={cn('tnum text-[13px] font-extrabold', noPrice ? 'text-warn' : 'text-ink')}>{noPrice ? 'No price' : money(p.price)}</span>
                     <span className={cn('tnum shrink-0 rounded px-1.5 py-0.5 text-[10.5px] font-bold', out ? 'bg-bad-bg text-bad' : stock < 10 ? 'bg-warn-bg text-warn' : 'bg-ok-bg text-ok')}>
                       {out ? 'OUT' : `${qtyText(stock - n)} ${p.unit || ''}`}
                     </span>
                   </span>
                   {n > 0 && (
-                    <span className="tnum absolute right-1.5 top-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-[#92D050] px-1.5 text-[12px] font-extrabold text-[#102108] shadow">
+                    <span className="tnum absolute right-1.5 top-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-fill px-1.5 text-[11.5px] font-extrabold text-on-fill shadow">
                       {qtyText(n)}
                     </span>
                   )}
@@ -201,19 +201,19 @@ export function PosTicket({ basket, onQty, onClear, title = 'Sale', sub, top, pa
   return (
     <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-surface">
       {/* The display. */}
-      <div className="bg-[#0E201A] px-4 pb-3 pt-3 text-white">
+      <div className="bg-navy px-4 pb-3 pt-3 text-white">
         <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[.08em] text-white/55">
           <span>{title}</span>
           <span className="tnum normal-case tracking-normal">{now}</span>
         </div>
         <div className="mt-1.5 flex items-end justify-between gap-3">
-          <span className="text-[12px] text-white/60">{count ? `${qtyText(count)} ${count === 1 ? 'item' : 'items'} · ${basket.length} ${basket.length === 1 ? 'line' : 'lines'}` : 'Ready'}</span>
-          <span className="tnum font-mono text-[30px] font-bold leading-none tracking-tight text-[#92D050] [text-shadow:0_0_14px_rgba(146,208,80,.35)]">
+          <span className="text-[11.5px] text-white/60">{count ? `${qtyText(count)} ${count === 1 ? 'item' : 'items'} · ${basket.length} ${basket.length === 1 ? 'line' : 'lines'}` : 'Ready'}</span>
+          <span className="tnum font-mono text-[28px] font-bold leading-none tracking-tight text-lime [text-shadow:0_0_14px_rgba(146,208,80,.35)]">
             {money(total).replace('UGX ', '')}
           </span>
         </div>
         <div className="mt-0.5 text-right text-[10.5px] font-semibold tracking-[.12em] text-white/45">TOTAL · UGX</div>
-        {sub && <div className="mt-2 border-t border-white/10 pt-2 text-[12px] text-white/75">{sub}</div>}
+        {sub && <div className="mt-2 border-t border-white/10 pt-2 text-[11.5px] text-white/75">{sub}</div>}
       </div>
 
       {top}
@@ -221,12 +221,12 @@ export function PosTicket({ basket, onQty, onClear, title = 'Sale', sub, top, pa
       {/* The lines, as they print. */}
       <div className="min-h-[120px] flex-1 overflow-y-auto bg-[repeating-linear-gradient(0deg,transparent,transparent_31px,rgba(15,27,51,.03)_31px,rgba(15,27,51,.03)_32px)]">
         {!basket.length ? (
-          <div className="grid h-full min-h-[140px] place-items-center p-6 text-center">
+          <div className="grid h-full min-h-[140px] place-items-center p-4 text-center">
             <div>
               <div className="mx-auto mb-2 grid size-11 place-items-center rounded-full bg-surface-sunk text-ink-muted">
                 <svg viewBox="0 0 20 20" className="size-5" aria-hidden="true"><path d="M4 3h12v14l-2-1.5L12 17l-2-1.5L8 17l-2-1.5L4 17z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M7 7h6M7 10h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
               </div>
-              <p className="text-[12.5px] text-ink-muted">Tap an item to ring it up.<br />Tap again for one more.</p>
+              <p className="text-[12px] text-ink-muted">Tap an item to ring it up.<br />Tap again for one more.</p>
             </div>
           </div>
         ) : (
@@ -244,20 +244,20 @@ export function PosTicket({ basket, onQty, onClear, title = 'Sale', sub, top, pa
                   >
                     <span className="tnum w-5 shrink-0 text-[11px] font-semibold text-ink-faint">{i + 1}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[12.5px] font-semibold text-ink">{l.product.name}</span>
+                      <span className="block truncate text-[12px] font-semibold text-ink">{l.product.name}</span>
                       <span className="tnum block font-mono text-[11.5px] text-ink-muted">{qtyText(l.qty)} {l.product.unit || ''} × {money(l.product.price).replace('UGX ', '')}</span>
                     </span>
                     <span className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                      <button type="button" aria-label="One fewer" onClick={() => onQty(l.product.id, l.qty - 1)} className="grid size-7 place-items-center rounded-md border border-line bg-surface text-[15px] font-bold text-ink-2 active:scale-90">−</button>
+                      <button type="button" aria-label="One fewer" onClick={() => onQty(l.product.id, l.qty - 1)} className="grid size-7 place-items-center rounded-md border border-line bg-surface text-[14px] font-bold text-ink-2 active:scale-90">−</button>
                       <button
                         type="button"
                         aria-label="One more"
                         disabled={l.qty >= Number(l.product.stock_available)}
                         onClick={() => onQty(l.product.id, l.qty + 1)}
-                        className="grid size-7 place-items-center rounded-md border border-line bg-surface text-[15px] font-bold text-ink-2 active:scale-90 disabled:opacity-30"
+                        className="grid size-7 place-items-center rounded-md border border-line bg-surface text-[14px] font-bold text-ink-2 active:scale-90 disabled:opacity-30"
                       >+</button>
                     </span>
-                    <span className="tnum w-[86px] shrink-0 text-right font-mono text-[12.5px] font-bold text-ink">{money(l.qty * Number(l.product.price || 0)).replace('UGX ', '')}</span>
+                    <span className="tnum w-[86px] shrink-0 text-right font-mono text-[12px] font-bold text-ink">{money(l.qty * Number(l.product.price || 0)).replace('UGX ', '')}</span>
                   </div>
                 </li>
               );
@@ -268,11 +268,11 @@ export function PosTicket({ basket, onQty, onClear, title = 'Sale', sub, top, pa
 
       {/* Totals, like the bottom of a slip. */}
       <div className="border-t-2 border-dashed border-line-firm bg-surface px-4 py-2.5">
-        <div className="flex justify-between text-[12px] text-ink-muted"><span>Items</span><span className="tnum font-mono">{qtyText(count)}</span></div>
-        <div className="flex justify-between text-[12px] text-ink-muted"><span>Subtotal</span><span className="tnum font-mono">{money(total)}</span></div>
+        <div className="flex justify-between text-[11.5px] text-ink-muted"><span>Items</span><span className="tnum font-mono">{qtyText(count)}</span></div>
+        <div className="flex justify-between text-[11.5px] text-ink-muted"><span>Subtotal</span><span className="tnum font-mono">{money(total)}</span></div>
         <div className="mt-1 flex items-baseline justify-between">
-          <span className="text-[13px] font-extrabold uppercase tracking-[.06em] text-ink">Total</span>
-          <span className="tnum font-mono text-[20px] font-extrabold text-ink">{money(total)}</span>
+          <span className="text-[12.5px] font-extrabold uppercase tracking-[.06em] text-ink">Total</span>
+          <span className="tnum font-mono text-[18px] font-extrabold text-ink">{money(total)}</span>
         </div>
         {keypad && basket.length > 0 && !pad && (
           <p className="mt-1 text-center text-[11px] text-ink-muted">Tap a line to change its quantity on the number pad.</p>
@@ -285,7 +285,7 @@ export function PosTicket({ basket, onQty, onClear, title = 'Sale', sub, top, pa
           <div className="mb-1.5 flex items-center justify-between gap-2 text-[11.5px]">
             <span className="truncate text-ink-muted">Qty for <b className="text-ink">{selected?.product.name}</b></span>
             <button type="button" onClick={() => setPad(false)} className="shrink-0 text-[11.5px] font-semibold text-ink-muted hover:text-ink">Close</button>
-            <span className="tnum min-w-[64px] rounded-md bg-[#0E201A] px-2 py-0.5 text-right font-mono text-[14px] font-bold text-[#92D050]">{typed || qtyText(selected?.qty || 0)}</span>
+            <span className="tnum min-w-[64px] rounded-md bg-navy px-2 py-0.5 text-right font-mono text-[13.5px] font-bold text-lime">{typed || qtyText(selected?.qty || 0)}</span>
           </div>
           <div className="grid grid-cols-4 gap-1.5">
             {['7', '8', '9', '⌫', '4', '5', '6', 'C', '1', '2', '3', 'QTY', '0', '.'].map((k) => (
@@ -294,8 +294,8 @@ export function PosTicket({ basket, onQty, onClear, title = 'Sale', sub, top, pa
                 type="button"
                 onClick={() => press(k)}
                 className={cn(
-                  'h-10 rounded-lg border text-[15px] font-bold active:scale-95 transition-transform duration-75',
-                  k === 'QTY' ? 'row-span-2 h-auto border-[#0E201A] bg-[#0E201A] text-[13px] text-[#92D050]'
+                  'h-10 rounded-lg border text-[14px] font-bold active:scale-95 transition-transform duration-75',
+                  k === 'QTY' ? 'row-span-2 h-auto border-navy bg-navy text-[12.5px] text-lime'
                     : k === '0' ? 'col-span-2 border-line bg-surface text-ink'
                       : ['⌫', 'C'].includes(k) ? 'border-line bg-surface-sunk text-ink-2'
                         : 'border-line bg-surface text-ink'
@@ -308,7 +308,7 @@ export function PosTicket({ basket, onQty, onClear, title = 'Sale', sub, top, pa
         </div>
       )}
 
-      {problem && <p className="border-t border-line bg-bad-bg px-3 py-2 text-[12.5px] font-medium text-bad">{problem}</p>}
+      {problem && <p className="border-t border-line bg-bad-bg px-3 py-2 text-[12px] font-medium text-bad">{problem}</p>}
 
       {/* The payment keys. */}
       {payKeys && (
@@ -321,8 +321,8 @@ export function PosTicket({ basket, onQty, onClear, title = 'Sale', sub, top, pa
                 disabled={!basket.length || busy || k.disabled}
                 onClick={k.onClick}
                 className={cn(
-                  'flex h-12 items-center justify-center gap-2 rounded-lg text-[13.5px] font-extrabold transition-transform duration-75 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40',
-                  k.primary ? 'col-span-2 h-14 bg-[#92D050] text-[16px] text-[#102108] hover:brightness-105' : 'border border-line bg-surface text-ink hover:bg-surface-2'
+                  'flex h-12 items-center justify-center gap-2 rounded-lg text-[13px] font-extrabold transition-transform duration-75 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40',
+                  k.primary ? 'col-span-2 h-14 bg-fill text-[15px] text-on-fill hover:brightness-105' : 'border border-line bg-surface text-ink hover:bg-surface-2'
                 )}
               >
                 {k.icon}{busy && k.primary ? 'Saving…' : k.label}
@@ -330,7 +330,7 @@ export function PosTicket({ basket, onQty, onClear, title = 'Sale', sub, top, pa
             ))}
           </div>
           {onClear && basket.length > 0 && (
-            <button type="button" onClick={onClear} className="mt-2 w-full text-center text-[12px] font-semibold text-ink-muted hover:text-bad">Void the sale</button>
+            <button type="button" onClick={onClear} className="mt-2 w-full text-center text-[11.5px] font-semibold text-ink-muted hover:text-bad">Void the sale</button>
           )}
         </div>
       )}

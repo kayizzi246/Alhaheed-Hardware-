@@ -50,10 +50,10 @@ export default function ManagerOrderDetail() {
 
   return (
     <>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="tnum text-[22px] leading-tight text-ink">Order {order.order_no}</h1>
-          <p className="mt-1 text-[13px] text-ink-muted">{dateTime(order.created_at)}</p>
+          <h1 className="tnum text-[20px] leading-tight text-ink">Order {order.order_no}</h1>
+          <p className="mt-1 text-[12.5px] text-ink-muted">{dateTime(order.created_at)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="ghost" size="sm"><Link href="/manager/orders">← All orders</Link></Button>
@@ -69,7 +69,7 @@ export default function ManagerOrderDetail() {
 
       <DocButtons orderId={order.id} />
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-3 xl:grid-cols-2">
         <Card>
           <CardHead><CardTitle>The order</CardTitle></CardHead>
           <TableWrap>
@@ -141,7 +141,7 @@ export default function ManagerOrderDetail() {
             <tfoot>
               <tr className="bg-surface-2">
                 <Td colSpan={3} className="font-bold text-ink">Total</Td>
-                <Td num className="font-display text-[13.5px] font-extrabold text-ink">{money(order.total)}</Td>
+                <Td num className="font-display text-[13px] font-extrabold text-ink">{money(order.total)}</Td>
               </tr>
             </tfoot>
           </Table>

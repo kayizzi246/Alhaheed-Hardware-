@@ -147,20 +147,20 @@ export default function CounterSale() {
   // ── After the sale ─────────────────────────────────────────────────
   if (done) {
     return (
-      <Card className="mx-auto mt-6 max-w-md overflow-hidden">
-        <div className="bg-[#0E201A] px-6 py-6 text-center text-white">
+      <Card className="mx-auto mt-4 max-w-md overflow-hidden">
+        <div className="bg-navy px-4 py-4 text-center text-white">
           <p className="text-[11px] font-bold uppercase tracking-[.12em] text-white/60">{done.waiting ? 'Saved · not paid' : 'Paid'}</p>
-          <p className="tnum mt-1 font-mono text-[28px] font-bold text-[#92D050]">{done.orderNo}</p>
+          <p className="tnum mt-1 font-mono text-[26px] font-bold text-lime">{done.orderNo}</p>
         </div>
-        <div className="px-6 py-6 text-center">
-          <p className="mx-auto max-w-sm text-[13px] leading-relaxed text-ink-2">
+        <div className="px-4 py-4 text-center">
+          <p className="mx-auto max-w-sm text-[12.5px] leading-relaxed text-ink-2">
             {done.waiting
               ? 'The sale is saved in the payment queue. Take the money from there when they are ready.'
               : <>Receipt <strong className="tnum text-ink">{done.receiptNo}</strong>. The payment is with Accounts.</>}
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             <Button size="lg" onClick={() => { setDone(null); reset(); }}>Next sale</Button>
-            <Link href={done.waiting ? '/cashier' : '/cashier/receipts'} className="inline-flex h-11 items-center rounded-sm border border-line px-5 text-[13px] font-semibold text-ink hover:bg-surface-2">
+            <Link href={done.waiting ? '/cashier' : '/cashier/receipts'} className="inline-flex h-11 items-center rounded-sm border border-line px-4 text-[12.5px] font-semibold text-ink hover:bg-surface-2">
               {done.waiting ? 'Payment queue' : 'Receipts'}
             </Link>
           </div>
@@ -178,26 +178,26 @@ export default function CounterSale() {
           onChange={(e) => setPhone(e.target.value)}
           placeholder="Customer phone (optional)"
           inputMode="tel"
-          className="tnum h-9 min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 text-[12.5px] outline-none focus:border-brand"
+          className="tnum h-9 min-w-0 flex-1 rounded-md border border-line bg-surface px-2.5 text-[12px] outline-none focus:border-brand"
         />
         <div className="flex shrink-0 overflow-hidden rounded-md border border-line text-[11.5px] font-semibold">
           {[['pickup', 'Takes now'], ['delivery', 'Deliver']].map(([k, l]) => (
-            <button key={k} type="button" onClick={() => setHow(k)} className={cn('px-2.5', how === k ? 'bg-[#0E201A] text-[#92D050]' : 'bg-surface text-ink-2')}>{l}</button>
+            <button key={k} type="button" onClick={() => setHow(k)} className={cn('px-2.5', how === k ? 'bg-navy text-lime' : 'bg-surface text-ink-2')}>{l}</button>
           ))}
         </div>
       </div>
       {match === 'looking' && <p className="text-[11.5px] text-ink-muted">Looking them up…</p>}
       {known && (
-        <p className="flex items-center gap-1.5 rounded-md bg-ok-bg px-2.5 py-1.5 text-[12px] text-ok">
+        <p className="flex items-center gap-1.5 rounded-md bg-ok-bg px-2.5 py-1.5 text-[11.5px] text-ok">
           <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3.5 shrink-0"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           <b>{known.fullName}</b>{known.orderCount ? ` · ${known.orderCount} orders before` : ''}
         </p>
       )}
       {isNew && (
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New customer: their name" autoFocus className="h-9 w-full rounded-md border border-warn/40 bg-surface px-2.5 text-[12.5px] outline-none focus:border-brand" />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New customer: their name" autoFocus className="h-9 w-full rounded-md border border-warn/40 bg-surface px-2.5 text-[12px] outline-none focus:border-brand" />
       )}
       {how === 'delivery' && (
-        <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Deliver to: Ntinda, behind the church" className="h-9 w-full rounded-md border border-line bg-surface px-2.5 text-[12.5px] outline-none focus:border-brand" />
+        <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Deliver to: Ntinda, behind the church" className="h-9 w-full rounded-md border border-line bg-surface px-2.5 text-[12px] outline-none focus:border-brand" />
       )}
     </div>
   );
@@ -206,10 +206,10 @@ export default function CounterSale() {
     <>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-[20px] font-extrabold text-ink">Till · New sale</h1>
-          <p className="text-[12.5px] text-ink-muted">Tap items to ring them up. Type or scan a code and press Enter.</p>
+          <h1 className="text-[18px] font-extrabold text-ink">Till · New sale</h1>
+          <p className="text-[12px] text-ink-muted">Tap items to ring them up. Type or scan a code and press Enter.</p>
         </div>
-        <Link href="/cashier" className="text-[12.5px] font-semibold text-brand-dark hover:underline">Payment queue →</Link>
+        <Link href="/cashier" className="text-[12px] font-semibold text-brand-dark hover:underline">Payment queue →</Link>
       </div>
 
       {blocked && (

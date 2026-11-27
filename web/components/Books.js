@@ -26,7 +26,7 @@ const monthStart = () => `${today().slice(0, 7)}-01`;
 
 const STATUS = {
   paid: ['Paid', 'bg-ok-bg text-ok'],
-  part: ['Partly paid', 'bg-[#e8f3fb] text-[#0b658d]'],
+  part: ['Partly paid', 'bg-info-bg text-info'],
   unpaid: ['Unpaid', 'bg-warn-bg text-warn'],
   overdue: ['Overdue', 'bg-bad-bg text-bad'],
 };
@@ -107,7 +107,7 @@ function DataTable({ cols, rows, onRow }) {
           {rows.map((r, i) => (
             <Tr key={i} onClick={onRow ? () => onRow(r) : undefined} className={onRow ? 'cursor-pointer' : ''}>
               {cols.map((c) => (
-                <Td key={c.h} num={c.fmt === 'money'} className={cn(c.fmt === 'money' && 'text-ink', c.fmt === 'date' && 'whitespace-nowrap text-[12px]')}>
+                <Td key={c.h} num={c.fmt === 'money'} className={cn(c.fmt === 'money' && 'text-ink', c.fmt === 'date' && 'whitespace-nowrap text-[11.5px]')}>
                   {c.fmt === 'status' ? <StatusChip s={r.status} />
                     : c.fmt === 'money' ? (r[c.key] ? money(r[c.key]) : <span className="text-ink-faint">-</span>)
                       : c.fmt === 'date' ? day(r[c.key]) || <span className="text-ink-faint">-</span>
@@ -263,7 +263,7 @@ function Overview({ d, onCustomer, onSupplier }) {
                       <Td><b className="block text-ink">{a.name}</b><span className="text-[11.5px] text-ink-muted">{a.phone}</span></Td>
                       <Td num className="font-bold text-bad">{money(a.overdue)}</Td>
                       <Td num className="text-ink">{money(a.owed)}</Td>
-                      <Td className="whitespace-nowrap text-[12px]">{a.oldestDays} days</Td>
+                      <Td className="whitespace-nowrap text-[11.5px]">{a.oldestDays} days</Td>
                     </Tr>
                   ))}
                 </tbody>
@@ -272,7 +272,7 @@ function Overview({ d, onCustomer, onSupplier }) {
           )}
         </Card>
         <Card>
-          <CardHead><CardTitle>Supplier bills to pay soon</CardTitle><Link href="/manager/purchasing" className="text-[12px] font-semibold text-brand hover:underline">Pay in Buying</Link></CardHead>
+          <CardHead><CardTitle>Supplier bills to pay soon</CardTitle><Link href="/manager/purchasing" className="text-[11.5px] font-semibold text-brand hover:underline">Pay in Buying</Link></CardHead>
           {!list(d.upcoming).length ? <Empty title="Nothing due in the next 14 days" /> : (
             <TableWrap className="max-h-[300px] overflow-y-auto">
               <Table>
@@ -281,8 +281,8 @@ function Overview({ d, onCustomer, onSupplier }) {
                   {d.upcoming.map((b) => (
                     <Tr key={b.id} onClick={() => onSupplier(b.supplier)} className="cursor-pointer">
                       <Td className="font-semibold text-ink">{b.supplier}</Td>
-                      <Td className="text-[12px]">{b.invoice}</Td>
-                      <Td className={cn('whitespace-nowrap text-[12px]', b.late && 'font-bold text-bad')}>{b.late ? `Late · ${day(b.due)}` : day(b.due)}</Td>
+                      <Td className="text-[11.5px]">{b.invoice}</Td>
+                      <Td className={cn('whitespace-nowrap text-[11.5px]', b.late && 'font-bold text-bad')}>{b.late ? `Late · ${day(b.due)}` : day(b.due)}</Td>
                       <Td num className="font-bold text-ink">{money(b.owed)}</Td>
                     </Tr>
                   ))}
@@ -296,8 +296,8 @@ function Overview({ d, onCustomer, onSupplier }) {
       <div className="grid gap-3 xl:grid-cols-[1fr_1fr]">
         <Card>
           <CardHead><CardTitle>How old the customer debt is</CardTitle></CardHead>
-          <div className="space-y-3 p-4">
-            {!agingTotal ? <p className="text-[12.5px] text-ink-muted">Nothing owed.</p> : (
+          <div className="space-y-3 p-3">
+            {!agingTotal ? <p className="text-[12px] text-ink-muted">Nothing owed.</p> : (
               <>
                 <div className="flex h-3 overflow-hidden rounded-full bg-line">
                   {[['current', '#92D050'], ['d30', '#c9a227'], ['d60', '#e08a1e'], ['d90', '#d9622b'], ['over90', '#b42318']].map(([k, col]) => (d.aging[k] > 0 ? <span key={k} style={{ flexGrow: d.aging[k], background: col }} /> : null))}
@@ -310,9 +310,9 @@ function Overview({ d, onCustomer, onSupplier }) {
               </>
             )}
             <div>
-              <p className="mb-1.5 text-[12px] font-semibold text-ink-2">Who owes most</p>
+              <p className="mb-1.5 text-[11.5px] font-semibold text-ink-2">Who owes most</p>
               {list(d.topDebtors).map((a) => (
-                <button key={a.customerId} type="button" onClick={() => onCustomer(a.customerId)} className="flex w-full items-center justify-between border-b border-line py-1.5 text-left text-[12.5px] last:border-0 hover:text-brand">
+                <button key={a.customerId} type="button" onClick={() => onCustomer(a.customerId)} className="flex w-full items-center justify-between border-b border-line py-1.5 text-left text-[12px] last:border-0 hover:text-brand">
                   <span className="text-ink">{a.name}</span><b className="tnum text-ink">{money(a.owed)}</b>
                 </button>
               ))}
@@ -326,7 +326,7 @@ function Overview({ d, onCustomer, onSupplier }) {
               {c.balanced ? 'Balanced' : 'Not balanced'}
             </span>
           </CardHead>
-          <div className="space-y-1.5 p-4 text-[12.5px]">
+          <div className="space-y-1.5 p-3 text-[12px]">
             <Check k="All debits" v={money(c.debit)} />
             <Check k="All credits" v={money(c.credit)} ok={c.debit === c.credit} />
             <Check k="Customers owe (books / loan list)" v={`${money(c.receivableBooks)} / ${money(c.receivableList)}`} ok={c.receivableBooks === c.receivableList} />
@@ -417,7 +417,7 @@ function Reports() {
   return (
     <>
       <Card className="mb-3">
-        <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Report">
             <Select value={type} onChange={(e) => setType(e.target.value)}>
               {Object.entries(REPORTS).map(([k, r]) => <option key={k} value={k}>{r.label}</option>)}
@@ -430,7 +430,7 @@ function Reports() {
               <Segmented label="Period" value={period} onChange={setPeriod} options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
             </Field>
           ) : (
-            <div className="self-end pb-1 text-[12px] text-ink-muted">{def.dated ? '' : 'Shows how things stand today.'}</div>
+            <div className="self-end pb-1 text-[11.5px] text-ink-muted">{def.dated ? '' : 'Shows how things stand today.'}</div>
           )}
         </div>
       </Card>
@@ -471,7 +471,7 @@ function Journal() {
   return (
     <>
       <Card className="mb-3">
-        <div className="flex flex-wrap items-end gap-3 p-4">
+        <div className="flex flex-wrap items-end gap-3 p-3">
           <Segmented label="Show" value={view} onChange={setView} options={[{ value: 'entries', label: 'Entries' }, { value: 'trial', label: 'Trial balance' }]} />
           {view === 'entries' && (
             <>
@@ -511,15 +511,15 @@ function Journal() {
             <Card key={e.id} className={cn(e.voided && 'opacity-60')}>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line px-4 py-2">
                 <span className="tnum text-[11.5px] text-ink-muted">#{e.id}</span>
-                <span className="text-[12px] text-ink-muted">{day(e.date)}</span>
-                <b className="min-w-0 flex-1 text-[13px] text-ink">{e.memo}</b>
+                <span className="text-[11.5px] text-ink-muted">{day(e.date)}</span>
+                <b className="min-w-0 flex-1 text-[12.5px] text-ink">{e.memo}</b>
                 <span className="rounded-full bg-surface-sunk px-2 py-0.5 text-[10.5px] font-semibold text-ink-muted">{SOURCE[e.source] || e.source}</span>
                 {e.voided && <span className="rounded-full bg-bad-bg px-2 py-0.5 text-[10.5px] font-bold text-bad">Undone later</span>}
                 {e.by && <span className="text-[11.5px] text-ink-muted">by {e.by}</span>}
               </div>
               <div className="px-4 py-1.5">
                 {e.lines.map((l, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_120px_120px] gap-3 py-0.5 text-[12.5px]">
+                  <div key={i} className="grid grid-cols-[1fr_120px_120px] gap-3 py-0.5 text-[12px]">
                     <span className={cn('text-ink-2', l.credit && 'pl-6')}>{l.account} · {l.name}</span>
                     <span className="tnum text-right text-ink">{l.debit ? money(l.debit) : ''}</span>
                     <span className="tnum text-right text-ink">{l.credit ? money(l.credit) : ''}</span>

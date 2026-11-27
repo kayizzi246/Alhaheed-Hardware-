@@ -179,7 +179,7 @@ export default function ReportsView() {
                 <span className="tnum w-[64px] shrink-0 text-right text-[11.5px] text-ink-muted">
                   {d.receipts} rcpt
                 </span>
-                <span className="tnum w-[120px] shrink-0 text-right text-[13px] font-semibold text-ink">
+                <span className="tnum w-[120px] shrink-0 text-right text-[12.5px] font-semibold text-ink">
                   {money(d.total)}
                 </span>
               </div>
@@ -188,7 +188,7 @@ export default function ReportsView() {
         )}
       </Card>
 
-      <div className="mb-4 grid gap-4 xl:grid-cols-2">
+      <div className="mb-4 grid gap-3 xl:grid-cols-2">
         <Card>
           <CardHead><CardTitle>Payments by method</CardTitle></CardHead>
           {list(sales.byMethod).length === 0 ? (

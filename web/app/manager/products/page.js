@@ -151,7 +151,7 @@ export default function ManagerProducts() {
       <Alert kind="ok" onDone={() => setNotice('')}>{notice}</Alert>
 
       {s && (
-        <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:gap-3 xl:grid-cols-4">
           <Stat
             hero
             label="Stock value"
@@ -187,7 +187,7 @@ export default function ManagerProducts() {
         <StockBook kinds={data?.kinds || {}} />
       ) : (
         <Card>
-          <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
+          <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 sm:px-4">
             <Input
               type="search"
               value={search}
@@ -214,7 +214,7 @@ export default function ManagerProducts() {
                   onClick={() => setShow(v)}
                   aria-pressed={show === v}
                   className={cn(
-                    'rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors',
+                    'rounded-full border px-3 py-1.5 text-[11.5px] font-semibold transition-colors',
                     show === v ? 'border-brand bg-brand-soft text-brand-dark' : 'border-line text-ink-muted hover:border-line-firm hover:text-ink'
                   )}
                 >
@@ -225,8 +225,8 @@ export default function ManagerProducts() {
           </div>
 
           {pickedShown.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 border-b border-line bg-brand-soft px-4 py-2.5 sm:px-5" role="status">
-              <span className="text-[12.5px] font-semibold text-brand-dark">
+            <div className="flex flex-wrap items-center gap-3 border-b border-line bg-brand-soft px-4 py-2.5 sm:px-4" role="status">
+              <span className="text-[12px] font-semibold text-brand-dark">
                 {pickedShown.length} {pickedShown.length === 1 ? 'product' : 'products'} selected
               </span>
               <Button variant="ghost" size="sm" onClick={() => setPicked(new Set())}>Clear</Button>
@@ -395,7 +395,7 @@ function DeleteProducts({ products, onClose, onDone }) {
         </>
       }
     >
-      <div className="space-y-4 text-[13px] text-ink-2">
+      <div className="space-y-4 text-[12.5px] text-ink-2">
         <Alert>{error}</Alert>
         <ul className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-line bg-surface-2 px-4 py-3">
           {products.map((p) => (
@@ -525,7 +525,7 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
         </>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Alert>{error}</Alert>
         {editing && <ProductPicture product={product} />}
 
@@ -533,7 +533,7 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
           <Field label="Name">
             <Input value={f.name} onChange={set('name')} placeholder="Hima Cement 50kg" autoFocus={!editing} />
           </Field>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Code (SKU)" hint={editing ? undefined : 'Left empty, one is made.'}>
               <Input value={f.code} onChange={set('code')} placeholder="AH-CEM-001" className="tnum" />
             </Field>
@@ -567,7 +567,7 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
         </Section>
 
         <Section title="Prices">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Buy price" hint="What the shop pays for one.">
               <MoneyField value={f.cost} onChange={(v) => setF((x) => ({ ...x, cost: v }))} placeholder="Not set" />
             </Field>
@@ -575,12 +575,12 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
               <MoneyField value={f.price} onChange={(v) => setF((x) => ({ ...x, price: v }))} placeholder="No price yet" strong />
             </Field>
             <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
-              <p className="text-[12px] font-semibold text-ink-muted">Profit on each</p>
-              <p className={cn('tnum mt-1 text-[16px] font-bold', margin === null ? 'text-ink-faint' : margin < 0 ? 'text-bad' : 'text-ok')}>
+              <p className="text-[11.5px] font-semibold text-ink-muted">Profit on each</p>
+              <p className={cn('tnum mt-1 text-[15px] font-bold', margin === null ? 'text-ink-faint' : margin < 0 ? 'text-bad' : 'text-ok')}>
                 {margin === null ? (price > 0 ? 'Add the buy price' : 'No price yet') : money(price - cost)}
               </p>
               {margin !== null && (
-                <p className={cn('text-[12px]', margin < 0 ? 'font-semibold text-bad' : 'text-ink-muted')}>
+                <p className={cn('text-[11.5px]', margin < 0 ? 'font-semibold text-bad' : 'text-ink-muted')}>
                   {margin < 0 ? 'Sold below cost' : `${margin.toFixed(1)}% margin`}
                 </p>
               )}
@@ -588,9 +588,9 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
           </div>
           {editing && product.last_buy && (
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl border border-line bg-surface-2 px-4 py-3">
-              <p className="text-[12px] font-semibold text-ink-muted">Last bought</p>
-              <p className="tnum text-[14px] font-bold text-ink">{money(product.last_buy.cost)}</p>
-              <p className="text-[12px] text-ink-muted">
+              <p className="text-[11.5px] font-semibold text-ink-muted">Last bought</p>
+              <p className="tnum text-[13.5px] font-bold text-ink">{money(product.last_buy.cost)}</p>
+              <p className="text-[11.5px] text-ink-muted">
                 {[product.last_buy.supplier, product.last_buy.fdn && `FDN ${product.last_buy.fdn}`, product.last_buy.date].filter(Boolean).join(' · ')}
               </p>
             </div>
@@ -598,7 +598,7 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
         </Section>
 
         <Section title="Size and weight">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <Field label="Short name" hint="PL, PIPE, ANG">
               <Input value={f.itemShort} onChange={set('itemShort')} placeholder="PL" />
             </Field>
@@ -618,7 +618,7 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
           {f.widthFt && f.lengthFt && f.thicknessMm && (
             <button
               type="button"
-              className="text-[12.5px] font-semibold text-brand hover:underline"
+              className="text-[12px] font-semibold text-brand hover:underline"
               onClick={() => setF({ ...f, weightKg: String(Math.round((Number(f.widthFt) / 3.281) * (Number(f.lengthFt) / 3.281) * 7850 * (Number(f.thicknessMm) / 1000) * 100) / 100) })}
             >
               Work out the weight for steel plate ({Math.round((Number(f.widthFt) / 3.281) * (Number(f.lengthFt) / 3.281) * 7850 * (Number(f.thicknessMm) / 1000) * 100) / 100} kg)
@@ -637,7 +637,7 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
               <Input type="number" inputMode="numeric" min="0" value={f.reorderLevel} onChange={set('reorderLevel')} className="tnum sm:max-w-[220px]" />
             </Field>
           )}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Supplier">
               {suppliers.length ? (
                 <Select value={f.supplier} onChange={set('supplier')}>
@@ -735,7 +735,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button disabled={!ok} onClick={save}>{busy ? 'Saving…' : 'Save'}</Button>
           {kind === 'received' && !purchaseOk && (
-            <span className="order-first mr-auto self-center text-[12px] text-ink-muted">Needs the supplier, FDN number and buy price.</span>
+            <span className="order-first mr-auto self-center text-[11.5px] text-ink-muted">Needs the supplier, FDN number and buy price.</span>
           )}
         </>
       }
@@ -743,7 +743,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
       <div className="space-y-4">
         <Alert>{error}</Alert>
         <div>
-          <p className="mb-2 text-[12px] font-semibold text-ink-2">What happened?</p>
+          <p className="mb-2 text-[11.5px] font-semibold text-ink-2">What happened?</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {MOVES.map((m) => (
               <button
@@ -752,7 +752,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
                 aria-pressed={kind === m.value}
                 onClick={() => { setKind(m.value); setError(''); }}
                 className={cn(
-                  'rounded-xl border px-3 py-2.5 text-left text-[12px] font-semibold transition-colors',
+                  'rounded-xl border px-3 py-2.5 text-left text-[11.5px] font-semibold transition-colors',
                   kind === m.value ? 'border-brand bg-brand-soft text-brand-dark' : 'border-line text-ink-2 hover:border-line-firm'
                 )}
               >
@@ -760,12 +760,12 @@ function StockMove({ product, suppliers, onClose, onDone }) {
               </button>
             ))}
           </div>
-          <p className="mt-2 text-[12px] text-ink-muted">{move.about}</p>
+          <p className="mt-2 text-[11.5px] text-ink-muted">{move.about}</p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label={kind === 'count' ? `How many ${product.unit} are on the shelf?` : kind === 'correction' ? `${product.unit} to add, or minus to take off` : `How many ${product.unit}?`}>
-            <Input type="number" step="any" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum text-[16px] font-semibold" autoFocus />
+            <Input type="number" step="any" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} className="tnum text-[15px] font-semibold" autoFocus />
           </Field>
           <Field label={kind === 'received' ? 'Delivery date' : 'Date'}>
             <Input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
@@ -774,7 +774,7 @@ function StockMove({ product, suppliers, onClose, onDone }) {
 
         {kind === 'received' && (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Buy price for one (UGX)" hint="Becomes the cost of every sale after this.">
                 <Input type="number" inputMode="numeric" min="0" value={cost} onChange={(e) => setCost(e.target.value)} className="tnum" />
               </Field>
@@ -801,15 +801,15 @@ function StockMove({ product, suppliers, onClose, onDone }) {
 
         {qty !== '' && (
           <div className={cn('flex items-center justify-between rounded-xl px-4 py-3', after < 0 ? 'bg-bad-bg' : 'bg-surface-2')}>
-            <span className="text-[12px] text-ink-muted">Stock after this</span>
-            <span className={cn('tnum text-[13.5px] font-bold', after < 0 ? 'text-bad' : 'text-ink')}>
+            <span className="text-[11.5px] text-ink-muted">Stock after this</span>
+            <span className={cn('tnum text-[13px] font-bold', after < 0 ? 'text-bad' : 'text-ink')}>
               {now} → {after} {product.unit}
-              {after < 0 && <span className="ml-2 text-[12px] font-semibold">Cannot go below zero</span>}
+              {after < 0 && <span className="ml-2 text-[11.5px] font-semibold">Cannot go below zero</span>}
             </span>
           </div>
         )}
         {kind === 'received' && n > 0 && int(cost) > 0 && (
-          <p className="text-right text-[12px] text-ink-muted">Cost of this delivery: <b className="text-ink">{money(n * int(cost))}</b></p>
+          <p className="text-right text-[11.5px] text-ink-muted">Cost of this delivery: <b className="text-ink">{money(n * int(cost))}</b></p>
         )}
       </div>
     </Modal>
@@ -876,22 +876,22 @@ function History({ product, onClose, onStock, onEdit, onDelete }) {
       }
     >
       {s?.reorder && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-warn/30 bg-warn-bg px-3 py-2.5 text-[12.5px] text-warn">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-warn/30 bg-warn-bg px-3 py-2.5 text-[12px] text-warn">
           <span><b>Reorder now.</b> {s.suggestedQty > 0 ? `Order ${s.suggestedQty} ${product.unit} to reach the target.` : 'Under 15 days of stock left.'}</span>
           {s.suggestedQty > 0 && s.cost > 0 && <span className="tnum font-semibold">{money(s.suggestedQty * s.cost)}</span>}
         </div>
       )}
       {s?.shelfMismatch !== null && s?.shelfMismatch !== undefined && (
-        <p className="mb-4 rounded-sm border border-bad/25 bg-bad-bg px-3 py-2 text-[12px] text-bad">
+        <p className="mb-4 rounded-sm border border-bad/25 bg-bad-bg px-3 py-2 text-[11.5px] text-bad">
           The shop&rsquo;s own count says {s.shelfMismatch}, the stock book says {t?.book}. Count it to settle which is right.
         </p>
       )}
 
-      <dl className="mb-5 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+      <dl className="mb-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
         {facts.map(([k, v, c]) => (
           <div key={k} className="min-w-0">
             <dt className="text-[11.5px] text-ink-muted">{k}</dt>
-            <dd className={cn('tnum truncate text-[13px] font-semibold text-ink', c)}>{v}</dd>
+            <dd className={cn('tnum truncate text-[12.5px] font-semibold text-ink', c)}>{v}</dd>
           </div>
         ))}
       </dl>
@@ -915,10 +915,10 @@ function History({ product, onClose, onStock, onEdit, onDelete }) {
       ) : !data ? (
         <Loading>Reading the stock book…</Loading>
       ) : lines.length === 0 ? (
-        <p className="py-6 text-center text-[12.5px] text-ink-muted">Nothing here yet. Purchases, sales and counts show here.</p>
+        <p className="py-4 text-center text-[12px] text-ink-muted">Nothing here yet. Purchases, sales and counts show here.</p>
       ) : (
         <TableWrap className="rounded-xl border border-line">
-          <Table className="text-[12px]">
+          <Table className="text-[11.5px]">
             <thead>
               <tr>
                 <Th>Date</Th>
@@ -960,7 +960,7 @@ function History({ product, onClose, onStock, onEdit, onDelete }) {
 function MovesTable({ moves, withProduct }) {
   return (
     <TableWrap className="rounded-xl border border-line">
-      <Table className="text-[12px]">
+      <Table className="text-[11.5px]">
         <thead>
           <tr>
             <Th>When</Th>
@@ -1022,7 +1022,7 @@ function StockBook({ kinds }) {
   const s = data?.summary;
   return (
     <Card>
-      <div className="flex flex-wrap items-end gap-3 border-b border-line px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap items-end gap-3 border-b border-line px-4 py-3 sm:px-4">
         <Field label="From"><Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></Field>
         <Field label="To"><Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></Field>
         <Field label="What" className="w-full sm:w-[220px]">
@@ -1040,14 +1040,14 @@ function StockBook({ kinds }) {
             ['Value in, at buy price', money(s.valueIn), 'text-ink'],
             ['Value out, at buy price', money(s.valueOut), 'text-ink'],
           ].map(([k, v, c]) => (
-            <div key={k} className="bg-surface px-4 py-3 sm:px-5">
+            <div key={k} className="bg-surface px-4 py-3 sm:px-4">
               <p className="text-[11.5px] text-ink-muted">{k}</p>
-              <p className={cn('tnum text-[15px] font-bold', c)}>{v}</p>
+              <p className={cn('tnum text-[14px] font-bold', c)}>{v}</p>
             </div>
           ))}
         </div>
       )}
-      <div className="p-4 sm:p-5">
+      <div className="p-3 sm:p-4">
         {error ? (
           <LoadFailed onRetry={load}>{error}</LoadFailed>
         ) : !data ? (
@@ -1148,10 +1148,10 @@ function ImportSheet({ onClose, onDone }) {
             className="sr-only"
             onChange={pick}
           />
-          <span className="text-[13px] font-semibold text-ink">
+          <span className="text-[12.5px] font-semibold text-ink">
             {file ? file.name : 'Choose a spreadsheet'}
           </span>
-          <span className="text-[12px] text-ink-muted">
+          <span className="text-[11.5px] text-ink-muted">
             {file
               ? `${(file.size / 1024).toFixed(0)} KB. Click to choose a different one`
               : 'Excel or CSV, up to 2,000 rows'}
@@ -1159,7 +1159,7 @@ function ImportSheet({ onClose, onDone }) {
         </label>
 
         {parsed && (
-          <div className="rounded-sm border border-line bg-surface-2 px-4 py-3 text-[12px]">
+          <div className="rounded-sm border border-line bg-surface-2 px-4 py-3 text-[11.5px]">
             <p className="font-semibold text-ink">
               {parsed.rows.length} {parsed.rows.length === 1 ? 'row' : 'rows'} read from “{parsed.sheetName}”
             </p>
@@ -1178,7 +1178,7 @@ function ImportSheet({ onClose, onDone }) {
 
         {parsed?.rows?.length > 0 && (
           <div className="overflow-x-auto rounded-sm border border-line">
-            <Table className="text-[12px]">
+            <Table className="text-[11.5px]">
               <thead>
                 <tr>
                   {parsed.recognised.map((f) => <Th key={f}>{f}</Th>)}
@@ -1285,7 +1285,7 @@ function ProductPicture({ product }) {
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3">
       <div className="size-20 shrink-0 overflow-hidden rounded-sm border border-line bg-surface-sunk">
         {shown ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -1299,7 +1299,7 @@ function ProductPicture({ product }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-[12px] font-semibold text-ink-2 transition-colors hover:border-line-firm hover:text-ink">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-[11.5px] font-semibold text-ink-2 transition-colors hover:border-line-firm hover:text-ink">
             <input type="file" accept="image/*" className="sr-only" onChange={(e) => { setGone(false); pick(e); }} disabled={busy} />
             {busy ? 'Working…' : shown ? 'Replace picture' : 'Upload a picture'}
           </label>
@@ -1307,7 +1307,7 @@ function ProductPicture({ product }) {
             <button
               type="button"
               onClick={remove}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-2 text-[12px] font-semibold text-bad transition-colors hover:border-bad/20 hover:bg-bad-bg"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-2 text-[11.5px] font-semibold text-bad transition-colors hover:border-bad/20 hover:bg-bad-bg"
             >
               Remove picture
             </button>

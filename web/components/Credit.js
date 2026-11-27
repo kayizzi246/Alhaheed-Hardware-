@@ -34,7 +34,7 @@ function UsedBar({ owed, limit }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
       <div
-        className={cn('h-full rounded-full', pct >= 100 ? 'bg-bad' : pct >= 80 ? 'bg-warn' : 'bg-[#92D050]')}
+        className={cn('h-full rounded-full', pct >= 100 ? 'bg-bad' : pct >= 80 ? 'bg-warn' : 'bg-fill')}
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -52,17 +52,17 @@ function StatusChip({ a }) {
 
 /** The aging bar: how old the money owed is. */
 function Aging({ aging, total }) {
-  if (!total) return <p className="text-[12.5px] text-ink-muted">Nothing owed.</p>;
+  if (!total) return <p className="text-[12px] text-ink-muted">Nothing owed.</p>;
   return (
     <div>
       <div className="flex h-3 overflow-hidden rounded-full bg-line">
         {AGES.map(([k, , c]) => (aging[k] > 0 ? <span key={k} style={{ flexGrow: aging[k], background: c }} /> : null))}
       </div>
-      <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12px] sm:grid-cols-5">
+      <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11.5px] sm:grid-cols-5">
         {AGES.map(([k, label, c]) => (
           <li key={k}>
             <span className="flex items-center gap-1.5 text-ink-muted"><i className="size-2 rounded-full" style={{ background: c }} />{label}</span>
-            <b className="tnum text-[13px] text-ink">{money(aging[k] || 0)}</b>
+            <b className="tnum text-[12.5px] text-ink">{money(aging[k] || 0)}</b>
           </li>
         ))}
       </ul>
@@ -117,7 +117,7 @@ export default function Credit() {
 
       {!data && !error && <Card><Loading>Adding up who owes…</Loading></Card>}
       {!data && error && !manager && (
-        <Card><p className="p-5 text-[13px] text-ink-2">Find the customer under <b>Customers</b> to take a payment on their credit.</p></Card>
+        <Card><p className="p-4 text-[12.5px] text-ink-2">Find the customer under <b>Customers</b> to take a payment on their credit.</p></Card>
       )}
 
       {s && (
@@ -134,7 +134,7 @@ export default function Credit() {
           <div className="mb-3 grid gap-3 xl:grid-cols-[1.2fr_1fr]">
             <Card>
               <CardHead><CardTitle>How old the money owed is</CardTitle></CardHead>
-              <div className="p-4"><Aging aging={s.aging} total={s.owed} /></div>
+              <div className="p-3"><Aging aging={s.aging} total={s.owed} /></div>
             </Card>
             {manager && (
               <Card>
@@ -198,8 +198,8 @@ export default function Credit() {
                           <span className="tnum mt-1 block text-[11px] text-ink-muted">{money(a.available)} left of {money(a.limit)}</span>
                         </Td>
                         <Td num className={a.overdue ? 'font-semibold text-bad' : 'text-ink-faint'}>{a.overdue ? money(a.overdue) : '-'}</Td>
-                        <Td className="whitespace-nowrap text-[12px]">{a.oldestBill ? `${a.oldestDays} days ago` : '-'}</Td>
-                        <Td className="whitespace-nowrap text-[12px]">{a.lastPayment ? `${money(a.lastPayment.amount)} · ${day(a.lastPayment.date)}` : 'Never'}</Td>
+                        <Td className="whitespace-nowrap text-[11.5px]">{a.oldestBill ? `${a.oldestDays} days ago` : '-'}</Td>
+                        <Td className="whitespace-nowrap text-[11.5px]">{a.lastPayment ? `${money(a.lastPayment.amount)} · ${day(a.lastPayment.date)}` : 'Never'}</Td>
                         <Td><StatusChip a={a} /></Td>
                       </Tr>
                     ))}
@@ -270,10 +270,10 @@ function GiveCredit({ onClose, onDone }) {
           <Field label="Which customer?" hint="Not in the list? Add them under Customers first.">
             <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or phone" />
             <ul className="mt-2 max-h-56 divide-y divide-line overflow-y-auto rounded-lg border border-line">
-              {!people && <li className="px-3 py-2 text-[12.5px] text-ink-muted">Loading…</li>}
+              {!people && <li className="px-3 py-2 text-[12px] text-ink-muted">Loading…</li>}
               {found.map((c) => (
                 <li key={c.id}>
-                  <button type="button" onClick={() => setWho(c)} className="flex w-full items-center justify-between px-3 py-2 text-left text-[13px] hover:bg-surface-2">
+                  <button type="button" onClick={() => setWho(c)} className="flex w-full items-center justify-between px-3 py-2 text-left text-[12.5px] hover:bg-surface-2">
                     <span><b className="text-ink">{c.fullName}</b> <span className="text-ink-muted">{c.phone}</span></span>
                     <span className="text-[11.5px] text-ink-muted">{c.orderCount || 0} orders</span>
                   </button>
@@ -283,11 +283,11 @@ function GiveCredit({ onClose, onDone }) {
           </Field>
         ) : (
           <div className="flex items-center justify-between rounded-xl border border-line bg-surface-2 px-4 py-3">
-            <span><b className="text-ink">{who.fullName}</b> <span className="text-[12px] text-ink-muted">{who.phone}</span></span>
-            <button type="button" onClick={() => setWho(null)} className="text-[12px] font-semibold text-brand hover:underline">Change</button>
+            <span><b className="text-ink">{who.fullName}</b> <span className="text-[11.5px] text-ink-muted">{who.phone}</span></span>
+            <button type="button" onClick={() => setWho(null)} className="text-[11.5px] font-semibold text-brand hover:underline">Change</button>
           </div>
         )}
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Most they may owe (limit)">
             <MoneyField value={limit} onChange={setLimit} placeholder="5,000,000" strong />
           </Field>
@@ -362,27 +362,27 @@ export function CreditAccount({ customerId, onClose, onChanged }) {
             ].map(([k, v, c]) => (
               <div key={k} className="rounded-xl border border-line bg-surface-2 px-3.5 py-2.5">
                 <span className="block text-[11.5px] font-semibold text-ink-muted">{k}</span>
-                <b className={cn('tnum text-[16px]', c)}>{v}</b>
+                <b className={cn('tnum text-[15px]', c)}>{v}</b>
               </div>
             ))}
           </div>
           <div>
             <UsedBar owed={a.owed} limit={a.limit} />
-            <p className="mt-1.5 flex flex-wrap gap-x-3 text-[12px] text-ink-muted">
+            <p className="mt-1.5 flex flex-wrap gap-x-3 text-[11.5px] text-ink-muted">
               <StatusChip a={a} />
               <span>{a.termsDays} days to pay each bill</span>
               {a.nextDue && <span>Next due {day(a.nextDue)}</span>}
               {a.lastPayment && <span>Last paid {money(a.lastPayment.amount)} on {day(a.lastPayment.date)}</span>}
             </p>
-            {a.blocked && <p className="mt-2 rounded-lg bg-warn-bg px-3 py-2 text-[12.5px] font-semibold text-warn">Cannot buy more on credit now: {a.blocked}</p>}
-            {a.note && <p className="mt-2 text-[12.5px] text-ink-2">Note: {a.note}</p>}
+            {a.blocked && <p className="mt-2 rounded-lg bg-warn-bg px-3 py-2 text-[12px] font-semibold text-warn">Cannot buy more on credit now: {a.blocked}</p>}
+            {a.note && <p className="mt-2 text-[12px] text-ink-2">Note: {a.note}</p>}
           </div>
 
           {a.owed > 0 && <Aging aging={a.aging} total={a.owed} />}
 
           {list(d.bills).length > 0 && (
             <div>
-              <h3 className="mb-1.5 text-[12px] font-bold uppercase tracking-wide text-ink-muted">Bills not yet paid</h3>
+              <h3 className="mb-1.5 text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">Bills not yet paid</h3>
               <TableWrap className="rounded-lg border border-line">
                 <Table>
                   <thead><tr><Th>Date</Th><Th>Receipt</Th><Th num>Bill</Th><Th num>Still owed</Th><Th>Due</Th></tr></thead>
@@ -406,7 +406,7 @@ export function CreditAccount({ customerId, onClose, onChanged }) {
           )}
 
           <div>
-            <h3 className="mb-1.5 text-[12px] font-bold uppercase tracking-wide text-ink-muted">Statement</h3>
+            <h3 className="mb-1.5 text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">Statement</h3>
             <TableWrap className="max-h-[320px] overflow-y-auto rounded-lg border border-line">
               <Table>
                 <thead><tr><Th>Date</Th><Th>What</Th><Th>Ref</Th><Th num>Bought (debit)</Th><Th num>Paid (credit)</Th><Th num>Balance</Th></tr></thead>
@@ -418,7 +418,7 @@ export function CreditAccount({ customerId, onClose, onChanged }) {
                         <span className="text-ink">{l.what}</span>
                         {(l.note || l.by) && <span className="block text-[11px] text-ink-muted">{[l.orderNo, l.note && l.note !== l.orderNo ? l.note : null, l.by].filter(Boolean).join(' · ')}</span>}
                       </Td>
-                      <Td className="tnum text-[12px]">{l.ref || '-'}</Td>
+                      <Td className="tnum text-[11.5px]">{l.ref || '-'}</Td>
                       <Td num className={l.debit ? 'text-ink' : 'text-ink-faint'}>{l.debit ? money(l.debit) : '-'}</Td>
                       <Td num className={l.credit ? 'font-semibold text-ok' : 'text-ink-faint'}>{l.credit ? money(l.credit) : '-'}</Td>
                       <Td num className="font-bold text-ink">{money(l.balance)}</Td>
@@ -478,7 +478,7 @@ function TakePayment({ a, onClose, onDone }) {
         </Field>
         <div className="flex flex-wrap gap-2">
           {[a.owed, a.overdue, Math.round(a.owed / 2)].filter((v, i, x) => v > 0 && x.indexOf(v) === i).map((v) => (
-            <button key={v} type="button" onClick={() => setAmount(String(v))} className="rounded-full border border-line px-3 py-1 text-[12px] font-semibold text-ink-2 hover:border-brand hover:text-brand">
+            <button key={v} type="button" onClick={() => setAmount(String(v))} className="rounded-full border border-line px-3 py-1 text-[11.5px] font-semibold text-ink-2 hover:border-brand hover:text-brand">
               {v === a.owed ? 'All' : v === a.overdue ? 'Late part' : 'Half'} · {money(v)}
             </button>
           ))}
@@ -494,7 +494,7 @@ function TakePayment({ a, onClose, onDone }) {
         <Field label="Note (optional)"><Input value={note} onChange={(e) => setNote(e.target.value)} /></Field>
         {twice && <Checkbox label="It is a second payment, not the same one again" checked={again} onChange={(e) => setAgain(e.target.checked)} />}
         {n > 0 && (
-          <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">
+          <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12px] text-ink-2">
             {a.owed - n >= 0
               ? <>After this they owe <b className="tnum text-ink">{money(a.owed - n)}</b>.</>
               : <>They owe nothing, and <b className="tnum text-ok">{money(n - a.owed)}</b> is kept for their next credit order.</>}
@@ -530,7 +530,7 @@ function EditAccount({ a, onClose, onDone }) {
     <Modal title={`Credit for ${a.name}`} onClose={onClose} footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={busy || !(Number(limit) >= 0)} onClick={go}>{busy ? 'Saving…' : 'Save'}</Button></>}>
       <div className="space-y-4">
         <Alert>{error}</Alert>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Limit"><MoneyField value={limit} onChange={setLimit} strong /></Field>
           <Field label="Days to pay each bill">
             <Select value={terms} onChange={(e) => setTerms(e.target.value)}>
@@ -542,7 +542,7 @@ function EditAccount({ a, onClose, onDone }) {
           <Segmented label="Status" value={status} onChange={setStatus} options={[{ value: 'active', label: 'Yes' }, { value: 'hold', label: 'Stop for now' }, { value: 'closed', label: 'Close account' }]} />
         </Field>
         <Field label="Note"><Input value={note} onChange={(e) => setNote(e.target.value)} /></Field>
-        <p className="text-[12px] text-ink-muted">Stopping or closing does not change what they owe. They can still pay.</p>
+        <p className="text-[11.5px] text-ink-muted">Stopping or closing does not change what they owe. They can still pay.</p>
       </div>
     </Modal>
   );
@@ -582,7 +582,7 @@ function Adjust({ a, onClose, onDone }) {
         )}
         <Field label="Amount"><MoneyField value={amount} onChange={setAmount} strong /></Field>
         <Field label="Why?"><Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={kind === 'writeoff' ? 'Customer left the country, cannot be found' : 'From the notebook, 25 Nov'} /></Field>
-        {n > 0 && <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">After this they owe <b className="tnum text-ink">{money(a.owed + signed)}</b>.</p>}
+        {n > 0 && <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12px] text-ink-2">After this they owe <b className="tnum text-ink">{money(a.owed + signed)}</b>.</p>}
       </div>
     </Modal>
   );
@@ -628,7 +628,7 @@ function SalesReportButton() {
           footer={<><Button variant="outline" onClick={() => setOpen(false)}>Close</Button><Button disabled={busy || from > to} onClick={go}>{busy ? 'Making it…' : 'Download'}</Button></>}
         >
           <Alert>{error}</Alert>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label="From"><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
             <Field label="To"><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
           </div>

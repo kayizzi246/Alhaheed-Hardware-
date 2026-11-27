@@ -24,7 +24,7 @@ export default function DocButtons({ orderId }) {
   const Row = ({ title, note, type, id }) => (
     <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5 last:border-0">
       <div className="min-w-0 flex-1">
-        <b className="block text-[13px] text-ink">{title}</b>
+        <b className="block text-[12.5px] text-ink">{title}</b>
         <span className="text-[11.5px] text-ink-muted">{note}</span>
       </div>
       <Button size="sm" variant="outline" onClick={() => go(type, id, false)}>Print</Button>
@@ -34,12 +34,12 @@ export default function DocButtons({ orderId }) {
   return (
     <Card className="mb-3">
       <CardHead><CardTitle>Documents</CardTitle><span className="text-[11.5px] text-ink-muted">the same PDFs the customer gets</span></CardHead>
-      {error && <p className="px-4 py-2 text-[12px] text-bad">{error}</p>}
+      {error && <p className="px-4 py-2 text-[11.5px] text-bad">{error}</p>}
       <Row title="Order summary" note="Items, prices, discounts, delivery, total, status" type="order" id={orderId} />
       {list(d.receipts).map((r) => (
         <Row key={r.receiptNo} title={`Payment receipt ${r.receiptNo}`} note={`${money(r.amount)} · ${methodLabel(r.method)} · ${r.kind === 'loan' ? 'paid on the loan' : 'paid for the order'}`} type="receipt" id={r.receiptNo} />
       ))}
-      {!list(d.receipts).length && <p className="border-b border-line px-4 py-2.5 text-[12px] text-ink-muted">No payment recorded yet, so no receipt.</p>}
+      {!list(d.receipts).length && <p className="border-b border-line px-4 py-2.5 text-[11.5px] text-ink-muted">No payment recorded yet, so no receipt.</p>}
       {d.statement && <Row title="Account statement" note="The customer's loan: bought, paid, owed, due dates" type="statement" id={d.statement} />}
     </Card>
   );

@@ -93,8 +93,8 @@ export default function ManagerConsole() {
     <>
       <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[18px] leading-tight text-ink">Today</h1>
-          <p className="text-[12px] text-ink-muted">
+          <h1 className="text-[17px] leading-tight text-ink">Today</h1>
+          <p className="text-[11.5px] text-ink-muted">
             {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
@@ -109,19 +109,19 @@ export default function ManagerConsole() {
       {shown.length > 0 && (
         <section className="mb-3 overflow-hidden rounded-xl border border-line bg-surface">
           <div className="flex items-center justify-between gap-3 border-b border-line px-3.5 py-2">
-            <h2 className="flex items-center gap-2 text-[12.5px] font-bold text-ink">
+            <h2 className="flex items-center gap-2 text-[12px] font-bold text-ink">
               Check these
               <span className="tnum rounded-full bg-bad-bg px-2 py-px text-[11.5px] font-bold text-bad">{shown.length}</span>
             </h2>
-            <div className="flex items-center gap-4">
-              <button type="button" onClick={() => hide(shown.map((t) => t.text))} className="text-[12px] font-semibold text-ink-muted hover:text-bad hover:underline">Remove all</button>
-              <Link href="/manager/stock" className="text-[12px] font-semibold text-brand hover:underline">See all</Link>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => hide(shown.map((t) => t.text))} className="text-[11.5px] font-semibold text-ink-muted hover:text-bad hover:underline">Remove all</button>
+              <Link href="/manager/stock" className="text-[11.5px] font-semibold text-brand hover:underline">See all</Link>
             </div>
           </div>
           <ul className="divide-y divide-line">
             {shown.slice(0, 5).map((t) => (
               <li key={t.text} className="flex items-stretch">
-                <Link href={t.link.startsWith('#') ? `/manager/stock${t.link}` : t.link} className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-1.5 text-[12px] text-ink hover:bg-surface-2">
+                <Link href={t.link.startsWith('#') ? `/manager/stock${t.link}` : t.link} className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-1.5 text-[11.5px] text-ink hover:bg-surface-2">
                   <span aria-hidden="true" className={cn('grid size-5 shrink-0 place-items-center rounded-md text-[11px] font-extrabold', t.level === 'bad' ? 'bg-bad-bg text-bad' : t.level === 'warn' ? 'bg-warn-bg text-warn' : 'bg-info-bg text-info')}>
                     {t.level === 'bad' ? '!' : 'i'}
                   </span>
@@ -222,32 +222,32 @@ function CreditCard({ c }) {
   const fig = (label, value, tone) => (
     <div className="min-w-0">
       <span className="block text-[11.5px] font-semibold text-ink-muted">{label}</span>
-      <b className={cn('tnum block truncate text-[16px] font-extrabold', tone || 'text-ink')}>{value}</b>
+      <b className={cn('tnum block truncate text-[15px] font-extrabold', tone || 'text-ink')}>{value}</b>
     </div>
   );
   return (
     <section className="mb-3 overflow-hidden rounded-xl border border-line bg-surface">
       <div className="flex items-center justify-between border-b border-line px-3.5 py-2">
-        <h2 className="text-[13.5px] font-bold text-ink">Credit customers</h2>
-        <Link href="/manager/credit" className="text-[12.5px] font-semibold text-brand-dark hover:underline">Open credit →</Link>
+        <h2 className="text-[13px] font-bold text-ink">Credit customers</h2>
+        <Link href="/manager/credit" className="text-[12px] font-semibold text-brand-dark hover:underline">Open credit →</Link>
       </div>
-      <div className="grid gap-4 p-3.5 lg:grid-cols-[1.1fr_1fr]">
+      <div className="grid gap-3 p-3.5 lg:grid-cols-[1.1fr_1fr]">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {fig('Owed to the shop', money(s.owed))}
           {fig('Late', money(s.overdue), s.overdue ? 'text-bad' : 'text-ok')}
           {fig('On credit today', money(s.soldToday))}
           {fig('Paid in today', money(s.paidToday), 'text-ok')}
-          <p className="col-span-2 text-[12px] text-ink-muted sm:col-span-4">
+          <p className="col-span-2 text-[11.5px] text-ink-muted sm:col-span-4">
             {s.owing} owe · {s.overdueCount} late · {s.nearLimit} near their limit · {s.onHold} stopped
           </p>
         </div>
         <ul className="space-y-1.5">
-          {!top.length && <li className="text-[12.5px] text-ink-muted">Nobody owes the shop.</li>}
+          {!top.length && <li className="text-[12px] text-ink-muted">Nobody owes the shop.</li>}
           {top.map((a) => (
-            <li key={a.customerId} className="flex items-center gap-2.5 text-[12.5px]">
+            <li key={a.customerId} className="flex items-center gap-2.5 text-[12px]">
               <span className="w-[110px] shrink-0 truncate text-ink-2">{a.name}</span>
               <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-sunk">
-                <span className={cn('block h-full rounded-full', a.overdue ? 'bg-bad' : 'bg-[#92D050]')} style={{ width: `${(a.owed / max) * 100}%` }} />
+                <span className={cn('block h-full rounded-full', a.overdue ? 'bg-bad' : 'bg-fill')} style={{ width: `${(a.owed / max) * 100}%` }} />
               </span>
               <span className="tnum w-[92px] shrink-0 text-right font-semibold text-ink">{shortMoney(a.owed)}</span>
             </li>
@@ -261,21 +261,21 @@ function CreditCard({ c }) {
 /** One small figure. Small on purpose: the whole day fits on one screen. */
 function Tile({ label, value, note, hero, tone, href, icon }) {
   const chip = hero
-    ? 'bg-[#102108]/10 text-[#102108]'
+    ? 'bg-on-fill/10 text-on-fill'
     : tone === 'bad' ? 'bg-bad-bg text-bad' : tone === 'warn' ? 'bg-warn-bg text-warn' : tone === 'ok' ? 'bg-ok-bg text-ok' : 'bg-brand-soft text-brand';
   const body = (
     <>
       <span className="flex items-center justify-between gap-2">
-        <span className={cn('text-[11.5px] font-semibold', hero ? 'text-[#102108]/80' : 'text-ink-muted')}>{label}</span>
+        <span className={cn('text-[11.5px] font-semibold', hero ? 'text-on-fill/80' : 'text-ink-muted')}>{label}</span>
         {icon && <span className={cn('grid size-7 shrink-0 place-items-center rounded-lg [&>svg]:size-4', chip)}>{icon}</span>}
       </span>
-      <span className={cn('tnum mt-1 block truncate font-display text-[19px] font-extrabold leading-tight tracking-tight', hero ? 'text-[#102108]' : tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink')}>{value}</span>
-      {note && <span className={cn('mt-0.5 block truncate text-[11.5px]', hero ? 'text-[#102108]/75' : 'text-ink-muted')}>{note}</span>}
+      <span className={cn('tnum mt-1 block truncate font-display text-[18px] font-extrabold leading-tight tracking-tight', hero ? 'text-on-fill' : tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink')}>{value}</span>
+      {note && <span className={cn('mt-0.5 block truncate text-[11.5px]', hero ? 'text-on-fill/75' : 'text-ink-muted')}>{note}</span>}
     </>
   );
   const cls = cn(
     'block rounded-xl border px-3.5 py-3 transition-[background-color,transform] duration-150 active:scale-[0.98]',
-    hero ? 'border-transparent bg-[#92D050] hover:bg-[#86c445]' : 'border-line bg-surface hover:border-line-firm hover:bg-surface-2'
+    hero ? 'border-transparent bg-fill hover:bg-[#86c445]' : 'border-line bg-surface hover:border-line-firm hover:bg-surface-2'
   );
   return href ? <Link href={href} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
 }
@@ -286,13 +286,13 @@ function Panel({ title, note, link, flush, children }) {
     <Card>
       <CardHead className="items-center px-3.5 py-2 sm:px-3.5">
         <div className="min-w-0">
-          <CardTitle className="text-[12.5px]">{title}</CardTitle>
+          <CardTitle className="text-[12px]">{title}</CardTitle>
           {note && <CardNote className="text-[11.5px]">{note}</CardNote>}
         </div>
         {link && (
           <Link
             href={link.href}
-            className="whitespace-nowrap text-[12px] font-semibold text-brand-dark underline-offset-2 hover:underline"
+            className="whitespace-nowrap text-[11.5px] font-semibold text-brand-dark underline-offset-2 hover:underline"
           >
             {link.label} →
           </Link>
@@ -304,7 +304,7 @@ function Panel({ title, note, link, flush, children }) {
 }
 
 const None = ({ children }) => (
-  <p className="py-4 text-center text-[12px] text-ink-muted">{children}</p>
+  <p className="py-4 text-center text-[11.5px] text-ink-muted">{children}</p>
 );
 
 /** How tall the tallest bar is. A definite height, so a % resolves. */
@@ -329,10 +329,10 @@ function Trajectory({ days, average }) {
   return (
     <>
       <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <strong className="tnum font-display text-[16px] font-extrabold leading-none text-ink">
+        <strong className="tnum font-display text-[15px] font-extrabold leading-none text-ink">
           {money(chosen.total)}
         </strong>
-        <span className="text-[12px] text-ink-muted">
+        <span className="text-[11.5px] text-ink-muted">
           {dayName(chosen.day)} {String(chosen.day).slice(5)} · {chosen.receipts} verified{' '}
           {chosen.receipts === 1 ? 'receipt' : 'receipts'}
         </span>
@@ -371,7 +371,7 @@ function Trajectory({ days, average }) {
               <span
                 className={cn(
                   'w-full rounded-md transition-[height,background-color] duration-200 ease-out',
-                  i === active ? 'bg-[#92D050]' : 'bg-[#92D050]/35 group-hover:bg-[#92D050]/60'
+                  i === active ? 'bg-fill' : 'bg-fill/35 group-hover:bg-fill/60'
                 )}
                 style={{ height: Math.max(4, Math.round((d.total / max) * TRACK)) }}
               />
@@ -415,7 +415,7 @@ function Funnel({ byStage }) {
                 {i + 1}
               </span>
               <span className="w-[104px] shrink-0">
-                <b className="block text-[12px] font-semibold text-ink">{s.label}</b>
+                <b className="block text-[11.5px] font-semibold text-ink">{s.label}</b>
               </span>
               <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-sunk">
                 <span
@@ -428,7 +428,7 @@ function Funnel({ byStage }) {
                   style={{ width: `${Math.max(3, (n / max) * 100)}%` }}
                 />
               </span>
-              <span className="tnum w-7 shrink-0 text-right text-[13px] font-bold text-ink">{n}</span>
+              <span className="tnum w-7 shrink-0 text-right text-[12.5px] font-bold text-ink">{n}</span>
             </Link>
           </li>
         );
@@ -461,7 +461,7 @@ function Mix({ byMethod }) {
 
       <ul className="mt-2.5 space-y-1.5">
         {parts.map((p) => (
-          <li key={p.key} className="flex items-center gap-2.5 text-[12.5px]">
+          <li key={p.key} className="flex items-center gap-2.5 text-[12px]">
             <span className="size-2.5 shrink-0 rounded-full ring-2 ring-surface" style={{ background: p.colour, boxShadow: `0 0 0 3px color-mix(in srgb, ${p.colour} 22%, transparent)` }} />
             <span className="flex-1 text-ink-2">{p.label}</span>
             <span className="tnum text-ink-muted">{Math.round((p.value / total) * 100)}%</span>
@@ -481,7 +481,7 @@ function Sellers({ rows }) {
   return (
     <ul className="space-y-1.5">
       {rows.map((r) => (
-        <li key={r.product_id} className="flex items-center gap-2.5 text-[12px]">
+        <li key={r.product_id} className="flex items-center gap-2.5 text-[11.5px]">
           <span className="w-[116px] shrink-0 truncate text-ink-2" title={r.product_name}>
             {r.product_name}
           </span>
@@ -506,7 +506,7 @@ function Latest({ rows }) {
         <li key={o.id}>
           <Link
             href={`/manager/orders/${o.id}`}
-            className="block rounded-lg px-2 py-1.5 text-[12px] transition-colors duration-150 hover:bg-surface-2"
+            className="block rounded-lg px-2 py-1.5 text-[11.5px] transition-colors duration-150 hover:bg-surface-2"
           >
             <span className="flex items-baseline justify-between gap-3">
               <span className="tnum font-bold text-ink">{o.order_no}</span>
@@ -528,11 +528,11 @@ function Latest({ rows }) {
 function ConsoleSkeleton() {
   return (
     <>
-      <h1 className="mb-5 text-[22px] text-ink">The shop today</h1>
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:gap-4 xl:grid-cols-5">
+      <h1 className="mb-4 text-[20px] text-ink">The shop today</h1>
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:gap-3 xl:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className={i === 0 ? 'col-span-2 h-[150px] rounded-2xl sm:col-span-1' : 'h-[150px] rounded-2xl'} />)}
       </div>
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-3 xl:grid-cols-2">
         <Skeleton className="h-[250px]" />
         <Skeleton className="h-[250px]" />
       </div>

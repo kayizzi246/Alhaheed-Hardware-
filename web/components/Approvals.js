@@ -123,44 +123,44 @@ function Request({ a, busy, onApprove, onRefuse }) {
     <Card className={cn(a.status === 'pending' && 'ring-1 ring-warn/30')}>
       <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
         <span className="rounded-full bg-surface-sunk px-2 py-0.5 text-[11px] font-semibold text-ink-muted">{KIND[a.kind] || a.kind}</span>
-        <b className="text-[14px] text-ink">{a.partyName}</b>
-        {a.orderNo && <span className="text-[12px] text-ink-muted">{a.orderNo}</span>}
+        <b className="text-[13.5px] text-ink">{a.partyName}</b>
+        {a.orderNo && <span className="text-[11.5px] text-ink-muted">{a.orderNo}</span>}
         <span className="ml-auto"><Pill s={a.status} /></span>
       </div>
-      <div className="space-y-3 p-4">
+      <div className="space-y-3 p-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <span className="block text-[11.5px] text-ink-muted">{a.kind === 'credit_sale' ? 'To go on the loan' : 'To pay'}</span>
-            <b className="tnum font-display text-[24px] font-extrabold text-ink">{money(a.amount)}</b>
+            <b className="tnum font-display text-[22px] font-extrabold text-ink">{money(a.amount)}</b>
             {a.kind === 'credit_sale' && a.paidNow > 0 && (
-              <span className="block text-[12px] text-ink-2">Order {money(a.total)} · {money(a.paidNow)} paid now</span>
+              <span className="block text-[11.5px] text-ink-2">Order {money(a.total)} · {money(a.paidNow)} paid now</span>
             )}
           </div>
-          <div className="text-right text-[12px] text-ink-muted">
+          <div className="text-right text-[11.5px] text-ink-muted">
             Asked by <b className="text-ink">{a.requestedBy}</b><br />{when(a.requestedAt)}
           </div>
         </div>
 
         {cu && (
           <>
-            <div className="grid grid-cols-2 gap-2 rounded-lg bg-surface-2 p-3 text-[12px] sm:grid-cols-4">
-              <div><span className="block text-ink-muted">Owes now</span><b className="tnum text-[14px] text-ink">{money(cu.owed)}</b></div>
-              <div><span className="block text-ink-muted">Limit</span><b className="tnum text-[14px] text-ink">{money(cu.limit)}</b></div>
-              <div><span className="block text-ink-muted">Late</span><b className={cn('tnum text-[14px]', cu.overdue ? 'text-bad' : 'text-ok')}>{cu.overdue ? money(cu.overdue) : 'Nothing'}</b></div>
-              <div><span className="block text-ink-muted">After this</span><b className={cn('tnum text-[14px]', over ? 'text-bad' : 'text-ink')}>{money(cu.after)}</b></div>
+            <div className="grid grid-cols-2 gap-2 rounded-lg bg-surface-2 p-3 text-[11.5px] sm:grid-cols-4">
+              <div><span className="block text-ink-muted">Owes now</span><b className="tnum text-[13.5px] text-ink">{money(cu.owed)}</b></div>
+              <div><span className="block text-ink-muted">Limit</span><b className="tnum text-[13.5px] text-ink">{money(cu.limit)}</b></div>
+              <div><span className="block text-ink-muted">Late</span><b className={cn('tnum text-[13.5px]', cu.overdue ? 'text-bad' : 'text-ok')}>{cu.overdue ? money(cu.overdue) : 'Nothing'}</b></div>
+              <div><span className="block text-ink-muted">After this</span><b className={cn('tnum text-[13.5px]', over ? 'text-bad' : 'text-ink')}>{money(cu.after)}</b></div>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-line">
-              <div className={cn('h-full rounded-full', over ? 'bg-bad' : cu.after > cu.limit * 0.8 ? 'bg-warn' : 'bg-[#92D050]')} style={{ width: `${Math.min(100, cu.limit ? (cu.after / cu.limit) * 100 : 100)}%` }} />
+              <div className={cn('h-full rounded-full', over ? 'bg-bad' : cu.after > cu.limit * 0.8 ? 'bg-warn' : 'bg-fill')} style={{ width: `${Math.min(100, cu.limit ? (cu.after / cu.limit) * 100 : 100)}%` }} />
             </div>
             {(over || cu.overdue > 0) && (
-              <p className="rounded-lg bg-bad-bg px-3 py-2 text-[12.5px] font-semibold text-bad">
+              <p className="rounded-lg bg-bad-bg px-3 py-2 text-[12px] font-semibold text-bad">
                 {[over && `This goes ${money(cu.after - cu.limit)} over the limit.`, cu.overdue > 0 && `${money(cu.overdue)} is already late (oldest bill ${cu.oldestDays} days).`].filter(Boolean).join(' ')}
               </p>
             )}
             <div>
-              <p className="mb-1 text-[12px] font-semibold text-ink-2">How they have paid · {money(a.paidIn90 || 0)} paid in the last 90 days</p>
-              {!list(a.history).length ? <p className="text-[12px] text-ink-muted">No loan payments or sales yet.</p> : (
-                <ul className="divide-y divide-line rounded-lg border border-line text-[12px]">
+              <p className="mb-1 text-[11.5px] font-semibold text-ink-2">How they have paid · {money(a.paidIn90 || 0)} paid in the last 90 days</p>
+              {!list(a.history).length ? <p className="text-[11.5px] text-ink-muted">No loan payments or sales yet.</p> : (
+                <ul className="divide-y divide-line rounded-lg border border-line text-[11.5px]">
                   {a.history.map((l) => (
                     <li key={l.id} className="flex justify-between gap-3 px-3 py-1.5">
                       <span className="text-ink-2">{day(l.date)} · {l.what}{l.ref ? ` · ${l.ref}` : ''}</span>
@@ -173,11 +173,11 @@ function Request({ a, busy, onApprove, onRefuse }) {
           </>
         )}
         {a.kind === 'supplier_payment' && (
-          <p className="text-[12.5px] text-ink-2">By {a.method}{a.ref ? ` · ${a.ref}` : ''}</p>
+          <p className="text-[12px] text-ink-2">By {a.method}{a.ref ? ` · ${a.ref}` : ''}</p>
         )}
 
         {a.status !== 'pending' && (
-          <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">
+          <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12px] text-ink-2">
             {a.status === 'withdrawn' ? 'The customer paid another way.' : `${a.status === 'approved' ? 'Approved' : 'Refused'} by ${a.decidedBy}, ${when(a.decidedAt)}.`}
             {a.note ? ` “${a.note}”` : ''}{a.receipt ? ` Receipt ${a.receipt}.` : ''}
           </p>
@@ -189,7 +189,7 @@ function Request({ a, busy, onApprove, onRefuse }) {
             <Button className="flex-[2]" disabled={busy} onClick={onApprove}>{busy ? 'Saving…' : `Approve ${money(a.amount)}`}</Button>
           </div>
         ) : (
-          <p className="text-[12px] text-ink-muted">{a.mine ? 'You asked for this. The owner decides it.' : 'Above what you may approve. The owner decides it.'}</p>
+          <p className="text-[11.5px] text-ink-muted">{a.mine ? 'You asked for this. The owner decides it.' : 'Above what you may approve. The owner decides it.'}</p>
         ))}
       </div>
     </Card>
@@ -241,10 +241,10 @@ function Rules() {
         <CardTitle>Who may do what</CardTitle>
         {p.canEdit && <Button size="sm" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save rules'}</Button>}
       </CardHead>
-      <div className="space-y-3 p-4">
+      <div className="space-y-3 p-3">
         <Alert>{error}</Alert>
         {saved && <Alert kind="ok" onDone={() => setSaved('')}>{saved}</Alert>}
-        <p className="text-[12.5px] text-ink-2">
+        <p className="text-[12px] text-ink-2">
           0 means always ask. A loan is only finished without asking when it is under the amount <b>and</b> within the customer&apos;s own limit.
           {!p.owners.length && ' No owner is named yet, so every manager counts as owner.'}
         </p>
@@ -267,7 +267,7 @@ function Rules() {
         <Field label="Supplier payments above this need the owner (UGX)" hint="For managers who are not the owner. 0 means every supplier payment they make needs you.">
           <Input className="tnum w-[200px]" inputMode="numeric" disabled={!p.canEdit} value={num(p.supplierPayLimit)} placeholder="0" onChange={(e) => setP((x) => ({ ...x, supplierPayLimit: Number(num(e.target.value)) || 0 }))} />
         </Field>
-        {!p.canEdit && <p className="text-[12px] text-ink-muted">Only the owner changes these.</p>}
+        {!p.canEdit && <p className="text-[11.5px] text-ink-muted">Only the owner changes these.</p>}
       </div>
     </Card>
   );
@@ -282,12 +282,12 @@ export function ApprovalsCard() {
   return (
     <section className="mb-3 overflow-hidden rounded-xl border border-warn/40 bg-warn-bg/40">
       <div className="flex items-center justify-between border-b border-warn/30 px-3.5 py-2">
-        <h2 className="text-[13.5px] font-bold text-ink">Waiting for your approval · {rows.length}</h2>
-        <Link href="/manager/approvals" className="text-[12.5px] font-semibold text-brand-dark hover:underline">Decide →</Link>
+        <h2 className="text-[13px] font-bold text-ink">Waiting for your approval · {rows.length}</h2>
+        <Link href="/manager/approvals" className="text-[12px] font-semibold text-brand-dark hover:underline">Decide →</Link>
       </div>
       <ul className="divide-y divide-warn/20">
         {rows.slice(0, 4).map((a) => (
-          <li key={a.id} className="flex items-center gap-3 px-3.5 py-2 text-[12.5px]">
+          <li key={a.id} className="flex items-center gap-3 px-3.5 py-2 text-[12px]">
             <span className="min-w-0 flex-1 truncate text-ink-2"><b className="text-ink">{a.partyName}</b> · {KIND[a.kind]} · asked by {a.requestedBy}</span>
             {a.customer && a.customer.after > a.customer.limit && <span className="rounded-full bg-bad-bg px-2 py-0.5 text-[10.5px] font-bold text-bad">Over limit</span>}
             <b className="tnum text-ink">{money(a.amount)}</b>
