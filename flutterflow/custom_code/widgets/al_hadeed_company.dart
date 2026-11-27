@@ -1565,113 +1565,7 @@ class _AlHadeedCompanyState extends State<AlHadeedCompany> {
         onAction: _openSignIn,
       );
     }
-
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 28, 16, 24),
-      children: [
-        Center(
-          child: Container(
-            width: 72,
-            height: 72,
-            decoration:
-                const BoxDecoration(color: _brandPale, shape: BoxShape.circle),
-            alignment: Alignment.center,
-            child: Text(
-              s.fullName.isEmpty
-                  ? '?'
-                  : s.fullName.characters.first.toUpperCase(),
-              style: _title(30, weight: FontWeight.w800, color: _brandDark),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Center(child: Text(s.fullName, style: _title(21))),
-        const SizedBox(height: 4),
-        Center(child: Text(s.phone, style: _txt(13.5, color: _mid))),
-        const SizedBox(height: 18),
-        const _CreditCard(),
-        Container(
-          decoration: BoxDecoration(
-            color: _white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _hairline),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              _accountRow(
-                  'Account type',
-                  switch (s.accountType) {
-                    'company_owner' => 'Company owner',
-                    'company_staff' => 'Company staff',
-                    _ => 'Individual',
-                  }),
-              if (s.isCompany) _accountRow('Company', s.companyName),
-              if (s.staffRole != null)
-                _accountRow('Role at the company', s.staffRole!),
-              _accountRow(
-                'Spending limit per order',
-                s.spendingLimit == null
-                    ? 'No limit set'
-                    : _ugx(s.spendingLimit!),
-                last: true,
-              ),
-            ],
-          ),
-        ),
-        if (s.accountType == 'company_staff') ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _bluePale,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.info_outline_rounded,
-                    size: 18, color: _blue),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Every order you place is in ${s.companyName}\'s name, '
-                    'and the owner can see it. Your limit is set by them, '
-                    'not in the app.',
-                    style: _txt(13, color: _inkSoft, height: 1.45),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        const SizedBox(height: 20),
-        _Pressable(
-          scale: 0.98,
-          onTap: _openProfile,
-          child: Container(
-            height: 46,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: _white,
-              borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: _hairline),
-            ),
-            child: Text('Account & sign out',
-                style: _txt(14.5, weight: FontWeight.w600, color: _navy)),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: TextButton(
-            onPressed: () => _DeleteAccountSheet.open(context),
-            child: Text('Delete account',
-                style: _txt(13.5, weight: FontWeight.w600, color: _ember)),
-          ),
-        ),
-      ],
-    );
+    return _CustomerHome(onProfile: _openProfile);
   }
 
   Widget _accountRow(String k, String v, {bool last = false}) => Column(
@@ -3015,4 +2909,558 @@ class _CreditSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  THE CUSTOMER'S ACCOUNT PAGE
+//
+//  Who they are, their credit (what they owe, the limit, what is late,
+//  what to pay to buy more), what came in and went out this month, the
+//  latest lines, their shopping, and their details.
+// ═══════════════════════════════════════════════════════════════
+
+class _CustomerHome extends StatefulWidget {
+  const _CustomerHome({required this.onProfile});
+  final VoidCallback onProfile;
+
+  @override
+  State<_CustomerHome> createState() => _CustomerHomeState();
+}
+
+class _CustomerHomeState extends State<_CustomerHome> {
+  Map<String, dynamic>? _me;
+  Map<String, dynamic>? _credit;
+  List<Map<String, dynamic>> _orders = const [];
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    Map<String, dynamic>? me, credit;
+    var orders = const <Map<String, dynamic>>[];
+    try {
+      me = ((await _apiGet('/api/auth/me'))['user'] as Map?)?.cast<String, dynamic>();
+    } on _ApiError {/* keep what the phone knows */}
+    try {
+      credit = await _apiGet('/api/me/credit');
+    } on _ApiError {/* no credit, or an older shop */}
+    try {
+      orders = (((await _apiGet('/api/orders/mine'))['orders'] as List?) ?? const [])
+          .map((x) => (x as Map).cast<String, dynamic>())
+          .toList();
+    } on _ApiError {/* shown as nothing yet */}
+    if (!mounted) return;
+    setState(() {
+      _me = me;
+      _credit = credit;
+      _orders = orders;
+      _loaded = true;
+    });
+  }
+
+  void _openCredit() => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _CreditSheet(data: _credit!),
+      );
+
+  Widget _box({required Widget child, EdgeInsets? padding, Color? color, Color? border}) =>
+      Container(
+        width: double.infinity,
+        padding: padding ?? const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: color ?? _white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: border ?? _hairline),
+        ),
+        child: child,
+      );
+
+  Widget _heading(String t, {String? action, VoidCallback? onAction}) => Padding(
+        padding: const EdgeInsets.fromLTRB(2, 18, 2, 8),
+        child: Row(children: [
+          Text(t, style: _txt(11.5, weight: FontWeight.w800, color: _light)),
+          const Spacer(),
+          if (action != null)
+            GestureDetector(
+              onTap: onAction,
+              child: Text(action,
+                  style: _txt(12.5, weight: FontWeight.w700, color: _brand)),
+            ),
+        ]),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _Session();
+    final me = _me ?? s.user ?? const {};
+    final name = '${me['fullName'] ?? s.fullName}'.trim();
+    final initials = name.isEmpty
+        ? '?'
+        : name.split(RegExp(r'\s+')).take(2).map((w) => w.characters.first.toUpperCase()).join();
+    final a = (_credit?['account'] as Map?)?.cast<String, dynamic>();
+    final lines = ((_credit?['statement'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .toList();
+    final live = _orders
+        .where((o) => !const ['cancelled', 'rejected', 'refunded'].contains('${o['status']}'))
+        .toList();
+    final spent = live.fold<int>(0, (n, o) => n + _ci(o['total']));
+    final open = live.where((o) => '${o['status']}' != 'released').length;
+
+    return RefreshIndicator(
+      color: _brand,
+      onRefresh: _load,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+        children: [
+          // ── Who they are ───────────────────────────────────────────
+          _box(
+            child: Row(children: [
+              Container(
+                width: 54,
+                height: 54,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(color: _lime, shape: BoxShape.circle),
+                child: Text(initials,
+                    style: _title(19, weight: FontWeight.w800, color: _onLime)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name.isEmpty ? 'Customer' : name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _title(17, weight: FontWeight.w800)),
+                    const SizedBox(height: 2),
+                    Text('${me['phone'] ?? s.phone}', style: _txt(12.5, color: _mid)),
+                    if ('${me['memberSince'] ?? ''}'.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text('Customer since ${_creditDay('${me['memberSince']}')}',
+                          style: _txt(11.5, color: _light)),
+                    ],
+                  ],
+                ),
+              ),
+              _Pressable(
+                scale: 0.9,
+                onTap: widget.onProfile,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: _tile,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _hairline),
+                  ),
+                  child: const Icon(Icons.settings_outlined, size: 18, color: _mid),
+                ),
+              ),
+            ]),
+          ),
+
+          if (!_loaded)
+            const Padding(
+              padding: EdgeInsets.all(30),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: _brand)),
+            ),
+
+          // ── Credit ─────────────────────────────────────────────────
+          if (a != null) ..._creditPart(a, lines),
+
+          // ── Shopping ───────────────────────────────────────────────
+          if (_loaded) ...[
+            _heading('MY SHOPPING'),
+            Row(children: [
+              _figure('Orders', '${_orders.length}', Icons.receipt_long_outlined),
+              const SizedBox(width: 8),
+              _figure('Spent', _shortUgx(spent), Icons.payments_outlined),
+              const SizedBox(width: 8),
+              _figure('Open now', '$open', Icons.local_shipping_outlined),
+            ]),
+          ],
+
+          // ── Details ────────────────────────────────────────────────
+          _heading('MY DETAILS'),
+          _box(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: Column(children: [
+              _detail(Icons.person_outline_rounded, 'Account', switch (s.accountType) {
+                'company_owner' => 'Company owner',
+                'company_staff' => 'Company buyer',
+                _ => 'Individual',
+              }),
+              if (s.isCompany) _detail(Icons.business_rounded, 'Company', s.companyName),
+              if (s.staffRole != null) _detail(Icons.badge_outlined, 'Role', s.staffRole!),
+              _detail(Icons.account_balance_wallet_outlined, 'Limit per order',
+                  s.spendingLimit == null ? 'No limit' : _ugx(s.spendingLimit!)),
+              if ('${me['email'] ?? ''}'.isNotEmpty && !'${me['email']}'.endsWith('.invalid'))
+                _detail(Icons.mail_outline_rounded, 'Email', '${me['email']}'),
+              _detail(Icons.storefront_outlined, 'Shop', 'Al Hadeed Hardware, Kampala', last: true),
+            ]),
+          ),
+          if (s.accountType == 'company_staff') ...[
+            const SizedBox(height: 10),
+            _box(
+              color: _bluePale,
+              border: _bluePale,
+              child: Text(
+                  'Every order you place is in ${s.companyName}\'s name, and the owner can see it.',
+                  style: _txt(12.5, color: _inkSoft, height: 1.45)),
+            ),
+          ],
+
+          // ── Help ───────────────────────────────────────────────────
+          _heading('HELP'),
+          _box(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+            child: Column(children: [
+              _link(Icons.privacy_tip_outlined, 'Privacy policy',
+                  () => launchURL('https://alhaheed-hardware.vercel.app/privacy')),
+              const Divider(height: 1, color: _hairline),
+              _link(Icons.settings_outlined, 'Account and sign out', widget.onProfile),
+              const Divider(height: 1, color: _hairline),
+              _link(Icons.person_remove_outlined, 'Delete my account',
+                  () => _DeleteAccountSheet.open(context),
+                  colour: _ember),
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _creditPart(Map<String, dynamic> a, List<Map<String, dynamic>> lines) {
+    final owed = _ci(a['owed']);
+    final limit = _ci(a['limit']);
+    final late = _ci(a['overdue']);
+    final over = owed - limit;
+    final used = limit > 0 ? owed / limit : 1.0;
+    final status = '${a['status']}';
+    final stopped = status == 'hold' || status == 'closed';
+    // What to pay before anything more can go on credit.
+    final payNow = [0, late, over].reduce((x, y) => x > y ? x : y);
+    final (label, tone, pale) = stopped
+        ? ('Stopped', _ember, _emberPale)
+        : over > 0
+            ? ('Over limit', _ember, _emberPale)
+            : late > 0
+                ? ('Late', _amber, _amberPale)
+                : used >= 0.8
+                    ? ('Near limit', _amber, _amberPale)
+                    : ('Good', _green, _greenPale);
+
+    final month = DateTime.now().toIso8601String().substring(0, 7);
+    final thisMonth = lines.where((l) => '${l['date']}'.startsWith(month));
+    final bought = thisMonth.fold<int>(0, (n, l) => n + _ci(l['debit']));
+    final paid = thisMonth.fold<int>(0, (n, l) => n + _ci(l['credit']));
+
+    return [
+      _heading('MY CREDIT', action: 'Statement', onAction: _openCredit),
+      // The big card: what they owe against the limit.
+      _Pressable(
+        scale: 0.99,
+        onTap: _openCredit,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          decoration: BoxDecoration(
+            color: _navy,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: _lime.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.account_balance_wallet_rounded, size: 17, color: _lime),
+                ),
+                const SizedBox(width: 9),
+                Text('Credit account',
+                    style: _txt(13, weight: FontWeight.w700, color: _white)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(color: pale, borderRadius: BorderRadius.circular(20)),
+                  child: Text(label, style: _txt(11, weight: FontWeight.w800, color: tone)),
+                ),
+              ]),
+              const SizedBox(height: 14),
+              Text(owed < 0 ? 'Paid in advance' : 'You owe',
+                  style: _txt(12, color: _white.withOpacity(0.65))),
+              const SizedBox(height: 2),
+              Text(_ugx(owed.abs()),
+                  style: _title(28, weight: FontWeight.w800, color: _white)),
+              const SizedBox(height: 14),
+              // Used of the limit; the part past it shows red.
+              LayoutBuilder(builder: (_, c) {
+                final w = c.maxWidth;
+                final inLimit = (used.clamp(0.0, 1.0)) * w;
+                return Stack(children: [
+                  Container(
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: _white.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                  Container(
+                    width: inLimit,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: over > 0 ? _ember : (used >= 0.8 ? const Color(0xFFE0A030) : _lime),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                ]);
+              }),
+              const SizedBox(height: 7),
+              Row(children: [
+                Text('${(used * 100).clamp(0, 999).round()}% of your limit',
+                    style: _txt(11.5, color: _white.withOpacity(0.7))),
+                const Spacer(),
+                Text('Limit ${_ugx(limit)}',
+                    style: _txt(11.5, weight: FontWeight.w700, color: _white.withOpacity(0.85))),
+              ]),
+              const SizedBox(height: 14),
+              Row(children: [
+                _darkFigure('Left to use', _shortUgx(_ci(a['available'])),
+                    _ci(a['available']) > 0 ? _lime : _white.withOpacity(0.5)),
+                _darkFigure('Late', late > 0 ? _shortUgx(late) : 'Nothing',
+                    late > 0 ? const Color(0xFFFF8A80) : _lime),
+                _darkFigure('Days to pay', '${_ci(a['termsDays'])}', _white),
+              ]),
+            ],
+          ),
+        ),
+      ),
+
+      // What to do about it.
+      if (stopped) ...[
+        const SizedBox(height: 10),
+        _alert(Icons.block_rounded, _ember, _emberPale,
+            'Credit is stopped', 'You cannot buy on credit now. Please see the shop.'),
+      ] else if (payNow > 0) ...[
+        const SizedBox(height: 10),
+        _alert(
+          Icons.priority_high_rounded,
+          _ember,
+          _emberPale,
+          'Pay ${_ugx(payNow)} to buy on credit again',
+          [
+            if (over > 0) 'You are ${_ugx(over)} over your limit.',
+            if (late > 0) '${_ugx(late)} is past the ${_ci(a['termsDays'])} days.',
+            'Pay at the shop counter. You get a receipt and an SMS.',
+          ].join(' '),
+        ),
+      ] else if (a['nextDue'] != null) ...[
+        const SizedBox(height: 10),
+        _alert(Icons.event_rounded, _green, _greenPale, 'All good',
+            'Next bill is due ${_creditDay('${a['nextDue']}')}.'),
+      ],
+
+      // This month: what went on credit, what was paid.
+      const SizedBox(height: 10),
+      Row(children: [
+        Expanded(
+          child: _flow('Bought this month', 'Debit', bought, Icons.north_east_rounded, _amber, _amberPale),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _flow('Paid this month', 'Credit', paid, Icons.south_west_rounded, _green, _greenPale),
+        ),
+      ]),
+
+      // The latest lines.
+      _heading('LATEST', action: lines.length > 4 ? 'See all' : null, onAction: _openCredit),
+      _box(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        child: lines.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text('Nothing yet.', style: _txt(12.5, color: _mid)),
+              )
+            : Column(children: [
+                for (var i = 0; i < lines.length && i < 4; i++) ...[
+                  if (i > 0) const Divider(height: 1, color: _hairline),
+                  _line(lines[i]),
+                ],
+              ]),
+      ),
+    ];
+  }
+
+  Widget _darkFigure(String k, String v, Color c) => Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(k, style: _txt(10.5, color: _white.withOpacity(0.6))),
+            const SizedBox(height: 2),
+            Text(v, style: _txt(14, weight: FontWeight.w800, color: c)),
+          ],
+        ),
+      );
+
+  Widget _alert(IconData icon, Color tone, Color bg, String title, String text) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: tone.withOpacity(0.25)),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(color: tone, shape: BoxShape.circle),
+            child: Icon(icon, size: 16, color: _white),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: _txt(13.5, weight: FontWeight.w800, color: tone)),
+                const SizedBox(height: 2),
+                Text(text, style: _txt(12, color: _inkSoft, height: 1.4)),
+              ],
+            ),
+          ),
+        ]),
+      );
+
+  Widget _flow(String k, String tag, int v, IconData icon, Color tone, Color pale) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(color: pale, shape: BoxShape.circle),
+                child: Icon(icon, size: 14, color: tone),
+              ),
+              const Spacer(),
+              Text(tag, style: _txt(10.5, weight: FontWeight.w700, color: tone)),
+            ]),
+            const SizedBox(height: 8),
+            Text(_shortUgx(v), style: _title(17, weight: FontWeight.w800)),
+            Text(k, style: _txt(11.5, color: _mid)),
+          ],
+        ),
+      );
+
+  Widget _line(Map<String, dynamic> l) {
+    final paid = _ci(l['credit']) > 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(color: paid ? _greenPale : _amberPale, shape: BoxShape.circle),
+          child: Icon(paid ? Icons.south_west_rounded : Icons.north_east_rounded,
+              size: 15, color: paid ? _green : _amber),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${l['what']}', style: _txt(13, weight: FontWeight.w700, color: _ink)),
+              Text(
+                  [
+                    _creditDay('${l['date']}'),
+                    if (l['orderNo'] != null) '${l['orderNo']}',
+                  ].join(' · '),
+                  style: _txt(11, color: _mid)),
+            ],
+          ),
+        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(paid ? '-${_ugx(_ci(l['credit']))}' : '+${_ugx(_ci(l['debit']))}',
+              style: _txt(13, weight: FontWeight.w800, color: paid ? _green : _ink)),
+          Text('Owed ${_shortUgx(_ci(l['balance']))}', style: _txt(10.5, color: _light)),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _figure(String k, String v, IconData icon) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _hairline),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 17, color: _brand),
+              const SizedBox(height: 6),
+              Text(v,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _title(16, weight: FontWeight.w800)),
+              Text(k, style: _txt(11, color: _mid)),
+            ],
+          ),
+        ),
+      );
+
+  Widget _detail(IconData icon, String k, String v, {bool last = false}) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          border: last ? null : const Border(bottom: BorderSide(color: _hairline)),
+        ),
+        child: Row(children: [
+          Icon(icon, size: 17, color: _mid),
+          const SizedBox(width: 10),
+          Text(k, style: _txt(13, color: _mid)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(v,
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _txt(13, weight: FontWeight.w600, color: _ink)),
+          ),
+        ]),
+      );
+
+  Widget _link(IconData icon, String label, VoidCallback onTap, {Color colour = _ink}) => _Pressable(
+        scale: 0.98,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(children: [
+            Icon(icon, size: 18, color: colour == _ink ? _brand : colour),
+            const SizedBox(width: 10),
+            Expanded(child: Text(label, style: _txt(13.5, weight: FontWeight.w600, color: colour))),
+            const Icon(Icons.chevron_right_rounded, size: 18, color: _light),
+          ]),
+        ),
+      );
 }
