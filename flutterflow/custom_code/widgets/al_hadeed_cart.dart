@@ -1358,9 +1358,9 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
   /// Why credit cannot be used at all (paying would not help), or null.
   String? get _creditProblem {
     final c = _credit;
-    if (c == null) return 'You have no credit with the shop.';
-    if (c['status'] == 'hold') return 'Your credit is stopped. Please see the shop.';
-    if (c['status'] == 'closed') return 'Your credit account is closed.';
+    if (c == null) return 'You have no loan with the shop.';
+    if (c['status'] == 'hold') return 'Your loan is stopped. Please see the shop.';
+    if (c['status'] == 'closed') return 'Your loan account is closed.';
     return null;
   }
 
@@ -1867,10 +1867,10 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
                     _payOption(
                       credit: true,
                       icon: Icons.account_balance_wallet_outlined,
-                      title: 'Buy on credit',
+                      title: 'Take on loan',
                       line: _creditProblem ??
                           (_payFirst > 0
-                              ? 'Pay ${_ugx(_payFirst)} off your credit at the shop first, then take the goods. You can order now.'
+                              ? 'Pay ${_ugx(_payFirst)} off your loan at the shop first, then take the goods. You can order now.'
                               : '${_ugx(_n(_credit!['available']))} left. Pay within ${_n(_credit!['termsDays'])} days.'),
                       bad: _creditProblem != null,
                     ),
@@ -1882,7 +1882,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
                         text: 'You owe ${_ugx(_n(_credit!['owed']))} of your ${_ugx(_n(_credit!['limit']))} limit'
                             '${_n(_credit!['overdue']) > 0 ? ', and ${_ugx(_n(_credit!['overdue']))} is late' : ''}. '
                             'To collect or have this delivered, first pay ${_ugx(_payFirst)} at the shop. '
-                            'The cashier then puts the order on your credit.',
+                            'The cashier then puts the order on your loan.',
                       ),
                   ]),
 
@@ -2074,7 +2074,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
           Row(children: [
             const Icon(Icons.account_balance_wallet_rounded, size: 16, color: _lime),
             const SizedBox(width: 7),
-            Text('My credit', style: _txt(12.5, weight: FontWeight.w700, color: _white)),
+            Text('My loan', style: _txt(12.5, weight: FontWeight.w700, color: _white)),
             const Spacer(),
             Text(owed < 0 ? 'In advance ${_ugx(-owed)}' : 'Owe ${_ugx(owed)}',
                 style: _txt(13, weight: FontWeight.w800, color: _white)),
@@ -2266,7 +2266,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
           ),
           Row(
             children: [
-              Text(_onCredit ? 'On your credit' : 'To pay at the cashier',
+              Text(_onCredit ? 'On your loan' : 'To pay at the cashier',
                   style: _title(15)),
               const Spacer(),
               Text(_ugx(subtotal), style: _title(20, weight: FontWeight.w800)),
@@ -2372,7 +2372,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
                         style: _title(18, weight: FontWeight.w800)),
                     Text(
                       _canPlace
-                          ? '${_CartStore().count} items · ${_onCredit ? 'on credit' : 'pay at the cashier'}'
+                          ? '${_CartStore().count} items · ${_onCredit ? 'on loan' : 'pay at the cashier'}'
                           : _whatIsMissing(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -2422,7 +2422,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
   /// which field is still empty.
   String _whatIsMissing() {
     if (_overLimit) return 'Over your spending limit';
-    if (_onCredit && _creditProblem != null) return 'Credit cannot be used';
+    if (_onCredit && _creditProblem != null) return 'Loan cannot be used';
     if (_Details().phone.trim().length < 9) return 'Add your phone number';
     if (_name.text.trim().length < 2) return 'Add your name';
     if (_needsLocation && _location.text.trim().isEmpty) {
@@ -2623,7 +2623,7 @@ class _OrderPlacedSheet extends StatelessWidget {
                     children: [
                       Text(
                           order['wants_credit'] == true
-                              ? 'On your credit'
+                              ? 'On your loan'
                               : 'To pay at the cashier',
                           style: _txt(13.5, color: _inkSoft)),
                       const Spacer(),
@@ -2637,9 +2637,9 @@ class _OrderPlacedSheet extends StatelessWidget {
                   order['wants_credit'] == true
                       ? ((order['credit_pay_first'] as num? ?? 0) > 0
                           ? _step(1, 'Pay ${_ugx((order['credit_pay_first'] as num).toInt())} at the cashier first',
-                              'That brings you under your credit limit. Then the order goes on your credit.')
+                              'That brings you under your loan limit. Then the order goes on your loan.')
                           : _step(1, 'Show your order number at the cashier',
-                              'It goes on your credit. Nothing to pay now.'))
+                              'It goes on your loan. Nothing to pay now.'))
                       : _step(1, 'Pay at the cashier',
                           'Cash, mobile money or card. Quote your order number.'),
                   _step(2, 'Accounts verify the payment',

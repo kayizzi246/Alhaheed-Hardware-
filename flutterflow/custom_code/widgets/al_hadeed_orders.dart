@@ -1395,7 +1395,7 @@ class _AlHadeedOrdersState extends State<AlHadeedOrders> {
                   _Chip(
                       (o['credit_pay_first'] as num? ?? 0) > 0
                           ? 'Pay ${_shortUgx((o['credit_pay_first'] as num).toInt())} first'
-                          : 'On credit',
+                          : 'On loan',
                       bg: _amberPale,
                       fg: _amber),
                 ],
@@ -1603,7 +1603,7 @@ class _TrackingSheetState extends State<_TrackingSheet> {
                     _Chip(
                         (o['credit_pay_first'] as num? ?? 0) > 0
                             ? 'Pay ${_shortUgx((o['credit_pay_first'] as num).toInt())} first'
-                            : 'On credit',
+                            : 'On loan',
                         bg: _amberPale,
                         fg: _amber),
                     const SizedBox(width: 5),

@@ -2652,7 +2652,7 @@ class _CreditCardState extends State<_CreditCard> {
                 const Icon(Icons.account_balance_wallet_rounded,
                     size: 18, color: _onLime),
                 const SizedBox(width: 7),
-                Text('My credit',
+                Text('My loan',
                     style: _txt(13, weight: FontWeight.w700, color: _onLime)),
                 const Spacer(),
                 Text('See all',
@@ -2661,7 +2661,7 @@ class _CreditCardState extends State<_CreditCard> {
                     size: 18, color: _onLime),
               ]),
               const SizedBox(height: 8),
-              Text(owed < 0 ? 'Paid in advance' : 'You owe',
+              Text(owed < 0 ? 'Paid in advance' : 'Your loan (debit)',
                   style: _txt(11.5, color: _onLime.withOpacity(0.75))),
               Text(_ugx(owed.abs()),
                   style: _title(25, weight: FontWeight.w800, color: _onLime)),
@@ -2696,7 +2696,7 @@ class _CreditCardState extends State<_CreditCard> {
                   ),
                   child: Text(
                       late > 0
-                          ? '${_ugx(late)} is late. Please pay it to buy more on credit.'
+                          ? '${_ugx(late)} is late. Please pay it to take more on loan.'
                           : '${a['blocked']}',
                       style: _txt(12, weight: FontWeight.w600, color: _ember)),
                 ),
@@ -2764,7 +2764,7 @@ class _CreditSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('My credit', style: _title(20, weight: FontWeight.w800)),
+            Text('My loan', style: _title(20, weight: FontWeight.w800)),
             const SizedBox(height: 2),
             Text(
                 'Buy now, pay within ${_ci(a['termsDays'])} days. '
@@ -3075,7 +3075,7 @@ class _CustomerHomeState extends State<_CustomerHome> {
             ),
 
           // ── Credit ─────────────────────────────────────────────────
-          if (a != null) ..._creditPart(a, lines),
+          if (a != null) ..._creditPart(a, lines) else if (_loaded) ..._noLoan(),
 
           // ── Shopping ───────────────────────────────────────────────
           if (_loaded) ...[
@@ -3165,7 +3165,7 @@ class _CustomerHomeState extends State<_CustomerHome> {
     final paid = thisMonth.fold<int>(0, (n, l) => n + _ci(l['credit']));
 
     return [
-      _heading('MY CREDIT', action: 'Statement', onAction: _openCredit),
+      _heading('MY LOAN', action: 'Statement', onAction: _openCredit),
       // The big card: what they owe against the limit.
       _Pressable(
         scale: 0.99,
@@ -3190,7 +3190,7 @@ class _CustomerHomeState extends State<_CustomerHome> {
                   child: const Icon(Icons.account_balance_wallet_rounded, size: 17, color: _lime),
                 ),
                 const SizedBox(width: 9),
-                Text('Credit account',
+                Text('Loan account',
                     style: _txt(13, weight: FontWeight.w700, color: _white)),
                 const Spacer(),
                 Container(
@@ -3200,7 +3200,7 @@ class _CustomerHomeState extends State<_CustomerHome> {
                 ),
               ]),
               const SizedBox(height: 14),
-              Text(owed < 0 ? 'Paid in advance' : 'You owe',
+              Text(owed < 0 ? 'Paid in advance' : 'Your loan (debit)',
                   style: _txt(12, color: _white.withOpacity(0.65))),
               const SizedBox(height: 2),
               Text(_ugx(owed.abs()),
@@ -3253,14 +3253,14 @@ class _CustomerHomeState extends State<_CustomerHome> {
       if (stopped) ...[
         const SizedBox(height: 10),
         _alert(Icons.block_rounded, _ember, _emberPale,
-            'Credit is stopped', 'You cannot buy on credit now. Please see the shop.'),
+            'Loan is stopped', 'You cannot take goods on loan now. Please see the shop.'),
       ] else if (payNow > 0) ...[
         const SizedBox(height: 10),
         _alert(
           Icons.priority_high_rounded,
           _ember,
           _emberPale,
-          'Pay ${_ugx(payNow)} to buy on credit again',
+          'Pay ${_ugx(payNow)} to take more on loan',
           [
             if (over > 0) 'You are ${_ugx(over)} over your limit.',
             if (late > 0) '${_ugx(late)} is past the ${_ci(a['termsDays'])} days.',
@@ -3277,11 +3277,11 @@ class _CustomerHomeState extends State<_CustomerHome> {
       const SizedBox(height: 10),
       Row(children: [
         Expanded(
-          child: _flow('Bought this month', 'Debit', bought, Icons.north_east_rounded, _amber, _amberPale),
+          child: _flow('Taken on loan this month', 'Debit', bought, Icons.north_east_rounded, _amber, _amberPale),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _flow('Paid this month', 'Credit', paid, Icons.south_west_rounded, _green, _greenPale),
+          child: _flow('Paid back this month', 'Paid', paid, Icons.south_west_rounded, _green, _greenPale),
         ),
       ]),
 
@@ -3303,6 +3303,66 @@ class _CustomerHomeState extends State<_CustomerHome> {
       ),
     ];
   }
+
+  /// No loan open yet: the same card, at zero, and how to get one.
+  List<Widget> _noLoan() => [
+        _heading('MY LOAN'),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          decoration: BoxDecoration(
+            color: _navy,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: _lime.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.account_balance_wallet_rounded, size: 17, color: _lime),
+                ),
+                const SizedBox(width: 9),
+                Text('Loan account',
+                    style: _txt(13, weight: FontWeight.w700, color: _white)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: _white.withOpacity(0.14), borderRadius: BorderRadius.circular(20)),
+                  child: Text('Not open',
+                      style: _txt(11, weight: FontWeight.w800, color: _white)),
+                ),
+              ]),
+              const SizedBox(height: 14),
+              Text('Your loan (debit)', style: _txt(12, color: _white.withOpacity(0.65))),
+              const SizedBox(height: 2),
+              Text(_ugx(0), style: _title(28, weight: FontWeight.w800, color: _white)),
+              const SizedBox(height: 14),
+              Container(
+                height: 9,
+                decoration: BoxDecoration(
+                  color: _white.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(children: [
+                _darkFigure('Limit', 'None', _white.withOpacity(0.6)),
+                _darkFigure('Debit', _shortUgx(0), _white),
+                _darkFigure('Paid', _shortUgx(0), _lime),
+              ]),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        _alert(Icons.info_outline_rounded, _blue, _bluePale, 'No loan yet',
+            'Want to take goods now and pay later? Ask the shop to open a loan for you.'),
+      ];
 
   Widget _darkFigure(String k, String v, Color c) => Expanded(
         child: Column(

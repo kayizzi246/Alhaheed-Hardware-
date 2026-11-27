@@ -27,7 +27,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Credit {
 
 	const KINDS = array(
-		'sale'       => 'Bought on credit',
+		'sale'       => 'Taken on loan',
 		'payment'    => 'Payment',
 		'opening'    => 'Balance brought forward',
 		'adjustment' => 'Correction',
@@ -640,7 +640,7 @@ class AH_Credit {
 		) );
 		$owed = self::balance( $customer );
 		$name = get_user_by( 'id', $customer )->display_name;
-		self::tell( $customer, 'Bought on credit', sprintf( '%s: order %s, UGX %s on credit. You now owe UGX %s. Pay within %d days.', self::shop(), AH_Shape::order_no( $order ), number_format( $amount ), number_format( $owed ), $days ) );
+		self::tell( $customer, 'Taken on loan', sprintf( '%s: order %s, UGX %s on loan. You now owe UGX %s. Pay within %d days.', self::shop(), AH_Shape::order_no( $order ), number_format( $amount ), number_format( $owed ), $days ) );
 		if ( class_exists( 'AH_Push' ) ) {
 			AH_Push::send( AH_Push::desk( 'manager' ), 'Credit sale UGX ' . number_format( $amount ), sprintf( '%s · %s · now owes UGX %s', AH_Shape::order_no( $order ), $name, number_format( $owed ) ), array( 'kind' => 'credit_sale' ) );
 		}
