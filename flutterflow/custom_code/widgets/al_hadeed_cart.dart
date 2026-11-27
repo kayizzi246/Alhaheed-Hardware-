@@ -40,6 +40,8 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ═══════════════════════════════════════════════════════════════
 //  WHERE THE API LIVES
@@ -130,7 +132,8 @@ TextStyle _font(
 }) {
   final s = size * _ui * 0.92; // one size step smaller everywhere
   return TextStyle(
-    fontFamily: _isApple ? (s >= 20 ? '.SF Pro Display' : '.SF Pro Text') : null,
+    // Plus Jakarta Sans: one modern, premium face on every screen.
+    fontFamily: _face,
     fontFamilyFallback: _isApple
         ? const ['.SF UI Display', '.SF UI Text', 'Helvetica Neue']
         : null,
@@ -141,6 +144,15 @@ TextStyle _font(
     letterSpacing: s * _trackingFor(s),
   );
 }
+
+/// Loaded once by google_fonts, then cached on the phone.
+final String? _face = GoogleFonts.plusJakartaSans().fontFamily;
+
+/// Cards and rows rise into place, one after another.
+Widget _rise(Widget w, [int i = 0]) => w
+    .animate()
+    .fadeIn(duration: 280.ms, delay: (i.clamp(0, 8) * 35).ms)
+    .slideY(begin: 0.06, end: 0, duration: 320.ms, delay: (i.clamp(0, 8) * 35).ms, curve: Curves.easeOutCubic);
 
 TextStyle _title(double size,
         {FontWeight weight = FontWeight.w700, Color color = _ink}) =>
@@ -249,8 +261,9 @@ class _Glass extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [_white, _white],
+                colors: [_white.withOpacity(0.82), _white.withOpacity(0.66)],
               ),
+              boxShadow: _cardShadow,
               border: _GradientRim(
                 LinearGradient(
                   begin: Alignment.topLeft,
@@ -329,17 +342,16 @@ class _SkeletonState extends State<_Skeleton>
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _c,
-        builder: (_, __) => Container(
-          width: widget.width == 0 ? null : widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            color: Color.lerp(_tile, _hairline, _c.value),
-            borderRadius: BorderRadius.circular(widget.radius),
-          ),
+  Widget build(BuildContext context) => Container(
+        width: widget.width == 0 ? null : widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: _tile,
+          borderRadius: BorderRadius.circular(widget.radius),
         ),
-      );
+      )
+          .animate(onPlay: (c) => c.repeat())
+          .shimmer(duration: 1300.ms, color: _white.withOpacity(0.75));
 }
 
 /// A text field styled to match the tiles, with no Material underline
@@ -783,8 +795,10 @@ class _BottomBar extends StatelessWidget {
   void _go(BuildContext context, Widget page) =>
       Navigator.of(context).pushReplacement(PageRouteBuilder(
         pageBuilder: (_, __, ___) => page,
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
+        transitionDuration: const Duration(milliseconds: 180),
+        reverseTransitionDuration: const Duration(milliseconds: 140),
+        transitionsBuilder: (_, a, __, child) =>
+            FadeTransition(opacity: CurvedAnimation(parent: a, curve: Curves.easeOut), child: child),
       ));
 
   @override
@@ -812,13 +826,10 @@ class _BottomBar extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
           16, 6, 16, MediaQuery.paddingOf(context).bottom + 10),
-      child: Container(
+      child: _Glass(
+        radius: 24,
+        blur: 18,
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: _white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: _cardShadow,
-        ),
         child: Row(
           children: [
             for (final (key, label, icon, iconOn, page) in items)
@@ -909,9 +920,12 @@ class _Header extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [_lime, _lime],
+            colors: [Color(0xFFA6DD6A), _lime, Color(0xFF7FC23F)],
           ),
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(color: Color(0x2E5C8F27), blurRadius: 24, offset: Offset(0, 8)),
+          ],
         ),
         child: Stack(
           children: [
@@ -926,7 +940,7 @@ class _Header extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(colors: [
-                    _white.withOpacity(0),
+                    _white.withOpacity(0.38),
                     _white.withOpacity(0),
                   ]),
                 ),
@@ -992,7 +1006,7 @@ class _Empty extends StatelessWidget {
   final Color tone;
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => _rise(Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
@@ -1044,7 +1058,7 @@ class _Empty extends StatelessWidget {
             ],
           ),
         ),
-      );
+      ));
 }
 
 /// The shell every sheet in the app sits in: grab handle, rounded top,
@@ -1062,10 +1076,15 @@ class _Sheet extends StatelessWidget {
       // Lifts the sheet above the keyboard, or the submit button sits
       // under it and cannot be reached.
       padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: _white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        child: Container(
+        decoration: BoxDecoration(
+          color: _white.withOpacity(0.9),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(top: BorderSide(color: _white.withOpacity(0.9), width: 1.2)),
         ),
         clipBehavior: Clip.antiAlias,
         child: SingleChildScrollView(
@@ -1085,6 +1104,8 @@ class _Sheet extends StatelessWidget {
             ],
           ),
         ),
+      ),
+      ),
       ),
     );
   }
