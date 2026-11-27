@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class AH_Install {
 
 	/** Bumped when the tables change, so an upgrade re-runs dbDelta. */
-	const DB_VERSION = '1.9.1';
+	const DB_VERSION = '1.10.0';
 
 	public static function activate() {
 		self::tables();
@@ -407,6 +407,44 @@ class AH_Install {
 			created_at    DATETIME        NOT NULL,
 			PRIMARY KEY (id),
 			KEY bill_id (bill_id)
+		) {$charset};";
+
+		// Customers who may buy on credit: how much, for how long, and
+		// whether they may buy more right now.
+		$sql[] = "CREATE TABLE {$p}ah_credit_accounts (
+			customer_id   BIGINT UNSIGNED NOT NULL,
+			credit_limit  BIGINT          NOT NULL DEFAULT 0,
+			terms_days    INT             NOT NULL DEFAULT 30,
+			status        VARCHAR(16)     NOT NULL DEFAULT 'active',
+			note          TEXT            NULL,
+			opened_by     BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			opened_at     DATETIME        NOT NULL,
+			updated_at    DATETIME        NOT NULL,
+			PRIMARY KEY (customer_id),
+			KEY status (status)
+		) {$charset};";
+
+		// The credit book. A sale on credit adds (debit, plus); a payment
+		// takes off (credit, minus). What a customer owes is the sum.
+		$sql[] = "CREATE TABLE {$p}ah_credit_entries (
+			id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			customer_id   BIGINT UNSIGNED NOT NULL,
+			kind          VARCHAR(16)     NOT NULL,
+			amount        BIGINT          NOT NULL DEFAULT 0,
+			order_id      BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			method        VARCHAR(32)     NULL,
+			ref           VARCHAR(64)     NULL,
+			receipt_no    VARCHAR(32)     NULL,
+			note          TEXT            NULL,
+			due_on        DATE            NULL,
+			user_id       BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			user_name     VARCHAR(191)    NULL,
+			entry_date    DATE            NOT NULL,
+			created_at    DATETIME        NOT NULL,
+			PRIMARY KEY (id),
+			KEY customer_id (customer_id),
+			KEY order_id (order_id),
+			KEY entry_date (entry_date)
 		) {$charset};";
 
 		// One-time codes for phone login, for customers who order on the

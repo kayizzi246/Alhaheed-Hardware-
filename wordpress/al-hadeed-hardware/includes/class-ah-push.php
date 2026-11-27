@@ -150,7 +150,8 @@ class AH_Push {
 
 		switch ( $to ) {
 			case 'paid':
-				self::send( self::desk( 'manager' ), 'Sale ' . $sum, sprintf( '%s · %s', $no, $who ), $data );
+				// A credit sale tells the manager itself, with what is owed.
+				if ( 'yes' !== $order->get_meta( '_ah_on_credit' ) ) self::send( self::desk( 'manager' ), 'Sale ' . $sum, sprintf( '%s · %s', $no, $who ), $data );
 				self::send( self::desk( 'accounts' ), 'Check payment ' . $no, sprintf( '%s · %s', $who, $sum ), $data );
 				break;
 			case 'payment_verified':

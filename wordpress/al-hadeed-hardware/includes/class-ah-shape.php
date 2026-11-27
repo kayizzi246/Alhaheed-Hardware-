@@ -203,6 +203,8 @@ class AH_Shape {
 			'ordered_by_phone' => $order->get_billing_phone() ?: null,
 			'item_count'       => $order->get_item_count(),
 			'source'           => $order->get_meta( '_ah_source' ) ?: 'web',
+			'on_credit'        => 'yes' === $order->get_meta( '_ah_on_credit' ),
+			'wants_credit'     => 'yes' === $order->get_meta( '_ah_wants_credit' ),
 			'created_at'       => self::stamp( $order->get_date_created() ),
 			'updated_at'       => self::stamp( $order->get_date_modified() ),
 		);

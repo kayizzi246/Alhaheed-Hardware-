@@ -47,16 +47,19 @@ export default function ManagerConsole() {
   });
   const [error, setError] = useState('');
   const [todo, setTodo] = useState(() => peek('/api/manager/stock/control')?.todo || null);
+  const [credit, setCredit] = useState(() => peek('/api/credit') || null);
   const { hide, visible } = useDismissed();
 
   const load = useCallback(async () => {
-    const [dash, sellers, orders, stock] = await Promise.allSettled([
+    const [dash, sellers, orders, stock, owed] = await Promise.allSettled([
       api('/api/manager/dashboard'),
       api('/api/reports/best-sellers?period=weekly'),
       api('/api/orders?limit=7'),
       api('/api/manager/stock/control'),
+      api('/api/credit'),
     ]);
     if (stock.status === 'fulfilled') setTodo(list(stock.value.todo));
+    if (owed.status === 'fulfilled') setCredit(owed.value);
 
     if (dash.status === 'fulfilled') setD(dash.value);
     if (sellers.status === 'fulfilled') setBest(list(sellers.value.products).slice(0, 5));
@@ -144,6 +147,8 @@ export default function ManagerConsole() {
         <Tile icon={Icon.box()} label="Low on stock" value={String(low.length)} note={low.length ? 'buy soon' : 'all stocked'} tone={low.length ? 'bad' : 'ok'} href="/manager/stock" />
       </div>
 
+      {credit?.summary && <CreditCard c={credit} />}
+
       {/* ── Trajectory and funnel ──────────────────────────────────── */}
       <div className="mb-3 grid gap-3 xl:grid-cols-2">
         {/* Said plainly, because beside "Sales today" a chart reading
@@ -206,6 +211,50 @@ export default function ManagerConsole() {
 }
 
 /* ── Pieces ───────────────────────────────────────────────────────── */
+
+/** Customers who owe the shop: the money out on credit at a glance. */
+function CreditCard({ c }) {
+  const s = c.summary;
+  const top = list(c.accounts).filter((a) => a.owed > 0).slice(0, 4);
+  const max = Math.max(1, ...top.map((a) => a.owed));
+  const fig = (label, value, tone) => (
+    <div className="min-w-0">
+      <span className="block text-[11.5px] font-semibold text-ink-muted">{label}</span>
+      <b className={cn('tnum block truncate text-[16px] font-extrabold', tone || 'text-ink')}>{value}</b>
+    </div>
+  );
+  return (
+    <section className="mb-3 overflow-hidden rounded-xl border border-line bg-surface">
+      <div className="flex items-center justify-between border-b border-line px-3.5 py-2">
+        <h2 className="text-[13.5px] font-bold text-ink">Credit customers</h2>
+        <Link href="/manager/credit" className="text-[12.5px] font-semibold text-brand-dark hover:underline">Open credit →</Link>
+      </div>
+      <div className="grid gap-4 p-3.5 lg:grid-cols-[1.1fr_1fr]">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {fig('Owed to the shop', money(s.owed))}
+          {fig('Late', money(s.overdue), s.overdue ? 'text-bad' : 'text-ok')}
+          {fig('On credit today', money(s.soldToday))}
+          {fig('Paid in today', money(s.paidToday), 'text-ok')}
+          <p className="col-span-2 text-[12px] text-ink-muted sm:col-span-4">
+            {s.owing} owe · {s.overdueCount} late · {s.nearLimit} near their limit · {s.onHold} stopped
+          </p>
+        </div>
+        <ul className="space-y-1.5">
+          {!top.length && <li className="text-[12.5px] text-ink-muted">Nobody owes the shop.</li>}
+          {top.map((a) => (
+            <li key={a.customerId} className="flex items-center gap-2.5 text-[12.5px]">
+              <span className="w-[110px] shrink-0 truncate text-ink-2">{a.name}</span>
+              <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-sunk">
+                <span className={cn('block h-full rounded-full', a.overdue ? 'bg-bad' : 'bg-[#92D050]')} style={{ width: `${(a.owed / max) * 100}%` }} />
+              </span>
+              <span className="tnum w-[92px] shrink-0 text-right font-semibold text-ink">{shortMoney(a.owed)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
 
 /** One small figure. Small on purpose: the whole day fits on one screen. */
 function Tile({ label, value, note, hero, tone, href, icon }) {

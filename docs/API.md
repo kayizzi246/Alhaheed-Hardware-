@@ -306,3 +306,19 @@ io('http://localhost:4000', { auth: { token } });
 | `order:new` | the order | All desks |
 | `order:updated` | the order | All desks, the customer, the company owner |
 | `notification` | `{ id, title, body, orderId }` | The person or the desk |
+
+## Credit (buy now, pay later) — plugin 1.21.0
+
+| Route | Who | What |
+| --- | --- | --- |
+| `GET /credit` | cashier, accounts, manager | Every credit customer: owed, limit, left, late, ageing; totals. |
+| `GET /credit/{customerId}` | cashier, accounts, manager | One account, open bills (oldest first) and the full statement. |
+| `POST /credit/{customerId}/payment` | cashier, manager | `{ amount, method: cash\|mobile_money\|bank\|cheque\|card, ref, note }`. Receipt and cash book. |
+| `POST /manager/credit/{customerId}` | manager | Open or change: `{ limit, termsDays, status: active\|hold\|closed, note, openingBalance }`. |
+| `POST /manager/credit/{customerId}/adjust` | manager | `{ kind: adjustment\|opening\|writeoff, amount (+/-), reason }`. |
+| `GET /manager/credit/days?from&to` | manager | Per day: cash sales, credit sales, paid in, owed at the end. |
+| `GET /manager/credit/sales-report?from&to` | manager | Every line sold, cash and credit apart (the Cash and Credit Sales Detailed Report). |
+| `GET /me/credit` | the customer | Their own account, open bills and statement. |
+
+Selling on credit: `POST /cashier/orders/{id}/payment` with `method: "credit"` (and `creditOverride` for the manager).
+Refused with `ah_credit_refused` when over the limit, late or stopped. App orders may send `onCredit: true`; it is checked when placed.

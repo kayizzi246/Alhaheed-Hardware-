@@ -271,6 +271,9 @@ class AH_Sms {
 
 		switch ( $api_status ) {
 			case 'paid':
+				if ( 'yes' === $order->get_meta( '_ah_on_credit' ) ) {
+					return "{$shop}: order {$no} is on your credit account. Accounts are checking it now.";
+				}
 				return "{$shop}: payment received for order {$no}. Accounts are checking it now.";
 			case 'payment_verified':
 				return "{$shop}: payment confirmed for order {$no}. The store is preparing your goods.";

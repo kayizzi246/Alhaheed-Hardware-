@@ -64,6 +64,7 @@ class AH_Order_Delete {
 			$wpdb->delete( AH_Install::table( 'cash_book' ), array( 'order_id' => $id ) );
 			$wpdb->delete( AH_Install::table( 'overrides' ), array( 'order_id' => $id ) );
 			$wpdb->delete( AH_Install::table( 'events' ), array( 'order_id' => $id ) );
+			$wpdb->delete( AH_Install::table( 'credit_entries' ), array( 'order_id' => $id ) );
 
 			// WooCommerce must not put the stock back a second time when
 			// the order goes: the stock book is already right.

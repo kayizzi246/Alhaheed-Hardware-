@@ -433,6 +433,7 @@ class AH_Rest {
 		AH_Order_Delete::routes();
 		AH_Tracker::routes();
 		AH_Push::routes();
+		AH_Credit::routes();
 
 		// Writing to suppliers from inside the shop, instead of the
 		// cashier opening a mail app and typing it out again.
@@ -986,6 +987,18 @@ class AH_Rest {
 			$order->delete( true );
 			return self::err( 'ah_over_limit', sprintf( 'This is over your spending limit of UGX %s per order.', number_format( (int) $limit ) ), 403 );
 		}
+		// Asked to buy on credit: checked now, so the customer knows before
+		// walking to the shop. The cashier puts it on the account.
+		if ( filter_var( $req->get_param( 'onCredit' ), FILTER_VALIDATE_BOOLEAN ) ) {
+			$refused = AH_Credit::check( $order, AH_Shape::money( $order->get_total() ) );
+			if ( $refused ) {
+				$order->delete( true );
+				return $refused;
+			}
+			$order->update_meta_data( '_ah_wants_credit', 'yes' );
+			$order->save();
+		}
+
 		$company = (int) get_user_meta( $user->ID, 'ah_company_id', true );
 		if ( $company ) {
 			$order->update_meta_data( '_ah_company_id', $company );
@@ -1378,6 +1391,7 @@ class AH_Rest {
 				'amount_paid'     => $req->get_param( 'amountPaid' ),
 				'transaction_ref' => $req->get_param( 'transactionRef' ),
 				'proof_file'      => $proof,
+				'override'        => (string) $req->get_param( 'creditOverride' ),
 			),
 			$user->ID
 		);

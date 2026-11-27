@@ -1324,6 +1324,7 @@ class _AlHadeedCompanyState extends State<AlHadeedCompany> {
             parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
         children: [
+          const _CreditCard(),
           // What the owner opened the app to see.
           Row(
             children: [
@@ -1588,7 +1589,8 @@ class _AlHadeedCompanyState extends State<AlHadeedCompany> {
         Center(child: Text(s.fullName, style: _title(21))),
         const SizedBox(height: 4),
         Center(child: Text(s.phone, style: _txt(13.5, color: _mid))),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
+        const _CreditCard(),
         Container(
           decoration: BoxDecoration(
             color: _white,
@@ -2665,6 +2667,347 @@ class _SignInSheetState extends State<_SignInSheet> {
                 ),
               ),
             SizedBox(height: mq.padding.bottom + 4),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MY CREDIT
+//
+//  For a customer the shop lets buy now and pay later: how much they
+//  may owe, how much they owe, what is left, what is late, and every
+//  line, like the shop's own notebook. Shows nothing for anyone else.
+// ═══════════════════════════════════════════════════════════════
+
+String _creditDay(String? iso) {
+  if (iso == null || iso.length < 10) return '';
+  const m = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  final mo = int.tryParse(iso.substring(5, 7)) ?? 1;
+  return '${int.tryParse(iso.substring(8, 10)) ?? ''} ${m[mo - 1]} ${iso.substring(0, 4)}';
+}
+
+int _ci(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
+
+class _CreditCard extends StatefulWidget {
+  const _CreditCard();
+
+  @override
+  State<_CreditCard> createState() => _CreditCardState();
+}
+
+class _CreditCardState extends State<_CreditCard> {
+  Map<String, dynamic>? _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final r = await _apiGet('/api/me/credit');
+      if (mounted) setState(() => _data = r);
+    } on _ApiError {
+      // No credit, or an older shop: the card simply does not show.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = (_data?['account'] as Map?)?.cast<String, dynamic>();
+    if (a == null) return const SizedBox.shrink();
+    final owed = _ci(a['owed']);
+    final limit = _ci(a['limit']);
+    final left = _ci(a['available']);
+    final late = _ci(a['overdue']);
+    final used = limit > 0 ? (owed / limit).clamp(0.0, 1.0) : 1.0;
+    final barColour = late > 0 || used >= 1
+        ? _ember
+        : used >= 0.8
+            ? _amber
+            : _onLime;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: _Pressable(
+        scale: 0.98,
+        onTap: () => showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => _CreditSheet(data: _data!),
+        ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          decoration: BoxDecoration(
+            color: _lime,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                const Icon(Icons.account_balance_wallet_rounded,
+                    size: 18, color: _onLime),
+                const SizedBox(width: 7),
+                Text('My credit',
+                    style: _txt(13, weight: FontWeight.w700, color: _onLime)),
+                const Spacer(),
+                Text('See all',
+                    style: _txt(12, weight: FontWeight.w700, color: _onLime)),
+                const Icon(Icons.chevron_right_rounded,
+                    size: 18, color: _onLime),
+              ]),
+              const SizedBox(height: 8),
+              Text('You owe', style: _txt(11.5, color: _onLime.withOpacity(0.75))),
+              Text(_ugx(owed),
+                  style: _title(25, weight: FontWeight.w800, color: _onLime)),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: used,
+                  minHeight: 7,
+                  backgroundColor: _white.withOpacity(0.45),
+                  color: barColour,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(
+                  child: Text('${_ugx(left)} left to use',
+                      style: _txt(12, weight: FontWeight.w700, color: _onLime)),
+                ),
+                Text('Limit ${_shortUgx(limit)}',
+                    style: _txt(12, color: _onLime.withOpacity(0.8))),
+              ]),
+              if (late > 0 || a['blocked'] != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _white.withOpacity(0.92),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                      late > 0
+                          ? '${_ugx(late)} is late. Please pay it to buy more on credit.'
+                          : '${a['blocked']}',
+                      style: _txt(12, weight: FontWeight.w600, color: _ember)),
+                ),
+              ] else if (a['nextDue'] != null) ...[
+                const SizedBox(height: 6),
+                Text('Next bill due ${_creditDay('${a['nextDue']}')}',
+                    style: _txt(11.5, color: _onLime.withOpacity(0.8))),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The whole account: figures, bills not paid, every line, how to pay.
+class _CreditSheet extends StatelessWidget {
+  const _CreditSheet({required this.data});
+  final Map<String, dynamic> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = (data['account'] as Map).cast<String, dynamic>();
+    final bills = ((data['bills'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .toList();
+    final lines = ((data['statement'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .toList();
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+
+    Widget fig(String k, String v, {Color colour = _ink}) => Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            decoration: BoxDecoration(
+              color: _tile,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _hairline),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(k, style: _txt(10.5, color: _mid)),
+                const SizedBox(height: 2),
+                Text(v,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _txt(13, weight: FontWeight.w800, color: colour)),
+              ],
+            ),
+          ),
+        );
+
+    Widget heading(String t) => Padding(
+          padding: const EdgeInsets.only(top: 16, bottom: 6),
+          child: Text(t,
+              style: _txt(11, weight: FontWeight.w800, color: _light)),
+        );
+
+    return _Sheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+            16, 4, 16, MediaQuery.paddingOf(context).bottom + 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('My credit', style: _title(20, weight: FontWeight.w800)),
+            const SizedBox(height: 2),
+            Text(
+                'Buy now, pay within ${_ci(a['termsDays'])} days. '
+                'Up to ${_ugx(_ci(a['limit']))}.',
+                style: _txt(12.5, color: _mid)),
+            const SizedBox(height: 12),
+            Row(children: [
+              fig('You owe', _shortUgx(_ci(a['owed']))),
+              const SizedBox(width: 6),
+              fig('Left to use', _shortUgx(_ci(a['available'])),
+                  colour: _green),
+              const SizedBox(width: 6),
+              fig('Late', _ci(a['overdue']) > 0 ? _shortUgx(_ci(a['overdue'])) : 'Nothing',
+                  colour: _ci(a['overdue']) > 0 ? _ember : _green),
+            ]),
+
+            if (bills.isNotEmpty) ...[
+              heading('BILLS NOT YET PAID'),
+              for (final b in bills)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: _white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: '${b['due']}'.compareTo(today) < 0
+                            ? _ember.withOpacity(0.4)
+                            : _hairline),
+                  ),
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_creditDay('${b['date']}'),
+                              style: _txt(12.5,
+                                  weight: FontWeight.w700, color: _ink)),
+                          Text(
+                              '${b['due']}'.compareTo(today) < 0
+                                  ? 'Late since ${_creditDay('${b['due']}')}'
+                                  : 'Pay by ${_creditDay('${b['due']}')}',
+                              style: _txt(11.5,
+                                  color: '${b['due']}'.compareTo(today) < 0
+                                      ? _ember
+                                      : _mid)),
+                        ],
+                      ),
+                    ),
+                    Text(_ugx(_ci(b['left'])),
+                        style: _txt(13, weight: FontWeight.w800, color: _ink)),
+                  ]),
+                ),
+            ],
+
+            heading('EVERY LINE'),
+            Container(
+              decoration: BoxDecoration(
+                color: _white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _hairline),
+              ),
+              child: Column(children: [
+                for (var i = 0; i < lines.length; i++)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    decoration: BoxDecoration(
+                      border: i == lines.length - 1
+                          ? null
+                          : const Border(bottom: BorderSide(color: _hairline)),
+                    ),
+                    child: Row(children: [
+                      Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: _ci(lines[i]['credit']) > 0 ? _greenPale : _amberPale,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                            _ci(lines[i]['credit']) > 0
+                                ? Icons.south_west_rounded
+                                : Icons.north_east_rounded,
+                            size: 15,
+                            color: _ci(lines[i]['credit']) > 0 ? _green : _amber),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${lines[i]['what']}',
+                                style: _txt(12.5,
+                                    weight: FontWeight.w700, color: _ink)),
+                            Text(
+                                [
+                                  _creditDay('${lines[i]['date']}'),
+                                  if (lines[i]['orderNo'] != null) '${lines[i]['orderNo']}',
+                                  if (lines[i]['ref'] != null) '${lines[i]['ref']}',
+                                ].join(' · '),
+                                style: _txt(11, color: _mid)),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                              _ci(lines[i]['credit']) > 0
+                                  ? '-${_ugx(_ci(lines[i]['credit']))}'
+                                  : '+${_ugx(_ci(lines[i]['debit']))}',
+                              style: _txt(12.5,
+                                  weight: FontWeight.w800,
+                                  color: _ci(lines[i]['credit']) > 0
+                                      ? _green
+                                      : _ink)),
+                          Text('Owed ${_shortUgx(_ci(lines[i]['balance']))}',
+                              style: _txt(10.5, color: _light)),
+                        ],
+                      ),
+                    ]),
+                  ),
+              ]),
+            ),
+
+            heading('HOW TO PAY'),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _brandPale,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                  'Pay at the shop counter in cash, Mobile Money or bank. '
+                  'The cashier gives you a receipt and you get an SMS. '
+                  'Your oldest bill is paid first.',
+                  style: _txt(12.5, color: _inkSoft, height: 1.45)),
+            ),
           ],
         ),
       ),

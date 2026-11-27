@@ -168,3 +168,21 @@ export async function exportTracker({ from, to }) {
   await saveBook(buildTracker(d), name);
   return name;
 }
+
+/** One customer's credit statement. */
+export async function exportCreditStatement(customerId) {
+  const d = await api(`/api/credit/${customerId}`);
+  const { buildCreditStatement } = await import('@/lib/workbook');
+  const name = `Credit-statement-${slug(d.account.name)}-${today()}.xlsx`;
+  await saveBook(buildCreditStatement(d), name);
+  return name;
+}
+
+/** The cash and credit sales report, like the shop's own. */
+export async function exportSalesReport({ from, to }) {
+  const d = await api(`/api/manager/credit/sales-report?${new URLSearchParams({ from, to })}`);
+  const { buildSalesReport } = await import('@/lib/workbook');
+  const name = `Cash-and-credit-sales-${d.from}${d.to !== d.from ? `-to-${d.to}` : ''}.xlsx`;
+  await saveBook(buildSalesReport(d), name);
+  return name;
+}

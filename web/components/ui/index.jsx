@@ -459,7 +459,8 @@ export function Alert({ kind = 'bad', children, onDone }) {
       className={cn(
         'mb-6 animate-rise-in rounded-sm border px-4 py-3 text-[12.5px]',
         kind === 'bad' && 'border-bad/25 bg-bad-bg text-bad',
-        kind === 'ok' && 'border-ok/25 bg-ok-bg text-ok'
+        kind === 'ok' && 'border-ok/25 bg-ok-bg text-ok',
+        kind === 'warn' && 'border-warn/25 bg-warn-bg text-warn'
       )}
     >
       {children}

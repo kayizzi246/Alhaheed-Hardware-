@@ -1390,6 +1390,10 @@ class _AlHadeedOrdersState extends State<AlHadeedOrders> {
                     style: _title(15.5, weight: FontWeight.w800)),
                 const SizedBox(width: 8),
                 _Chip(_statusLabel(status), bg: bg, fg: fg),
+                if (o['on_credit'] == true || o['wants_credit'] == true) ...[
+                  const SizedBox(width: 5),
+                  const _Chip('On credit', bg: _amberPale, fg: _amber),
+                ],
                 const Spacer(),
                 Text(_ugx((o['total'] as num?)?.toInt() ?? 0),
                     style: _title(15.5, weight: FontWeight.w800)),
@@ -1590,6 +1594,10 @@ class _TrackingSheetState extends State<_TrackingSheet> {
                 children: [
                   Text('Order #${o['order_no'] ?? ''}', style: _title(20)),
                   const Spacer(),
+                  if (o['on_credit'] == true || o['wants_credit'] == true) ...[
+                    const _Chip('On credit', bg: _amberPale, fg: _amber),
+                    const SizedBox(width: 5),
+                  ],
                   _Chip(_statusLabel(status), bg: bg, fg: fg),
                 ],
               ),

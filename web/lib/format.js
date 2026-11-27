@@ -42,6 +42,7 @@ export const methodLabel = (m) =>
     bank: 'Bank transfer',
     cheque: 'Cheque',
     card: 'Card',
+    credit: 'On credit',
   })[m] || m || '';
 
 export const statusLabel = (s) =>

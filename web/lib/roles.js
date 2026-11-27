@@ -16,6 +16,7 @@ export const NAV = {
     { href: '/cashier/sale', label: 'New Sale', icon: 'box' },
     { href: '/cashier/receipts', label: 'Receipts', icon: 'receipt' },
     { href: '/cashier/customers', label: 'Customers', icon: 'people' },
+    { href: '/cashier/credit', label: 'Credit', icon: 'cash' },
     { href: '/cashier/cash-book', label: 'Cash Book', icon: 'cash' },
     { href: '/cashier/end-of-day', label: 'End of Day', icon: 'clock' },
     { href: '/cashier/expenses', label: 'Expenses', icon: 'cash' },
@@ -40,6 +41,7 @@ export const NAV = {
 
     { group: 'Shop' },
     { href: '/manager/customers', label: 'Customers', icon: 'people' },
+    { href: '/manager/credit', label: 'Credit', icon: 'cash' },
     { href: '/manager/workers', label: 'Workers & pay', icon: 'people' },
     { href: '/manager/staff', label: 'Staff logins', icon: 'user' },
     { href: '/manager/expenses', label: 'Expenses', icon: 'cash' },

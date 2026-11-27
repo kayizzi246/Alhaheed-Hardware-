@@ -491,3 +491,87 @@ export function buildTracker(d) {
 
   return book;
 }
+
+/** One customer's credit statement: every line with the balance after. */
+export function buildCreditStatement(d) {
+  const book = new ExcelJS.Workbook();
+  const a = d.account;
+  const lines = [...d.statement].reverse();
+  trackerSheet(book, 'Statement', [
+    { h: 'Date', w: 11.5, fmt: 'date', get: (r) => r.date },
+    { h: 'What', w: 24, get: (r) => r.what },
+    { h: 'Order', w: 10, get: (r) => r.orderNo || '' },
+    { h: 'Receipt / Ref', w: 14, get: (r) => r.ref || '' },
+    { h: 'Bought (Debit)', w: 15, fmt: 'money', total: true, get: (r) => r.debit || null },
+    { h: 'Paid (Credit)', w: 15, fmt: 'money', total: true, get: (r) => r.credit || null },
+    { h: 'Balance', w: 15, fmt: 'money', get: (r) => r.balance },
+    { h: 'Due', w: 11, fmt: 'date', get: (r) => r.due || null },
+    { h: 'By', w: 14, get: (r) => r.by || '' },
+    { h: 'Note', w: 30, get: (r) => r.note || '' },
+  ], lines, 1);
+  const info = book.addWorksheet('Account');
+  info.columns = [{ width: 24 }, { width: 22 }];
+  const rows = [
+    ['Customer', a.name], ['Phone', a.phone || ''], ['Limit', a.limit], ['Days to pay', a.termsDays],
+    ['Owes', a.owed], ['Left to use', a.available], ['Late', a.overdue], ['Status', a.status],
+    ['Up to 7 days', a.aging.current], ['8 to 30 days', a.aging.d30], ['31 to 60 days', a.aging.d60],
+    ['61 to 90 days', a.aging.d90], ['Over 90 days', a.aging.over90],
+  ];
+  rows.forEach(([k, v], i) => {
+    const r = info.getRow(i + 1);
+    r.getCell(1).value = k;
+    r.getCell(2).value = v;
+    r.getCell(1).font = { name: FONT, size: 11, bold: true };
+    r.getCell(1).fill = fill('FF92D050');
+    if (typeof v === 'number' && !['Days to pay'].includes(k)) r.getCell(2).numFmt = ACC;
+  });
+  return book;
+}
+
+/**
+ * The "Cash and Credit Sales Detailed Report", the way the shop's own
+ * report lays it out: cash sales, credit sales, and the grand total.
+ */
+export function buildSalesReport(d) {
+  const book = new ExcelJS.Workbook();
+  const cols = [
+    { h: 'Date', w: 11.5, fmt: 'date', get: (r) => r.date },
+    { h: 'Reference', w: 18, get: (r) => r.reference },
+    { h: 'Customer', w: 18, get: (r) => r.customer },
+    { h: 'Stock Item', w: 34, get: (r) => r.item },
+    { h: 'Qty', w: 7, fmt: 'qty', total: true, get: (r) => r.qty },
+    { h: 'Unit Price', w: 13, fmt: 'money', get: (r) => r.unitPrice },
+    { h: 'Amount', w: 15, fmt: 'money', total: true, get: (r) => r.amount },
+  ];
+  const cashTotal = d.cash.reduce((n, r) => n + r.amount, 0);
+  const creditTotal = d.credit.reduce((n, r) => n + r.amount, 0);
+
+  const sum = book.addWorksheet('Summary');
+  sum.columns = [{ width: 30 }, { width: 18 }];
+  const title = sum.getRow(1);
+  title.getCell(1).value = `Cash and Credit Sales, ${d.from === d.to ? d.from : `${d.from} to ${d.to}`}`;
+  title.getCell(1).font = { name: FONT, size: 13, bold: true };
+  const put = (n, k, v, strong) => {
+    const r = sum.getRow(n);
+    r.getCell(1).value = k;
+    r.getCell(2).value = v;
+    r.getCell(2).numFmt = ACC;
+    r.getCell(1).font = { name: FONT, size: 11, bold: !!strong };
+    r.getCell(2).font = { name: FONT, size: 11, bold: !!strong };
+    if (strong) { r.getCell(1).fill = fill('FF92D050'); r.getCell(2).fill = fill('FF92D050'); }
+  };
+  put(3, 'Total Cash Sale', cashTotal);
+  put(4, 'Total Credit Sale', creditTotal);
+  put(5, 'Grand Total', cashTotal + creditTotal, true);
+  // Credit sales by customer, like "Ben Sale" in the notebook.
+  const by = {};
+  for (const r of d.credit) by[r.customer] = (by[r.customer] || 0) + r.amount;
+  let n = 7;
+  sum.getRow(n).getCell(1).value = 'Credit sales by customer';
+  sum.getRow(n).getCell(1).font = { name: FONT, size: 11, bold: true };
+  for (const [who, v] of Object.entries(by).sort((x, y) => y[1] - x[1])) put(++n, who, v);
+
+  trackerSheet(book, 'Cash Sale', cols, d.cash, 3);
+  trackerSheet(book, 'Credit Sale', cols, d.credit, 3);
+  return book;
+}

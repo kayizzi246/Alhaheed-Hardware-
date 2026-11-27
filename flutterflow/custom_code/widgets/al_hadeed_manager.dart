@@ -1387,7 +1387,9 @@ class _AlHadeedManagerState extends State<AlHadeedManager> {
             ],
           ),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 14),
+          const _OwedCard(),
+          const SizedBox(height: 8),
           Text('ORDERS BY STAGE (LIVE)',
               style: _txt(11.5, weight: FontWeight.w700, color: _light)),
           const SizedBox(height: 10),
@@ -2123,4 +2125,110 @@ class _ProfileSheet extends StatelessWidget {
           ],
         ),
       );
+}
+
+/// Customers on credit: what is owed to the shop, what is late, and who
+/// owes the most. Shows nothing when nobody buys on credit.
+class _OwedCard extends StatefulWidget {
+  const _OwedCard();
+
+  @override
+  State<_OwedCard> createState() => _OwedCardState();
+}
+
+class _OwedCardState extends State<_OwedCard> {
+  Map<String, dynamic>? _d;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiGet('/api/credit').then((r) {
+      if (mounted) setState(() => _d = r);
+    }).catchError((_) {});
+  }
+
+  int _n(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = (_d?['summary'] as Map?)?.cast<String, dynamic>();
+    if (s == null || (_n(s['owed']) == 0 && _n(s['customers']) == 0)) {
+      return const SizedBox.shrink();
+    }
+    final top = ((_d?['accounts'] as List?) ?? const [])
+        .map((x) => (x as Map).cast<String, dynamic>())
+        .where((a) => _n(a['owed']) > 0)
+        .take(3)
+        .toList();
+    final max = top.isEmpty ? 1 : _n(top.first['owed']);
+    Widget fig(String k, String v, Color c) => Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(k, style: _txt(11, color: _mid)),
+              const SizedBox(height: 2),
+              Text(v,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _txt(14, weight: FontWeight.w800, color: c)),
+            ],
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _hairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.account_balance_wallet_outlined,
+                size: 17, color: _brand),
+            const SizedBox(width: 6),
+            Text('Credit customers', style: _title(14)),
+            const Spacer(),
+            Text('${_n(s['owing'])} owe', style: _txt(11.5, color: _mid)),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            fig('Owed to the shop', _shortUgx(_n(s['owed'])), _ink),
+            fig('Late', _shortUgx(_n(s['overdue'])),
+                _n(s['overdue']) > 0 ? _ember : _green),
+            fig('Paid in today', _shortUgx(_n(s['paidToday'])), _green),
+          ]),
+          if (top.isNotEmpty) const SizedBox(height: 10),
+          for (final a in top)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(children: [
+                SizedBox(
+                  width: 90,
+                  child: Text('${a['name']}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _txt(12, color: _inkSoft)),
+                ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: _n(a['owed']) / max,
+                      minHeight: 6,
+                      backgroundColor: _hairline,
+                      color: _n(a['overdue']) > 0 ? _ember : _lime,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(_shortUgx(_n(a['owed'])),
+                    style: _txt(12, weight: FontWeight.w700, color: _ink)),
+              ]),
+            ),
+        ],
+      ),
+    );
+  }
 }

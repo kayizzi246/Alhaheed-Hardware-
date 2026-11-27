@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CreditAccount } from '@/components/Credit';
 import { api, peek } from '@/lib/api';
 import { money, list, dateTime, statusLabel } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -697,6 +698,13 @@ function CustomerHistory({ customer, canSell, onClose, onSell }) {
 
   const c = data ? data.customer : customer;
   const orders = data ? list(data.orders) : [];
+  // Their credit, if any: what they owe, and a way to open it.
+  const [credit, setCredit] = useState(null);
+  const [showCredit, setShowCredit] = useState(false);
+  const loadCredit = useCallback(() => {
+    api(`/api/credit/${customer.id}`).then((r) => setCredit(r.account)).catch(() => setCredit(null));
+  }, [customer.id]);
+  useEffect(loadCredit, [loadCredit]);
 
   return (
     <Modal
@@ -720,6 +728,22 @@ function CustomerHistory({ customer, canSell, onClose, onSell }) {
               {c.address && <p><span className="text-ink-muted">Lives at </span><span className="text-ink">{c.address}</span></p>}
               {c.notes && <p className="text-ink">{c.notes}</p>}
             </div>
+          )}
+
+          {credit && credit.status !== 'none' && (
+            <button
+              type="button"
+              onClick={() => setShowCredit(true)}
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface-2 px-4 py-3 text-left hover:border-brand"
+            >
+              <span>
+                <span className="block text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">Credit</span>
+                <span className="tnum text-[15px] font-bold text-ink">Owes {money(credit.owed)}</span>
+                <span className="tnum ml-2 text-[12px] text-ink-muted">of {money(credit.limit)} · {credit.termsDays} days</span>
+                {credit.overdue > 0 && <span className="ml-2 text-[12px] font-semibold text-bad">{money(credit.overdue)} late</span>}
+              </span>
+              <span className="text-[12.5px] font-semibold text-brand-dark">Open →</span>
+            </button>
           )}
 
           <div className="grid grid-cols-3 gap-2">
@@ -753,6 +777,7 @@ function CustomerHistory({ customer, canSell, onClose, onSell }) {
           </section>
         </div>
       )}
+      {showCredit && <CreditAccount customerId={customer.id} onClose={() => setShowCredit(false)} onChanged={loadCredit} />}
     </Modal>
   );
 }

@@ -1197,6 +1197,10 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
   /// 'shop_delivery' | 'own_transport' | 'pickup'
   String _delivery = 'shop_delivery';
 
+  /// The customer's credit account, when the shop gives them one.
+  Map<String, dynamic>? _credit;
+  bool _onCredit = false;
+
   bool _ready = false;
   bool _placing = false;
   String? _error;
@@ -1225,6 +1229,14 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
 
     _name.text = _Details().fullName;
     _location.text = _Details().location;
+    if (_Session().signedIn) {
+      try {
+        final r = await _apiGet('/api/me/credit');
+        _credit = (r['account'] as Map?)?.cast<String, dynamic>();
+      } on _ApiError {
+        _credit = null;
+      }
+    }
     setState(() => _ready = true);
 
     // The number is the first thing asked for, and only once there is
@@ -1270,7 +1282,26 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
       _Details().phone.trim().length >= 9 &&
       _name.text.trim().length >= 2 &&
       (!_needsLocation || _location.text.trim().isNotEmpty) &&
-      !_overLimit;
+      !_overLimit &&
+      (!_onCredit || _creditProblem == null);
+
+  int _n(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
+
+  /// Why this order cannot go on credit, or null when it can.
+  String? get _creditProblem {
+    final c = _credit;
+    if (c == null) return 'You have no credit with the shop.';
+    if (c['status'] == 'hold') return 'Your credit is stopped. Please see the shop.';
+    if (c['status'] == 'closed') return 'Your credit account is closed.';
+    if (_n(c['overdue']) > 0) {
+      return '${_ugx(_n(c['overdue']))} is late. Pay it first to buy on credit.';
+    }
+    final left = _n(c['available']);
+    if (_CartStore().subtotal > left) {
+      return 'Only ${_ugx(left)} of credit is left. Remove something, or pay at the cashier.';
+    }
+    return null;
+  }
 
   /// A company's staff member can be given a ceiling per order. The
   /// server enforces it; this is only so the ceiling is visible *before*
@@ -1302,6 +1333,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
           'location': _location.text.trim(),
         'phone': _Details().phone.trim(),
         'fullName': _name.text.trim(),
+        if (_onCredit) 'onCredit': true,
       });
       final order = (r['order'] as Map).cast<String, dynamic>();
       final smsSent = r['smsSent'] != false;
@@ -1524,6 +1556,25 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
                 style: _txt(12, color: _light, height: 1.45),
               ),
 
+              if (_credit != null && _credit!['status'] != 'none') ...[
+                const SizedBox(height: 16),
+                _label('HOW YOU PAY'),
+                const SizedBox(height: 10),
+                _payOption(
+                  credit: false,
+                  icon: Icons.payments_outlined,
+                  title: 'Pay at the cashier',
+                  line: 'Cash, Mobile Money or card at the counter.',
+                ),
+                _payOption(
+                  credit: true,
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Buy on credit',
+                  line: _creditProblem ??
+                      '${_ugx(_n(_credit!['available']))} left. Pay within ${_n(_credit!['termsDays'])} days.',
+                  bad: _creditProblem != null,
+                ),
+              ],
               const SizedBox(height: 20),
               _totals(),
 
@@ -1690,6 +1741,65 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
     );
   }
 
+  Widget _payOption({
+    required bool credit,
+    required IconData icon,
+    required String title,
+    required String line,
+    bool bad = false,
+  }) {
+    final on = _onCredit == credit;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: _Pressable(
+        scale: 0.99,
+        onTap: () => setState(() => _onCredit = credit),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: on ? _brandPale : _white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: on ? _brand : _hairline),
+          ),
+          child: Row(children: [
+            Icon(icon, size: 21, color: on ? _brandDark : _mid),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: _txt(14,
+                          weight: FontWeight.w600,
+                          color: on ? _brandDark : _ink)),
+                  const SizedBox(height: 2),
+                  Text(line,
+                      style: _txt(12,
+                          color: bad ? _ember : _mid,
+                          weight: bad ? FontWeight.w600 : FontWeight.w400,
+                          height: 1.35)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: on ? _brand : _white,
+                border: Border.all(color: on ? _brand : _hairline, width: 2),
+              ),
+              child: on
+                  ? const Icon(Icons.check_rounded, size: 12, color: _white)
+                  : null,
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Widget _cartLine(Map<String, dynamic> line) {
     final id = line['productId'] as int;
     final price = line['price'] as int;
@@ -1797,7 +1907,8 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
           ),
           Row(
             children: [
-              Text('To pay at the cashier', style: _title(15)),
+              Text(_onCredit ? 'On your credit' : 'To pay at the cashier',
+                  style: _title(15)),
               const Spacer(),
               Text(_ugx(subtotal), style: _title(20, weight: FontWeight.w800)),
             ],
@@ -1866,7 +1977,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
                         style: _title(18, weight: FontWeight.w800)),
                     Text(
                       _canPlace
-                          ? '${_CartStore().count} items · pay at the cashier'
+                          ? '${_CartStore().count} items · ${_onCredit ? 'on credit' : 'pay at the cashier'}'
                           : _whatIsMissing(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1916,6 +2027,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
   /// which field is still empty.
   String _whatIsMissing() {
     if (_overLimit) return 'Over your spending limit';
+    if (_onCredit && _creditProblem != null) return 'Credit cannot cover this';
     if (_Details().phone.trim().length < 9) return 'Add your phone number';
     if (_name.text.trim().length < 2) return 'Add your name';
     if (_needsLocation && _location.text.trim().isEmpty) {
@@ -2113,7 +2225,10 @@ class _OrderPlacedSheet extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text('To pay at the cashier',
+                      Text(
+                          order['wants_credit'] == true
+                              ? 'On your credit'
+                              : 'To pay at the cashier',
                           style: _txt(13.5, color: _inkSoft)),
                       const Spacer(),
                       Text(_ugx((order['total'] as num?)?.toInt() ?? 0),
@@ -2123,8 +2238,11 @@ class _OrderPlacedSheet extends StatelessWidget {
                   const SizedBox(height: 10),
                   const Divider(height: 1, thickness: 1, color: _hairline),
                   const SizedBox(height: 12),
-                  _step(1, 'Pay at the cashier',
-                      'Cash, mobile money or card. Quote your order number.'),
+                  order['wants_credit'] == true
+                      ? _step(1, 'Show your order number at the cashier',
+                          'It goes on your credit. Nothing to pay now.')
+                      : _step(1, 'Pay at the cashier',
+                          'Cash, mobile money or card. Quote your order number.'),
                   _step(2, 'Accounts verify the payment',
                       'Usually a minute or two.'),
                   _step(

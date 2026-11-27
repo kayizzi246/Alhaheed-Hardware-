@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, upload } from '@/lib/api';
+import { api, upload, getUser } from '@/lib/api';
 import { readPaymentText, normaliseRef } from '@/lib/txref';
 import { readImageText, shrinkImage } from '@/lib/ocr';
 import { money } from '@/lib/format';
@@ -24,6 +24,32 @@ const METHODS = [
 
 export default function ReceivePayment({ order, onClose, onDone }) {
   const [method, setMethod] = useState('cash');
+  // The customer's credit account, if they have one: then "On credit"
+  // is a way to pay, within the limit.
+  const [credit, setCredit] = useState(null);
+  const [override, setOverride] = useState('');
+  const isManager = getUser()?.role === 'manager';
+  useEffect(() => {
+    if (!order.customer_id) return;
+    api(`/api/credit/${order.customer_id}`)
+      .then((r) => {
+        const a = r.account;
+        if (a && a.status !== 'none') {
+          setCredit(a);
+          if (order.wants_credit) setMethod('credit');
+        }
+      })
+      .catch(() => {});
+  }, [order.customer_id, order.wants_credit]);
+  const onCredit = method === 'credit';
+  const after = credit ? credit.owed + order.total : 0;
+  // The same rules the server applies, said before Confirm is pressed.
+  const blocked = !credit ? null
+    : credit.status === 'hold' ? 'Credit is stopped for this customer.'
+    : credit.status === 'closed' ? 'This credit account is closed.'
+    : credit.overdue > 0 ? `${money(credit.overdue)} is past the ${credit.termsDays} days to pay. Pay that first.`
+    : after > credit.limit ? `This would make ${money(after)} owed. The limit is ${money(credit.limit)}. Only ${money(Math.max(0, credit.limit - credit.owed))} is left.`
+    : null;
   const [amount, setAmount] = useState(String(order.total));
   const [ref, setRef] = useState('');
   const [error, setError] = useState('');
@@ -40,7 +66,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
 
   const paid = Number(amount || 0);
   const change = paid - order.total;
-  const needsRef = method !== 'cash';
+  const needsRef = method !== 'cash' && method !== 'credit';
 
   // The thumbnail's URL is let go of when the picture changes or the
   // box closes, or every attached picture stays in memory for the day.
@@ -117,6 +143,14 @@ export default function ReceivePayment({ order, onClose, onDone }) {
     setError('');
     setBusy(true);
     try {
+      if (onCredit) {
+        const res = await api(`/api/cashier/orders/${order.id}/payment`, {
+          method: 'POST',
+          body: { method: 'credit', creditOverride: blocked ? override.trim() : '' },
+        });
+        onDone(res.order?.payment?.receipt_no || '');
+        return;
+      }
       const fields = {
         method,
         amountPaid: String(Math.trunc(paid)),
@@ -162,9 +196,11 @@ export default function ReceivePayment({ order, onClose, onDone }) {
           <Button
             type="submit"
             form="pay"
-            disabled={busy || reading !== null || paid < order.total || (needsRef && (!normaliseRef(ref) || dupe))}
+            disabled={onCredit
+              ? busy || (blocked && !(isManager && override.trim().length >= 5))
+              : busy || reading !== null || paid < order.total || (needsRef && (!normaliseRef(ref) || dupe))}
           >
-            {busy ? 'Recording…' : 'Confirm & send to Accounts'}
+            {busy ? 'Recording…' : onCredit ? 'Put on credit & send to Accounts' : 'Confirm & send to Accounts'}
           </Button>
         </>
       }
@@ -182,8 +218,45 @@ export default function ReceivePayment({ order, onClose, onDone }) {
         </div>
 
         <Field label="How did they pay?">
-          <Segmented label="Payment method" value={method} onChange={setMethod} options={METHODS} />
+          <Segmented
+            label="Payment method"
+            value={method}
+            onChange={setMethod}
+            options={credit ? [...METHODS, { value: 'credit', label: 'On credit' }] : METHODS}
+          />
         </Field>
+
+        {order.wants_credit && !credit && (
+          <Alert kind="warn">The customer asked for credit, but has no credit account. Take payment, or ask the manager.</Alert>
+        )}
+
+        {onCredit && credit && (
+          <div className="space-y-3 rounded-xl border border-line bg-surface-2 p-4">
+            <div className="grid grid-cols-3 gap-3 text-[12px]">
+              <div><span className="block text-ink-muted">Owes now</span><b className="tnum text-[14px] text-ink">{money(credit.owed)}</b></div>
+              <div><span className="block text-ink-muted">Limit</span><b className="tnum text-[14px] text-ink">{money(credit.limit)}</b></div>
+              <div><span className="block text-ink-muted">After this</span><b className={cn('tnum text-[14px]', blocked ? 'text-bad' : 'text-ink')}>{money(after)}</b></div>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-line">
+              <div className={cn('h-full rounded-full', after > credit.limit ? 'bg-bad' : after > credit.limit * 0.8 ? 'bg-warn' : 'bg-[#92D050]')} style={{ width: `${Math.min(100, credit.limit ? (after / credit.limit) * 100 : 100)}%` }} />
+            </div>
+            <p className="text-[12px] text-ink-muted">To pay within {credit.termsDays} days. No money goes in the cash book now.</p>
+            {blocked && (
+              <div className="space-y-2">
+                <p className="rounded-lg bg-bad-bg px-3 py-2 text-[12.5px] font-semibold text-bad">{blocked}</p>
+                {isManager ? (
+                  <Field label="Allow it anyway? Say why" hint="Written in History with your name.">
+                    <Input value={override} onChange={(e) => setOverride(e.target.value)} placeholder="Ben pays on Friday, agreed by phone" />
+                  </Field>
+                ) : (
+                  <p className="text-[12px] text-ink-muted">Ask them to pay some first, take cash, or call the manager.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {!onCredit && (<>
 
         <Field
           label="Amount received"
@@ -311,6 +384,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
             )}
           </>
         )}
+        </>)}
       </form>
     </Modal>
   );

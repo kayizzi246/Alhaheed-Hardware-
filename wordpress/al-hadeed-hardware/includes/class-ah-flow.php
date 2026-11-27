@@ -105,7 +105,7 @@ class AH_Flow {
 		}
 
 		$method = isset( $args['method'] ) ? $args['method'] : '';
-		if ( ! in_array( $method, array( 'cash', 'mobile_money', 'card' ), true ) ) {
+		if ( ! in_array( $method, array( 'cash', 'mobile_money', 'card', 'credit' ), true ) ) {
 			return new WP_Error( 'ah_bad_method', 'Unknown payment method', array( 'status' => 400 ) );
 		}
 
@@ -143,6 +143,16 @@ class AH_Flow {
 
 		$due  = AH_Shape::money( $order->get_total() );
 		$paid = isset( $args['amount_paid'] ) ? (int) $args['amount_paid'] : $due;
+
+		// On account: no money now. Allowed only within the customer's
+		// credit limit and terms, or by the manager with a reason.
+		if ( 'credit' === $method ) {
+			$refused = AH_Credit::check( $order, $due, $args['override'] ?? '', $cashier_id );
+			if ( $refused ) {
+				return $refused;
+			}
+			$paid = $due;
+		}
 		if ( $paid < $due ) {
 			return new WP_Error(
 				'ah_short_payment',
@@ -175,8 +185,11 @@ class AH_Flow {
 		$payment_id = $wpdb->insert_id;
 
 		// The cash book is the thing the shop reconciles at close of
-		// day, so the money is entered the moment it is taken.
-		$wpdb->insert(
+		// day, so the money is entered the moment it is taken. A credit
+		// sale takes no money, so it goes on the customer's account.
+		if ( 'credit' === $method ) {
+			AH_Credit::charge( $order, $due, $receipt_no );
+		} else $wpdb->insert(
 			AH_Install::table( 'cash_book' ),
 			array(
 				'entry_date'  => current_time( 'Y-m-d' ),
@@ -192,7 +205,10 @@ class AH_Flow {
 		);
 
 		$order->update_meta_data( '_ah_receipt_no', $receipt_no );
-		$order->set_status( 'ah-paid', 'Payment received at the cashier desk.' );
+		if ( 'credit' === $method ) {
+			$order->update_meta_data( '_ah_on_credit', 'yes' );
+		}
+		$order->set_status( 'ah-paid', 'credit' === $method ? 'Sold on credit at the cashier desk.' : 'Payment received at the cashier desk.' );
 		$order->save();
 
 		self::after_move( $order, 'cashier', 'payment_received', 'pending_payment', 'paid', $cashier_id, "Receipt {$receipt_no}" );
@@ -248,7 +264,9 @@ class AH_Flow {
 
 			// The cash book entry is reversed rather than deleted: the
 			// shop needs to see that it happened and was undone.
-			if ( $payment ) {
+			if ( $payment && 'credit' === $payment['method'] ) {
+				AH_Credit::reverse_order( $order, 'Sent back by Accounts' . ( $remarks ? ': ' . $remarks : '' ) );
+			} elseif ( $payment ) {
 				$wpdb->insert(
 					AH_Install::table( 'cash_book' ),
 					array(
