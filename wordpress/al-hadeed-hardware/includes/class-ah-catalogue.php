@@ -55,6 +55,12 @@ class AH_Catalogue {
 			'callback'            => array( __CLASS__, 'upload_image' ),
 		) );
 
+		register_rest_route( $ns, '/manager/products/(?P<id>\d+)/image/remove', array(
+			'methods'             => $post,
+			'permission_callback' => $manager,
+			'callback'            => array( __CLASS__, 'remove_image' ),
+		) );
+
 		register_rest_route( $ns, '/manager/products/import', array(
 			'methods'             => $post,
 			'permission_callback' => $manager,
@@ -87,6 +93,20 @@ class AH_Catalogue {
 
 		set_post_thumbnail( $product->get_id(), $attachment_id );
 
+		return array( 'product' => AH_Shape::product( $product->get_id() ) );
+	}
+
+	/** Take a product's picture off. The file stays in the media library. */
+	public static function remove_image( $req ) {
+		$product = wc_get_product( (int) $req['id'] );
+		if ( ! $product ) {
+			return new WP_Error( 'ah_not_found', 'Product not found', array( 'status' => 404 ) );
+		}
+		$product->set_image_id( 0 );
+		$product->save();
+		delete_post_thumbnail( $product->get_id() );
+		$user = AH_Auth::current();
+		AH_Flow::log_event( 0, 'manager', 'picture_removed', null, null, $user ? $user->ID : null, $product->get_name() );
 		return array( 'product' => AH_Shape::product( $product->get_id() ) );
 	}
 

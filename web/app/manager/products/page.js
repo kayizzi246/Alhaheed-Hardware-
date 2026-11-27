@@ -6,10 +6,12 @@ import { money, list, today } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { Icon } from '@/components/icons';
 import Categories from '@/components/Categories';
+import { MoneyField, MeasureField } from '@/components/Fields';
 import { shrinkImage } from '@/lib/ocr';
 import {
   Alert, Button, Card, Checkbox, Chip, Empty, Field, Input, Loading, Modal, PageHead, Segmented, Select,
   Stat, Table, TableWrap, Td, Textarea, Th, Tr, LoadFailed } from '@/components/ui';
+import { confirmAction } from '@/components/Confirm';
 
 /**
  * Products and their stock, as the manager keeps them.
@@ -424,7 +426,7 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
     code: product?.code || '',
     category: product?.category_name || '',
     unit: product?.unit || 'pc',
-    price: product ? String(product.price) : '',
+    price: product?.price ? String(product.price) : '',
     cost: product?.cost ? String(product.cost) : '',
     stock: '',
     reorderLevel: product ? String(product.reorder_level || '') : '',
@@ -489,7 +491,9 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
     }
   }
 
-  const ok = f.name.trim().length >= 2 && price > 0 && !busy;
+  // A product may be saved with no price: the app then says "Ask for the
+  // price" and nothing sells until one is set.
+  const ok = f.name.trim().length >= 2 && !busy;
 
   return (
     <Modal
@@ -564,16 +568,16 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
 
         <Section title="Prices">
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Buy price (UGX)" hint="What the shop pays for one.">
-              <Input type="number" inputMode="numeric" min="0" value={f.cost} onChange={set('cost')} className="tnum" />
+            <Field label="Buy price" hint="What the shop pays for one.">
+              <MoneyField value={f.cost} onChange={(v) => setF((x) => ({ ...x, cost: v }))} placeholder="Not set" />
             </Field>
-            <Field label="Sale price (UGX)" hint="What a customer pays for one.">
-              <Input type="number" inputMode="numeric" min="0" value={f.price} onChange={set('price')} className="tnum font-semibold" />
+            <Field label="Sale price" hint="What a customer pays for one.">
+              <MoneyField value={f.price} onChange={(v) => setF((x) => ({ ...x, price: v }))} placeholder="No price yet" strong />
             </Field>
             <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
               <p className="text-[12px] font-semibold text-ink-muted">Profit on each</p>
               <p className={cn('tnum mt-1 text-[16px] font-bold', margin === null ? 'text-ink-faint' : margin < 0 ? 'text-bad' : 'text-ok')}>
-                {margin === null ? 'Enter both prices' : money(price - cost)}
+                {margin === null ? (price > 0 ? 'Add the buy price' : 'No price yet') : money(price - cost)}
               </p>
               {margin !== null && (
                 <p className={cn('text-[12px]', margin < 0 ? 'font-semibold text-bad' : 'text-ink-muted')}>
@@ -583,11 +587,11 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Next buy price (UGX)" hint="What you expect to pay next time.">
-              <Input type="number" inputMode="numeric" min="0" value={f.expectedCost} onChange={set('expectedCost')} className="tnum" />
+            <Field label="Next buy price" hint="What you expect to pay next time.">
+              <MoneyField value={f.expectedCost} onChange={(v) => setF((x) => ({ ...x, expectedCost: v }))} placeholder="Optional" />
             </Field>
-            <Field label="Next sale price (UGX)" hint="What you plan to sell at.">
-              <Input type="number" inputMode="numeric" min="0" value={f.expectedPrice} onChange={set('expectedPrice')} className="tnum" />
+            <Field label="Next sale price" hint="What you plan to sell at.">
+              <MoneyField value={f.expectedPrice} onChange={(v) => setF((x) => ({ ...x, expectedPrice: v }))} placeholder="Optional" />
             </Field>
             {editing && product.last_buy ? (
               <div className="rounded-xl border border-line bg-surface-2 px-4 py-3">
@@ -606,17 +610,17 @@ function ProductForm({ product, categories, suppliers, onClose, onDone, onDelete
             <Field label="Short name" hint="PL, PIPE, ANG">
               <Input value={f.itemShort} onChange={set('itemShort')} placeholder="PL" />
             </Field>
-            <Field label="Width (ft)">
-              <Input type="number" inputMode="decimal" min="0" step="any" value={f.widthFt} onChange={set('widthFt')} className="tnum" placeholder="4" />
+            <Field label="Width">
+              <MeasureField value={f.widthFt} onChange={(v) => setF((x) => ({ ...x, widthFt: v }))} unit="ft" placeholder="4" />
             </Field>
-            <Field label="Length (ft)">
-              <Input type="number" inputMode="decimal" min="0" step="any" value={f.lengthFt} onChange={set('lengthFt')} className="tnum" placeholder="8" />
+            <Field label="Length">
+              <MeasureField value={f.lengthFt} onChange={(v) => setF((x) => ({ ...x, lengthFt: v }))} unit="ft" placeholder="8" />
             </Field>
-            <Field label="Thickness (mm)">
-              <Input type="number" inputMode="decimal" min="0" step="any" value={f.thicknessMm} onChange={set('thicknessMm')} className="tnum" placeholder="1.5" />
+            <Field label="Thickness">
+              <MeasureField value={f.thicknessMm} onChange={(v) => setF((x) => ({ ...x, thicknessMm: v }))} unit="mm" placeholder="1.5" />
             </Field>
-            <Field label="Weight of one (kg)">
-              <Input type="number" inputMode="decimal" min="0" step="any" value={f.weightKg} onChange={set('weightKg')} className="tnum" placeholder="35.05" />
+            <Field label="Weight of one">
+              <MeasureField value={f.weightKg} onChange={(v) => setF((x) => ({ ...x, weightKg: v }))} unit="kg" placeholder="35.05" />
             </Field>
           </div>
           {f.widthFt && f.lengthFt && f.thicknessMm && (
@@ -1228,7 +1232,29 @@ function ProductPicture({ product }) {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
-  const shown = preview || product.picture;
+  const [gone, setGone] = useState(false);
+  const shown = preview || (gone ? null : product.picture);
+
+  async function remove() {
+    const ok = await confirmAction({
+      title: 'Remove this picture?',
+      body: 'The product stays. The app shows "No photo yet" until you add a new one.',
+      confirm: 'Remove picture',
+    });
+    if (!ok) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/api/manager/products/${product.id}/image/remove`, { method: 'POST', body: {} });
+      setPreview(null);
+      setGone(true);
+      setSaved(false);
+    } catch (err) {
+      setError(/no route/i.test(err.message) ? 'This needs the new plugin. Upload the zip to the website first.' : err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function pick(e) {
     const file = e.target.files?.[0];
@@ -1280,10 +1306,21 @@ function ProductPicture({ product }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-sm border border-line bg-surface px-3 py-2 text-[12px] font-semibold text-ink-2 transition-colors hover:border-line-firm hover:text-ink">
-          <input type="file" accept="image/*" className="sr-only" onChange={pick} disabled={busy} />
-          {busy ? 'Uploading…' : shown ? 'Replace picture' : 'Upload a picture'}
-        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-[12px] font-semibold text-ink-2 transition-colors hover:border-line-firm hover:text-ink">
+            <input type="file" accept="image/*" className="sr-only" onChange={(e) => { setGone(false); pick(e); }} disabled={busy} />
+            {busy ? 'Working…' : shown ? 'Replace picture' : 'Upload a picture'}
+          </label>
+          {shown && !busy && (
+            <button
+              type="button"
+              onClick={remove}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-2 text-[12px] font-semibold text-bad transition-colors hover:border-bad/20 hover:bg-bad-bg"
+            >
+              Remove picture
+            </button>
+          )}
+        </div>
 
         <p className={cn('mt-1.5 text-[11.5px]', error ? 'text-bad' : saved ? 'text-ok' : 'text-ink-muted')}>
           {error || (saved ? 'Saved. It shows in the app straight away.' : 'JPG, PNG or WEBP, up to 8MB.')}

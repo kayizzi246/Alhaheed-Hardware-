@@ -311,8 +311,10 @@ class AH_Stock {
 		if ( strlen( $name ) < 2 ) {
 			return self::err( 'ah_no_name', 'Give the product a name', 400 );
 		}
-		if ( $price <= 0 ) {
-			return self::err( 'ah_no_price', 'Give it a sale price', 400 );
+		// No price yet is allowed: the app shows "Ask for the price" and
+		// nothing can be sold until one is set.
+		if ( $price < 0 ) {
+			return self::err( 'ah_bad_price', 'A price cannot be below zero', 400 );
 		}
 		if ( $open < 0 ) {
 			return self::err( 'ah_bad_qty', 'Opening stock cannot be below zero', 400 );
@@ -390,10 +392,11 @@ class AH_Stock {
 
 		if ( null !== $req->get_param( 'price' ) ) {
 			$price = (int) $req->get_param( 'price' );
-			if ( $price <= 0 ) {
-				return self::err( 'ah_no_price', 'The sale price must be more than zero', 400 );
+			if ( $price < 0 ) {
+				return self::err( 'ah_bad_price', 'A price cannot be below zero', 400 );
 			}
-			$product->set_regular_price( (string) $price );
+			// Empty or 0 takes the price off: not for sale until set again.
+			$product->set_regular_price( $price > 0 ? (string) $price : '' );
 			$product->set_sale_price( '' );
 		}
 		if ( null !== $req->get_param( 'active' ) ) {

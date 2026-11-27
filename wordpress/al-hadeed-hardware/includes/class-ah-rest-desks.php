@@ -602,6 +602,7 @@ class AH_Rest_Desks {
 		$no    = $order ? AH_Shape::order_no( $order ) : 'an order';
 		$plain = array(
 			'products_deleted'     => 'Products deleted',
+			'picture_removed'      => 'Picture removed',
 			'orders_deleted'       => 'Orders deleted',
 			'customers_deleted'    => 'Customers deleted',
 			'customer_added'       => 'Customer added',
