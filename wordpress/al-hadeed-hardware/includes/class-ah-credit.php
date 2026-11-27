@@ -200,6 +200,8 @@ class AH_Credit {
 			'termsDays'   => $account ? (int) $account['terms_days'] : 0,
 			'note'        => $account ? (string) $account['note'] : '',
 			'owed'        => $owed,
+			// Money paid in advance and not yet used.
+			'advance'     => max( 0, -$owed ),
 			'available'   => max( 0, $limit - $owed ),
 			'used'        => $limit > 0 ? round( $owed / $limit * 100, 1 ) : null,
 			'overdue'     => $overdue,
@@ -212,6 +214,28 @@ class AH_Credit {
 			'canBuy'      => self::reason_not( $account, $owed, $overdue, 0 ) === null,
 			'blocked'     => self::reason_not( $account, $owed, $overdue, 0 ),
 		);
+	}
+
+	/**
+	 * How much must be paid off before $more can go on credit: enough to
+	 * clear what is late, and enough to bring the new total under the
+	 * limit. 0 when it fits now. Null when credit cannot be used at all
+	 * (no account, stopped or closed): then paying does not help.
+	 */
+	public static function to_pay_first( $customer_id, $more ) {
+		$acc = self::account( $customer_id );
+		if ( ! $acc || 'active' !== $acc['status'] ) {
+			return null;
+		}
+		$owed  = self::balance( $customer_id );
+		$today = current_time( 'Y-m-d' );
+		$late  = 0;
+		foreach ( self::open_bills( $customer_id ) as $b ) {
+			if ( $b['due'] < $today ) {
+				$late += $b['left'];
+			}
+		}
+		return max( 0, $late, $owed + (int) $more - (int) $acc['credit_limit'] );
 	}
 
 	/** Why more cannot go on this account now, in plain words, or null. */
@@ -533,10 +557,8 @@ class AH_Credit {
 		if ( 'cash' !== $method && strlen( $ref ) < 3 ) {
 			return self::err( 'ah_ref_required', 'Type the transaction or cheque number' );
 		}
-		$owed = self::balance( $id );
-		if ( $amount > $owed ) {
-			return self::err( 'ah_too_much', sprintf( 'They only owe UGX %s', number_format( max( 0, $owed ) ) ) );
-		}
+		// Paying more than is owed is allowed: the extra is held for the
+		// customer and used by their next credit order (a deposit).
 
 		$me      = AH_Auth::current();
 		$receipt = AH_Flow::next_receipt_no();
@@ -557,7 +579,9 @@ class AH_Credit {
 		AH_Flow::log_event( 0, 'cashier', 'credit_payment', null, null, $me ? $me->ID : null, sprintf( '%s · %s · UGX %s · %s', $receipt, $user->display_name, number_format( $amount ), $method ) );
 
 		$left = self::balance( $id );
-		self::tell( $id, 'Payment received', sprintf( '%s: we received UGX %s. You now owe UGX %s. Receipt %s.', self::shop(), number_format( $amount ), number_format( max( 0, $left ) ), $receipt ) );
+		self::tell( $id, 'Payment received', $left < 0
+			? sprintf( '%s: we received UGX %s. You owe nothing and have UGX %s with us for your next order. Receipt %s.', self::shop(), number_format( $amount ), number_format( -$left ), $receipt )
+			: sprintf( '%s: we received UGX %s. You now owe UGX %s. Receipt %s.', self::shop(), number_format( $amount ), number_format( $left ), $receipt ) );
 		if ( class_exists( 'AH_Push' ) ) {
 			AH_Push::send( AH_Push::desk( 'manager' ), 'Credit paid UGX ' . number_format( $amount ), sprintf( '%s · now owes UGX %s', $user->display_name, number_format( max( 0, $left ) ) ), array( 'kind' => 'credit_payment' ) );
 		}
@@ -620,6 +644,15 @@ class AH_Credit {
 		if ( class_exists( 'AH_Push' ) ) {
 			AH_Push::send( AH_Push::desk( 'manager' ), 'Credit sale UGX ' . number_format( $amount ), sprintf( '%s · %s · now owes UGX %s', AH_Shape::order_no( $order ), $name, number_format( $owed ) ), array( 'kind' => 'credit_sale' ) );
 		}
+	}
+
+	/** Tell the customer how much to pay before the goods go on credit. */
+	public static function ask_to_pay_first( $order, $amount ) {
+		self::tell(
+			(int) $order->get_customer_id(),
+			'Pay UGX ' . number_format( $amount ) . ' first',
+			sprintf( '%s: order %s waits for you. Pay UGX %s off your credit at the shop, then you can collect it or we deliver.', self::shop(), AH_Shape::order_no( $order ), number_format( $amount ) )
+		);
 	}
 
 	/** Take an order's credit back off, when it is cancelled or sent back. */

@@ -1287,20 +1287,22 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
 
   int _n(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
 
-  /// Why this order cannot go on credit, or null when it can.
+  /// Why credit cannot be used at all (paying would not help), or null.
   String? get _creditProblem {
     final c = _credit;
     if (c == null) return 'You have no credit with the shop.';
     if (c['status'] == 'hold') return 'Your credit is stopped. Please see the shop.';
     if (c['status'] == 'closed') return 'Your credit account is closed.';
-    if (_n(c['overdue']) > 0) {
-      return '${_ugx(_n(c['overdue']))} is late. Pay it first to buy on credit.';
-    }
-    final left = _n(c['available']);
-    if (_CartStore().subtotal > left) {
-      return 'Only ${_ugx(left)} of credit is left. Remove something, or pay at the cashier.';
-    }
     return null;
+  }
+
+  /// How much to pay off first so this order fits: what is late, and
+  /// enough to bring the total under the limit. 0 when it fits now.
+  int get _payFirst {
+    final c = _credit;
+    if (c == null || _creditProblem != null) return 0;
+    final over = _n(c['owed']) + _CartStore().subtotal - _n(c['limit']);
+    return [0, _n(c['overdue']), over].reduce((a, b) => a > b ? a : b);
   }
 
   /// A company's staff member can be given a ceiling per order. The
@@ -1571,9 +1573,21 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
                   icon: Icons.account_balance_wallet_outlined,
                   title: 'Buy on credit',
                   line: _creditProblem ??
-                      '${_ugx(_n(_credit!['available']))} left. Pay within ${_n(_credit!['termsDays'])} days.',
+                      (_payFirst > 0
+                          ? 'Pay ${_ugx(_payFirst)} off your credit at the shop first, then take the goods. You can order now.'
+                          : '${_ugx(_n(_credit!['available']))} left. Pay within ${_n(_credit!['termsDays'])} days.'),
                   bad: _creditProblem != null,
                 ),
+                if (_onCredit && _payFirst > 0 && _creditProblem == null)
+                  _notice(
+                    icon: Icons.info_outline_rounded,
+                    tone: _amber,
+                    bg: _amberPale,
+                    text: 'You owe ${_ugx(_n(_credit!['owed']))} of your ${_ugx(_n(_credit!['limit']))} limit'
+                        '${_n(_credit!['overdue']) > 0 ? ', and ${_ugx(_n(_credit!['overdue']))} is late' : ''}. '
+                        'To collect or have this delivered, first pay ${_ugx(_payFirst)} at the shop. '
+                        'The cashier then puts the order on your credit.',
+                  ),
               ],
               const SizedBox(height: 20),
               _totals(),
@@ -2027,7 +2041,7 @@ class _AlHadeedCartState extends State<AlHadeedCart> {
   /// which field is still empty.
   String _whatIsMissing() {
     if (_overLimit) return 'Over your spending limit';
-    if (_onCredit && _creditProblem != null) return 'Credit cannot cover this';
+    if (_onCredit && _creditProblem != null) return 'Credit cannot be used';
     if (_Details().phone.trim().length < 9) return 'Add your phone number';
     if (_name.text.trim().length < 2) return 'Add your name';
     if (_needsLocation && _location.text.trim().isEmpty) {
@@ -2239,8 +2253,11 @@ class _OrderPlacedSheet extends StatelessWidget {
                   const Divider(height: 1, thickness: 1, color: _hairline),
                   const SizedBox(height: 12),
                   order['wants_credit'] == true
-                      ? _step(1, 'Show your order number at the cashier',
-                          'It goes on your credit. Nothing to pay now.')
+                      ? ((order['credit_pay_first'] as num? ?? 0) > 0
+                          ? _step(1, 'Pay ${_ugx((order['credit_pay_first'] as num).toInt())} at the cashier first',
+                              'That brings you under your credit limit. Then the order goes on your credit.')
+                          : _step(1, 'Show your order number at the cashier',
+                              'It goes on your credit. Nothing to pay now.'))
                       : _step(1, 'Pay at the cashier',
                           'Cash, mobile money or card. Quote your order number.'),
                   _step(2, 'Accounts verify the payment',

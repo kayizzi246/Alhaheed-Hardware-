@@ -989,14 +989,21 @@ class AH_Rest {
 		}
 		// Asked to buy on credit: checked now, so the customer knows before
 		// walking to the shop. The cashier puts it on the account.
+		// Over the limit or late: the order is still taken, and the
+		// customer is told how much to pay first. Stopped or no credit:
+		// refused, because paying would not help.
 		if ( filter_var( $req->get_param( 'onCredit' ), FILTER_VALIDATE_BOOLEAN ) ) {
-			$refused = AH_Credit::check( $order, AH_Shape::money( $order->get_total() ) );
-			if ( $refused ) {
+			$first = AH_Credit::to_pay_first( $user->ID, AH_Shape::money( $order->get_total() ) );
+			if ( null === $first ) {
+				$refused = AH_Credit::check( $order, AH_Shape::money( $order->get_total() ) );
 				$order->delete( true );
-				return $refused;
+				return $refused ?: self::err( 'ah_credit_refused', 'Credit cannot be used for this order.', 409 );
 			}
 			$order->update_meta_data( '_ah_wants_credit', 'yes' );
 			$order->save();
+			if ( $first > 0 ) {
+				AH_Credit::ask_to_pay_first( $order, $first );
+			}
 		}
 
 		$company = (int) get_user_meta( $user->ID, 'ah_company_id', true );

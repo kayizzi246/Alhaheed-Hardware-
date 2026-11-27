@@ -108,7 +108,7 @@ export default function CashierQueue() {
                     {/* The order number is read across a desk, so it is
                         the biggest thing in the row after the amount. */}
                     <span className="tnum font-display text-[14.5px] font-bold text-ink">{o.order_no}</span>
-                    {o.wants_credit && <span className="ml-2 rounded-full bg-warn-bg px-2 py-0.5 text-[10.5px] font-bold text-warn">Wants credit</span>}
+                    {o.wants_credit && <span className="ml-2 rounded-full bg-warn-bg px-2 py-0.5 text-[10.5px] font-bold text-warn">{o.credit_pay_first > 0 ? `Credit · pay ${money(o.credit_pay_first)} first` : 'Wants credit'}</span>}
                     <StatusChip status={o.status}>Pending</StatusChip>
                   </div>
                   <p className="mt-0.5 truncate text-[13px] font-medium text-ink-2">

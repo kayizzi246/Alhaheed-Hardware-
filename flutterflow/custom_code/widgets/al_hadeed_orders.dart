@@ -1392,7 +1392,12 @@ class _AlHadeedOrdersState extends State<AlHadeedOrders> {
                 _Chip(_statusLabel(status), bg: bg, fg: fg),
                 if (o['on_credit'] == true || o['wants_credit'] == true) ...[
                   const SizedBox(width: 5),
-                  const _Chip('On credit', bg: _amberPale, fg: _amber),
+                  _Chip(
+                      (o['credit_pay_first'] as num? ?? 0) > 0
+                          ? 'Pay ${_shortUgx((o['credit_pay_first'] as num).toInt())} first'
+                          : 'On credit',
+                      bg: _amberPale,
+                      fg: _amber),
                 ],
                 const Spacer(),
                 Text(_ugx((o['total'] as num?)?.toInt() ?? 0),
@@ -1595,7 +1600,12 @@ class _TrackingSheetState extends State<_TrackingSheet> {
                   Text('Order #${o['order_no'] ?? ''}', style: _title(20)),
                   const Spacer(),
                   if (o['on_credit'] == true || o['wants_credit'] == true) ...[
-                    const _Chip('On credit', bg: _amberPale, fg: _amber),
+                    _Chip(
+                        (o['credit_pay_first'] as num? ?? 0) > 0
+                            ? 'Pay ${_shortUgx((o['credit_pay_first'] as num).toInt())} first'
+                            : 'On credit',
+                        bg: _amberPale,
+                        fg: _amber),
                     const SizedBox(width: 5),
                   ],
                   _Chip(_statusLabel(status), bg: bg, fg: fg),

@@ -29,9 +29,10 @@ export default function ReceivePayment({ order, onClose, onDone }) {
   const [credit, setCredit] = useState(null);
   const [override, setOverride] = useState('');
   const isManager = getUser()?.role === 'manager';
-  useEffect(() => {
-    if (!order.customer_id) return;
-    api(`/api/credit/${order.customer_id}`)
+  const [first, setFirst] = useState({ amount: '', method: 'cash', ref: '', busy: false, done: '' });
+  const loadCredit = () => {
+    if (!order.customer_id) return Promise.resolve();
+    return api(`/api/credit/${order.customer_id}`)
       .then((r) => {
         const a = r.account;
         if (a && a.status !== 'none') {
@@ -40,7 +41,28 @@ export default function ReceivePayment({ order, onClose, onDone }) {
         }
       })
       .catch(() => {});
-  }, [order.customer_id, order.wants_credit]);
+  };
+  useEffect(() => { loadCredit(); }, [order.customer_id, order.wants_credit]); // eslint-disable-line react-hooks/exhaustive-deps
+  // What they must pay off first for this to fit: what is late, and
+  // enough to bring the total under the limit.
+  const payFirst = credit && credit.status === 'active'
+    ? Math.max(0, credit.overdue, credit.owed + order.total - credit.limit)
+    : 0;
+  async function takeFirst() {
+    setFirst((x) => ({ ...x, busy: true }));
+    setError('');
+    try {
+      const r = await api(`/api/credit/${order.customer_id}/payment`, {
+        method: 'POST',
+        body: { amount: Number(first.amount), method: first.method, ref: first.ref },
+      });
+      setFirst({ amount: '', method: 'cash', ref: '', busy: false, done: `Received ${money(Number(first.amount))}, receipt ${r.receiptNo}.` });
+      await loadCredit();
+    } catch (e) {
+      setError(e.message);
+      setFirst((x) => ({ ...x, busy: false }));
+    }
+  }
   const onCredit = method === 'credit';
   const after = credit ? credit.owed + order.total : 0;
   // The same rules the server applies, said before Confirm is pressed.
@@ -241,6 +263,22 @@ export default function ReceivePayment({ order, onClose, onDone }) {
               <div className={cn('h-full rounded-full', after > credit.limit ? 'bg-bad' : after > credit.limit * 0.8 ? 'bg-warn' : 'bg-[#92D050]')} style={{ width: `${Math.min(100, credit.limit ? (after / credit.limit) * 100 : 100)}%` }} />
             </div>
             <p className="text-[12px] text-ink-muted">To pay within {credit.termsDays} days. No money goes in the cash book now.</p>
+            {first.done && <p className="rounded-lg bg-ok-bg px-3 py-2 text-[12.5px] font-semibold text-ok">{first.done}</p>}
+            {blocked && payFirst > 0 && (
+              <div className="space-y-2 rounded-lg border border-warn/30 bg-warn-bg/60 p-3">
+                <p className="text-[13px] font-bold text-ink">Take {money(payFirst)} from them first</p>
+                <p className="text-[12px] text-ink-2">That pays what is late and brings them under the limit. Then put this order on credit.</p>
+                <div className="flex flex-wrap items-end gap-2">
+                  <Input className="w-[140px]" inputMode="numeric" value={first.amount} placeholder={String(payFirst)} onChange={(e) => setFirst((x) => ({ ...x, amount: e.target.value.replace(/[^d]/g, '') }))} />
+                  <Segmented label="Paid by" value={first.method} onChange={(v) => setFirst((x) => ({ ...x, method: v }))} options={[{ value: 'cash', label: 'Cash' }, { value: 'mobile_money', label: 'MoMo' }, { value: 'bank', label: 'Bank' }]} />
+                  {first.method !== 'cash' && <Input className="w-[150px]" value={first.ref} placeholder="Transaction ID" onChange={(e) => setFirst((x) => ({ ...x, ref: e.target.value }))} />}
+                  <Button type="button" size="sm" disabled={first.busy || !(Number(first.amount) > 0) || (first.method !== 'cash' && first.ref.trim().length < 3)} onClick={takeFirst}>
+                    {first.busy ? 'Saving…' : 'Receive'}
+                  </Button>
+                  <button type="button" className="text-[12px] font-semibold text-brand hover:underline" onClick={() => setFirst((x) => ({ ...x, amount: String(payFirst) }))}>Fill {money(payFirst)}</button>
+                </div>
+              </div>
+            )}
             {blocked && (
               <div className="space-y-2">
                 <p className="rounded-lg bg-bad-bg px-3 py-2 text-[12.5px] font-semibold text-bad">{blocked}</p>

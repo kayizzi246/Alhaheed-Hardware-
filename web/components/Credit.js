@@ -345,7 +345,7 @@ export function CreditAccount({ customerId, onClose, onChanged }) {
             </div>
           )}
           <Button variant="outline" onClick={onClose}>Close</Button>
-          {a.owed > 0 && <Button onClick={() => setMode('pay')}>Take payment</Button>}
+          <Button onClick={() => setMode('pay')}>Take payment</Button>
         </>
       )}
     >
@@ -355,7 +355,7 @@ export function CreditAccount({ customerId, onClose, onChanged }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {[
-              ['Owes', money(a.owed), a.owed > a.limit ? 'text-bad' : 'text-ink'],
+              a.owed < 0 ? ['Paid in advance', money(-a.owed), 'text-ok'] : ['Owes', money(a.owed), a.owed > a.limit ? 'text-bad' : 'text-ink'],
               ['Limit', money(a.limit), 'text-ink'],
               ['Left to use', money(a.available), a.available > 0 ? 'text-ok' : 'text-bad'],
               ['Late', a.overdue ? money(a.overdue) : 'Nothing', a.overdue ? 'text-bad' : 'text-ok'],
@@ -463,9 +463,9 @@ function TakePayment({ a, onClose, onDone }) {
   return (
     <Modal
       title={`Payment from ${a.name}`}
-      description={`Owes ${money(a.owed)}. The oldest bill is paid first.`}
+      description={a.owed > 0 ? `Owes ${money(a.owed)}. The oldest bill is paid first.` : 'Owes nothing. A payment now is kept for their next credit order.'}
       onClose={onClose}
-      footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={busy || n <= 0 || n > a.owed || (needRef && ref.trim().length < 3)} onClick={go}>{busy ? 'Saving…' : `Receive ${money(n)}`}</Button></>}
+      footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={busy || n <= 0 || (needRef && ref.trim().length < 3)} onClick={go}>{busy ? 'Saving…' : `Receive ${money(n)}`}</Button></>}
     >
       <div className="space-y-4">
         <Alert>{error}</Alert>
@@ -488,7 +488,14 @@ function TakePayment({ a, onClose, onDone }) {
           </Field>
         )}
         <Field label="Note (optional)"><Input value={note} onChange={(e) => setNote(e.target.value)} /></Field>
-        {n > 0 && <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">After this they owe <b className="tnum text-ink">{money(Math.max(0, a.owed - n))}</b>. It goes in the cash book with a receipt.</p>}
+        {n > 0 && (
+          <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">
+            {a.owed - n >= 0
+              ? <>After this they owe <b className="tnum text-ink">{money(a.owed - n)}</b>.</>
+              : <>They owe nothing, and <b className="tnum text-ok">{money(n - a.owed)}</b> is kept for their next credit order.</>}
+            {' '}It goes in the cash book with a receipt.
+          </p>
+        )}
       </div>
     </Modal>
   );

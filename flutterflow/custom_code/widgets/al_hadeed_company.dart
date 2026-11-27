@@ -2767,8 +2767,9 @@ class _CreditCardState extends State<_CreditCard> {
                     size: 18, color: _onLime),
               ]),
               const SizedBox(height: 8),
-              Text('You owe', style: _txt(11.5, color: _onLime.withOpacity(0.75))),
-              Text(_ugx(owed),
+              Text(owed < 0 ? 'Paid in advance' : 'You owe',
+                  style: _txt(11.5, color: _onLime.withOpacity(0.75))),
+              Text(_ugx(owed.abs()),
                   style: _title(25, weight: FontWeight.w800, color: _onLime)),
               const SizedBox(height: 10),
               ClipRRect(
@@ -2877,7 +2878,8 @@ class _CreditSheet extends StatelessWidget {
                 style: _txt(12.5, color: _mid)),
             const SizedBox(height: 12),
             Row(children: [
-              fig('You owe', _shortUgx(_ci(a['owed']))),
+              fig(_ci(a['owed']) < 0 ? 'In advance' : 'You owe',
+                  _shortUgx(_ci(a['owed']).abs())),
               const SizedBox(width: 6),
               fig('Left to use', _shortUgx(_ci(a['available'])),
                   colour: _green),
