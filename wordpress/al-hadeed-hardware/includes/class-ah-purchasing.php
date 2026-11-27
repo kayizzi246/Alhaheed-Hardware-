@@ -114,6 +114,11 @@ class AH_Purchasing {
 				'qty_ordered'  => $qty,
 				'unit_cost'    => $cost,
 			) );
+			// The item now belongs to this supplier, so the next order to
+			// them lists it by itself.
+			if ( ! get_post_meta( $p->get_id(), '_ah_supplier', true ) ) {
+				update_post_meta( $p->get_id(), '_ah_supplier', $supplier );
+			}
 		}
 		self::audit( 'po_created', sprintf( '%s to %s, %d lines', $no, $supplier, count( $lines ) ) );
 		return self::show_po( array( 'id' => $id ) );

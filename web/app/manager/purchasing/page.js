@@ -46,9 +46,18 @@ export default function Purchasing() {
     }
   }, []);
   useEffect(() => { load(); }, [load]);
+  const [listed, setListed] = useState([]);
   useEffect(() => {
     api('/api/manager/products').then((r) => setProducts(list(r.products).filter((p) => p.active))).catch(() => {});
+    api('/api/suppliers').then((r) => setListed(list(r.suppliers).filter((x) => x.active !== false).map((x) => x.name))).catch(() => {});
   }, []);
+  // One list for every drop-down: the Suppliers page first, then any
+  // other name already used on an order or a product.
+  const suppliers = useMemo(() => [...new Set([
+    ...listed,
+    ...list(data?.suppliers),
+    ...products.map((p) => p.supplier).filter(Boolean),
+  ].map((x) => String(x).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [listed, data, products]);
 
   const done = (msg) => { setDialog(null); setNotice(msg); load(); };
   const owed = list(data?.balances).reduce((s, b) => s + b.owed, 0);
@@ -201,25 +210,30 @@ export default function Purchasing() {
         )}
       </Card>
 
-      {dialog?.kind === 'po' && <NewPo suppliers={list(data?.suppliers)} products={products} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog?.kind === 'po' && <NewPo suppliers={suppliers} products={products} onClose={() => setDialog(null)} onDone={done} />}
       {dialog?.kind === 'show' && <ShowPo id={dialog.id} onClose={() => { setDialog(null); load(); }} onBill={(po) => setDialog({ kind: 'bill', po })} />}
-      {dialog?.kind === 'bill' && <NewBill po={dialog.po} suppliers={list(data?.suppliers)} orders={list(data?.orders)} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog?.kind === 'bill' && <NewBill po={dialog.po} suppliers={suppliers} orders={list(data?.orders)} onClose={() => setDialog(null)} onDone={done} />}
       {dialog?.kind === 'pay' && <PayBill bill={dialog.bill} onClose={() => setDialog(null)} onDone={done} />}
-      {dialog?.kind === 'return' && <ReturnGoods suppliers={list(data?.suppliers)} products={products} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog?.kind === 'return' && <ReturnGoods suppliers={suppliers} products={products} onClose={() => setDialog(null)} onDone={done} />}
     </>
   );
 }
 
 function SupplierField({ suppliers, value, onChange }) {
-  return suppliers.length ? (
+  return (
     <Select value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Choose the supplier</option>
+      <option value="">{suppliers.length ? 'Choose the supplier' : 'Add suppliers on the Suppliers page first'}</option>
       {suppliers.map((s) => <option key={s} value={s}>{s}</option>)}
     </Select>
-  ) : (
-    <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Supplier name" />
   );
 }
+
+/** The items this supplier sends: named on the product, or last bought from them. */
+const fromSupplier = (products, name) => {
+  const n = name.trim().toLowerCase();
+  return products.filter((p) =>
+    (p.supplier || '').trim().toLowerCase() === n || (p.last_buy?.supplier || '').trim().toLowerCase() === n);
+};
 
 function ProductPick({ products, value, onChange }) {
   const [q, setQ] = useState('');
@@ -248,13 +262,32 @@ function NewPo({ suppliers, products, onClose, onDone }) {
   const [error, setError] = useState('');
   const set = (i, k, v) => setLines((ls) => ls.map((l, n) => (n === i ? { ...l, [k]: v } : l)));
   const total = lines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitCost) || 0), 0);
-  const ok = supplier && lines.length && lines.every((l) => l.productId && Number(l.qty) > 0 && Number(l.unitCost) > 0);
+  // Lines left without a quantity are skipped, so a supplier's whole
+  // list can sit there and only what is needed gets ordered.
+  const wanted = lines.filter((l) => l.productId && Number(l.qty) > 0);
+  const ok = supplier && wanted.length && wanted.every((l) => Number(l.unitCost) > 0);
+  const [auto, setAuto] = useState(0);
+
+  function pickSupplier(name) {
+    setSupplier(name);
+    const theirs = fromSupplier(products, name);
+    setAuto(theirs.length);
+    if (!theirs.length) return;
+    setLines(theirs
+      .sort((a, b) => (a.state === 'out' ? 0 : a.state === 'low' ? 1 : 2) - (b.state === 'out' ? 0 : b.state === 'low' ? 1 : 2) || a.name.localeCompare(b.name))
+      .map((p) => {
+        const low = p.state === 'out' || p.state === 'low';
+        // What is running low gets a suggested quantity; the rest waits.
+        const suggest = low ? Math.max(p.reorder_qty || 0, (p.reorder_level || 0) * 2 - Math.max(0, p.stock_available || 0)) : 0;
+        return { productId: p.id, auto: true, qty: suggest > 0 ? String(suggest) : '', unitCost: String(p.last_buy?.cost || p.cost || '') };
+      }));
+  }
 
   async function save() {
     setBusy(true);
     setError('');
     try {
-      const r = await api('/api/manager/purchase-orders', { method: 'POST', body: { supplier, expectedOn: expected, note, lines: lines.map((l) => ({ productId: l.productId, qty: Number(l.qty), unitCost: Number(l.unitCost) })) } });
+      const r = await api('/api/manager/purchase-orders', { method: 'POST', body: { supplier, expectedOn: expected, note, lines: wanted.map((l) => ({ productId: l.productId, qty: Number(l.qty), unitCost: Number(l.unitCost) })) } });
       onDone(`${r.po.poNo} saved for ${supplier}: ${money(r.po.ordered)}.`);
     } catch (e) {
       setError(e.message);
@@ -268,18 +301,52 @@ function NewPo({ suppliers, products, onClose, onDone }) {
       <div className="space-y-4">
         <Alert>{error}</Alert>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Supplier"><SupplierField suppliers={suppliers} value={supplier} onChange={setSupplier} /></Field>
+          <Field label="Supplier"><SupplierField suppliers={suppliers} value={supplier} onChange={pickSupplier} /></Field>
           <Field label="Expected on (optional)"><Input type="date" value={expected} onChange={(e) => setExpected(e.target.value)} /></Field>
         </div>
-        {lines.map((l, i) => (
-          <div key={i} className="grid gap-3 rounded-xl border border-line p-3 sm:grid-cols-[minmax(0,1fr)_110px_150px_auto]">
+        {supplier && (
+          <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">
+            {auto
+              ? <>{auto} {auto === 1 ? 'item comes' : 'items come'} from {supplier}. Items running low already have a number. Type how many of the others you want; <b>leave it empty to skip it</b>.</>
+              : <>No items are linked to {supplier} yet. Choose them below. Next time they fill in by themselves.</>}
+          </p>
+        )}
+        {lines.some((l) => l.auto) && (
+          <div className="overflow-hidden rounded-xl border border-line">
+            <div className="grid grid-cols-[minmax(0,1fr)_96px_130px_28px] gap-2 border-b border-line bg-surface-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-muted">
+              <span>Item</span><span className="text-right">How many</span><span className="text-right">Price for one</span><span />
+            </div>
+            <ul className="max-h-[46vh] divide-y divide-line overflow-y-auto">
+              {lines.map((l, i) => {
+                if (!l.auto) return null;
+                const p = products.find((x) => x.id === l.productId);
+                return (
+                  <li key={l.productId} className={cn('grid grid-cols-[minmax(0,1fr)_96px_130px_28px] items-center gap-2 px-3 py-1.5', Number(l.qty) > 0 && 'bg-brand-soft/40')}>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-semibold text-ink">{p?.name}</span>
+                      <span className="text-[11px] text-ink-muted">
+                        {p?.code} · {p ? `${p.stock_available} ${p.unit} left` : ''}
+                        {p && (p.state === 'out' || p.state === 'low') && <b className="ml-1 text-warn">{p.state === 'out' ? 'Out' : 'Low'}</b>}
+                      </span>
+                    </span>
+                    <Input type="number" min="0" step="any" inputMode="decimal" value={l.qty} placeholder="0" onChange={(e) => set(i, 'qty', e.target.value)} className="tnum h-8 text-right" />
+                    <Input type="number" min="1" inputMode="numeric" value={l.unitCost} onChange={(e) => set(i, 'unitCost', e.target.value)} className="tnum h-8 text-right" />
+                    <button type="button" aria-label="Remove" onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))} className="text-[16px] leading-none text-ink-faint hover:text-bad">×</button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+        {lines.map((l, i) => l.auto ? null : (
+          <div key={i} className={cn('grid gap-3 rounded-xl border p-3 sm:grid-cols-[minmax(0,1fr)_110px_150px_auto]', Number(l.qty) > 0 ? 'border-brand/40 bg-brand-soft/30' : 'border-line')}>
             <Field label="Item">
               <ProductPick products={products} value={l.productId} onChange={(id) => { set(i, 'productId', id); const p = products.find((x) => x.id === id); if (p?.cost && !l.unitCost) set(i, 'unitCost', String(p.cost)); }} />
             </Field>
             <Field label="Quantity"><Input type="number" min="0" step="any" inputMode="decimal" value={l.qty} onChange={(e) => set(i, 'qty', e.target.value)} className="tnum" /></Field>
             <Field label="Price for one (UGX)"><Input type="number" min="1" inputMode="numeric" value={l.unitCost} onChange={(e) => set(i, 'unitCost', e.target.value)} className="tnum" /></Field>
             <div className="flex items-end">
-              <Button variant="ghost" className="text-bad" disabled={lines.length === 1} onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))}>Remove</Button>
+              <Button variant="ghost" className="text-bad" disabled={lines.length === 1 && !auto} onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))}>Remove</Button>
             </div>
           </div>
         ))}
