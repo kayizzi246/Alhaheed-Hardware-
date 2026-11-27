@@ -59,6 +59,8 @@ class AH_Credit {
 		register_rest_route( $ns, '/manager/credit', array( 'methods' => $get, 'permission_callback' => $manager, 'callback' => array( __CLASS__, 'overview' ) ) );
 		register_rest_route( $ns, '/manager/credit/days', array( 'methods' => $get, 'permission_callback' => $manager, 'callback' => array( __CLASS__, 'days' ) ) );
 		register_rest_route( $ns, '/manager/credit/sales-report', array( 'methods' => $get, 'permission_callback' => $manager, 'callback' => array( __CLASS__, 'sales_report' ) ) );
+		// Take loan accounts away, with everything on them.
+		register_rest_route( $ns, '/manager/credit/delete', array( 'methods' => $post, 'permission_callback' => $manager, 'callback' => array( __CLASS__, 'delete_accounts' ) ) );
 		// Open or change an account; correct a balance.
 		register_rest_route( $ns, '/manager/credit/(?P<id>\d+)', array( 'methods' => $post, 'permission_callback' => $manager, 'callback' => array( __CLASS__, 'save_account' ) ) );
 		register_rest_route( $ns, '/manager/credit/(?P<id>\d+)/adjust', array( 'methods' => $post, 'permission_callback' => $manager, 'callback' => array( __CLASS__, 'adjust' ) ) );
@@ -508,6 +510,38 @@ class AH_Credit {
 			self::entry( $id, 'opening', $opening, array( 'note' => 'Balance brought forward', 'due_on' => current_time( 'Y-m-d' ) ) );
 		}
 		return array( 'account' => self::summary( $id ) );
+	}
+
+	/**
+	 * Delete loan accounts: the account and every line on it. The books
+	 * do not forget: each line's journal entry is turned around, and
+	 * History keeps who deleted what and how much was owed.
+	 */
+	public static function delete_accounts( $req ) {
+		global $wpdb;
+		$me  = AH_Auth::current();
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', (array) $req->get_param( 'ids' ) ) ) ) );
+		if ( ! $ids ) {
+			return self::err( 'ah_nothing', 'Choose the loan accounts to delete' );
+		}
+		$done = array();
+		foreach ( $ids as $id ) {
+			$acc   = self::account( $id );
+			$lines = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . self::t( 'credit_entries' ) . ' WHERE customer_id = %d', $id ) );
+			if ( ! $acc && ! $lines ) {
+				continue;
+			}
+			$owed = self::balance( $id );
+			$user = get_user_by( 'id', $id );
+			$wpdb->delete( self::t( 'credit_entries' ), array( 'customer_id' => $id ) );
+			$wpdb->delete( self::t( 'credit_accounts' ), array( 'customer_id' => $id ) );
+			AH_Flow::log_event( 0, 'manager', 'credit_deleted', null, null, $me ? $me->ID : null, sprintf( '%s · owed UGX %s · %d lines', $user ? $user->display_name : '#' . $id, number_format( $owed ), $lines ) );
+			$done[] = $id;
+		}
+		if ( class_exists( 'AH_Books' ) ) {
+			AH_Books::sync();
+		}
+		return array( 'deleted' => count( $done ), 'ids' => $done );
 	}
 
 	public static function adjust( $req ) {

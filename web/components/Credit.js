@@ -82,6 +82,8 @@ export default function Credit() {
   const [open, setOpen] = useState(null); // customer id
   const [giving, setGiving] = useState(false);
   const [note, setNote] = useState('');
+  const [picked, setPicked] = useState([]); // customer ids
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -173,6 +175,9 @@ export default function Credit() {
                   { value: 'all', label: `All (${accounts.length})` },
                 ]}
               />
+              {manager && picked.length > 0 && (
+                <Button size="sm" variant="danger" onClick={() => setDeleting(true)}>Delete {picked.length}</Button>
+              )}
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or phone" className="ml-auto w-[220px]" />
             </div>
             {!rows.length ? (
@@ -183,11 +188,33 @@ export default function Credit() {
               <TableWrap>
                 <Table>
                   <thead>
-                    <tr><Th>Customer</Th><Th num>Owes</Th><Th>Used of limit</Th><Th num>Late</Th><Th>Oldest bill</Th><Th>Last paid</Th><Th>Status</Th></tr>
+                    <tr>
+                      {manager && (
+                        <Th className="w-8">
+                          <Checkbox
+                            label=""
+                            aria-label="Tick all"
+                            checked={rows.length > 0 && rows.every((a) => picked.includes(a.customerId))}
+                            onChange={(e) => setPicked(e.target.checked ? rows.map((a) => a.customerId) : [])}
+                          />
+                        </Th>
+                      )}
+                      <Th>Customer</Th><Th num>Owes</Th><Th>Used of limit</Th><Th num>Late</Th><Th>Oldest bill</Th><Th>Last paid</Th><Th>Status</Th>
+                    </tr>
                   </thead>
                   <tbody>
                     {rows.map((a) => (
                       <Tr key={a.customerId} onClick={() => setOpen(a.customerId)} className="cursor-pointer">
+                        {manager && (
+                          <Td onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              label=""
+                              aria-label={`Tick ${a.name}`}
+                              checked={picked.includes(a.customerId)}
+                              onChange={(e) => setPicked((p) => (e.target.checked ? [...p, a.customerId] : p.filter((x) => x !== a.customerId)))}
+                            />
+                          </Td>
+                        )}
                         <Td>
                           <b className="block text-ink">{a.name}</b>
                           <span className="text-[11.5px] text-ink-muted">{a.phone}</span>
@@ -216,6 +243,13 @@ export default function Credit() {
           customerId={open}
           onClose={() => setOpen(null)}
           onChanged={(msg) => { if (msg) setNote(msg); load(); }}
+        />
+      )}
+      {deleting && (
+        <DeleteLoans
+          people={accounts.filter((a) => picked.includes(a.customerId))}
+          onClose={() => setDeleting(false)}
+          onDone={(msg) => { setDeleting(false); setPicked([]); setNote(msg); load(); }}
         />
       )}
       {giving && (
@@ -319,7 +353,7 @@ export function CreditAccount({ customerId, onClose, onChanged }) {
   const manager = getUser()?.role === 'manager';
   const [d, setD] = useState(null);
   const [error, setError] = useState('');
-  const [mode, setMode] = useState(null); // 'pay' | 'edit' | 'adjust'
+  const [mode, setMode] = useState(null); // 'pay' | 'edit' | 'adjust' | 'owe' | 'delete'
 
   const load = useCallback(() => {
     api(`/api/credit/${customerId}`).then(setD).catch((e) => setError(e.message));
@@ -340,8 +374,10 @@ export function CreditAccount({ customerId, onClose, onChanged }) {
           {manager && (
             <div className="mr-auto flex flex-wrap gap-2">
               <Button variant="ghost" onClick={() => setMode('edit')}>Limit and days</Button>
+              <Button variant="outline" onClick={() => setMode('owe')}>Add what they owe</Button>
               <Button variant="ghost" onClick={() => setMode('adjust')}>Correct balance</Button>
               <Button variant="ghost" onClick={() => exportStatement(customerId)}>Download statement</Button>
+              <Button variant="ghost" className="text-bad hover:text-bad" onClick={() => setMode('delete')}>Delete</Button>
             </div>
           )}
           <Button variant="outline" onClick={onClose}>Close</Button>
@@ -434,6 +470,14 @@ export function CreditAccount({ customerId, onClose, onChanged }) {
       {mode === 'pay' && a && <TakePayment a={a} onClose={() => setMode(null)} onDone={done} />}
       {mode === 'edit' && a && <EditAccount a={a} onClose={() => setMode(null)} onDone={done} />}
       {mode === 'adjust' && a && <Adjust a={a} onClose={() => setMode(null)} onDone={done} />}
+      {mode === 'owe' && a && <Adjust a={a} startKind="opening" onClose={() => setMode(null)} onDone={done} />}
+      {mode === 'delete' && a && (
+        <DeleteLoans
+          people={[a]}
+          onClose={() => setMode(null)}
+          onDone={(msg) => { setMode(null); onChanged?.(msg); onClose(); }}
+        />
+      )}
     </Modal>
   );
 }
@@ -548,8 +592,8 @@ function EditAccount({ a, onClose, onDone }) {
   );
 }
 
-function Adjust({ a, onClose, onDone }) {
-  const [kind, setKind] = useState('adjustment');
+function Adjust({ a, onClose, onDone, startKind = 'adjustment' }) {
+  const [kind, setKind] = useState(startKind);
   const [way, setWay] = useState('add');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
@@ -571,7 +615,7 @@ function Adjust({ a, onClose, onDone }) {
   }
 
   return (
-    <Modal title={`Correct ${a.name}'s balance`} description={`Owes ${money(a.owed)} now. Every correction is kept with your name.`} onClose={onClose} footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={busy || n <= 0 || reason.trim().length < 3} onClick={go}>{busy ? 'Saving…' : 'Save'}</Button></>}>
+    <Modal title={startKind === 'opening' ? `Add what ${a.name} owes` : `Correct ${a.name}'s balance`} description={`Owes ${money(a.owed)} now. Every correction is kept with your name.`} onClose={onClose} footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={busy || n <= 0 || reason.trim().length < 3} onClick={go}>{busy ? 'Saving…' : 'Save'}</Button></>}>
       <div className="space-y-4">
         <Alert>{error}</Alert>
         <Field label="What is it?">
@@ -583,6 +627,52 @@ function Adjust({ a, onClose, onDone }) {
         <Field label="Amount"><MoneyField value={amount} onChange={setAmount} strong /></Field>
         <Field label="Why?"><Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={kind === 'writeoff' ? 'Customer left the country, cannot be found' : 'From the notebook, 25 Nov'} /></Field>
         {n > 0 && <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12px] text-ink-2">After this they owe <b className="tnum text-ink">{money(a.owed + signed)}</b>.</p>}
+      </div>
+    </Modal>
+  );
+}
+
+/** Delete loan accounts, after saying what is still owed on them. */
+function DeleteLoans({ people, onClose, onDone }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const owed = people.reduce((n, p) => n + Math.max(0, p.owed || 0), 0);
+  async function go() {
+    setBusy(true);
+    setError('');
+    try {
+      const r = await api('/api/manager/credit/delete', { method: 'POST', body: { ids: people.map((p) => p.customerId) } });
+      onDone(`${r.deleted} loan ${r.deleted === 1 ? 'account' : 'accounts'} deleted.`);
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal
+      title={people.length === 1 ? `Delete ${people[0].name}'s loan account?` : `Delete ${people.length} loan accounts?`}
+      description="The account and every line on it are taken away. The customer stays in your customer list."
+      onClose={onClose}
+      footer={<><Button variant="outline" onClick={onClose}>Keep</Button><Button variant="danger" disabled={busy} onClick={go}>{busy ? 'Deleting…' : 'Delete'}</Button></>}
+    >
+      <div className="space-y-3">
+        <Alert>{error}</Alert>
+        {owed > 0 ? (
+          <p className="rounded-lg bg-bad-bg px-3 py-2 text-[12.5px] font-semibold text-bad">
+            Still owed: {money(owed)}. Deleting forgets this debt. To keep the record, use Write off instead.
+          </p>
+        ) : (
+          <p className="text-[12.5px] text-ink-2">Nothing is owed on {people.length === 1 ? 'it' : 'them'}.</p>
+        )}
+        <ul className="max-h-[200px] divide-y divide-line overflow-y-auto rounded-lg border border-line text-[12.5px]">
+          {people.map((p) => (
+            <li key={p.customerId} className="flex justify-between gap-3 px-3 py-1.5">
+              <span className="text-ink">{p.name}</span>
+              <span className="tnum text-ink-2">{money(p.owed || 0)}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="text-[11.5px] text-ink-muted">History keeps who deleted it and what was owed.</p>
       </div>
     </Modal>
   );

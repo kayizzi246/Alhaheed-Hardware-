@@ -613,6 +613,7 @@ class AH_Rest_Desks {
 			'products_deleted'     => 'Products deleted',
 			'picture_removed'      => 'Picture removed',
 			'orders_deleted'       => 'Orders deleted',
+			'credit_deleted'       => 'Loan account deleted',
 			'approval_requested'   => 'Asked the owner',
 			'approval_approved'    => 'Owner approved',
 			'approval_rejected'    => 'Owner refused',
