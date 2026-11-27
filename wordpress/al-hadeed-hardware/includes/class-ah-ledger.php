@@ -318,7 +318,7 @@ class AH_Ledger {
 		}
 		$last_count = self::last_count();
 		if ( ! $last_count || ( strtotime( current_time( 'Y-m-d' ) ) - strtotime( $last_count ) ) > 30 * DAY_IN_SECONDS ) {
-			$todo[] = array( 'level' => 'info', 'text' => $last_count ? sprintf( 'Last stock count: %s. Count every month.', $last_count ) : 'Stock was never counted. Count it now.', 'link' => '/manager/stock-take' );
+			$todo[] = array( 'level' => 'info', 'text' => $last_count ? sprintf( 'Last stock count: %s. Count every month.', $last_count ) : 'Stock was never counted. Count it now.', 'link' => '/manager/stock/count' );
 		}
 
 		return array(

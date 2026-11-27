@@ -35,7 +35,6 @@ export const NAV = {
     { group: 'Stock' },
     { href: '/manager/stock', label: 'Stock', icon: 'scales' },
     { href: '/manager/products', label: 'Products', icon: 'box' },
-    { href: '/manager/stock-take', label: 'Count stock', icon: 'check' },
     { href: '/manager/purchasing', label: 'Buying', icon: 'mail' },
     { href: '/manager/margins', label: 'Profit & zakat', icon: 'chart' },
 

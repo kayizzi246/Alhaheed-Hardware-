@@ -6,7 +6,7 @@ import { api, peek } from '@/lib/api';
 import { money, shortMoney, list } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
-  Alert, Card, CardHead, CardTitle, Chip, Empty, Loading, LoadFailed, PageHead, Segmented,
+  Alert, Button, Card, CardHead, CardTitle, Chip, Empty, Loading, LoadFailed, PageHead, Segmented,
   Stat, Stats, Table, TableWrap, Td, Th, Tr } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { useDismissed } from '@/lib/dismissed';
@@ -67,6 +67,7 @@ export default function StockControl() {
     <div className="space-y-5">
       <PageHead title="Stock" sub="Your stock, what to buy, and what is lost.">
         <TrackerExport />
+        <Button asChild size="sm"><Link href="/manager/stock/count">Count stock</Link></Button>
       </PageHead>
       <Alert>{error}</Alert>
 
