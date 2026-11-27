@@ -22,8 +22,9 @@ const METHODS = [
   { value: 'card', label: 'Card' },
 ];
 
-export default function ReceivePayment({ order, onClose, onDone }) {
-  const [method, setMethod] = useState('cash');
+export default function ReceivePayment({ order, onClose, onDone, initialMethod }) {
+  // A till key pressed (Cash, Mobile Money, Card, On loan) opens it ready.
+  const [method, setMethod] = useState(initialMethod && initialMethod !== 'credit' ? initialMethod : 'cash');
   // The customer's credit account, if they have one: then "On credit"
   // is a way to pay, within the limit.
   const [credit, setCredit] = useState(null);
@@ -37,7 +38,7 @@ export default function ReceivePayment({ order, onClose, onDone }) {
         const a = r.account;
         if (a && a.status !== 'none') {
           setCredit(a);
-          if (order.wants_credit) setMethod('credit');
+          if (order.wants_credit || initialMethod === 'credit') setMethod('credit');
         }
       })
       .catch(() => {});

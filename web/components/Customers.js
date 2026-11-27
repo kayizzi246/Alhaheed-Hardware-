@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PosShelf, PosTicket } from '@/components/Pos';
 import { CreditAccount } from '@/components/Credit';
 import { api, peek } from '@/lib/api';
 import { money, list, dateTime, statusLabel } from '@/lib/format';
@@ -471,7 +472,7 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
 
   return (
     <Modal
-      wide
+      wide="pos"
       title={known ? `New sale for ${known.fullName}` : 'Add a customer'}
       description={
         known
@@ -557,119 +558,23 @@ function CounterSale({ start, onClose, onAdded, onSold }) {
             <span className="tnum text-[12px] text-ink-muted">{count} {count === 1 ? 'item' : 'items'}</span>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            {/* The shelf */}
-            <div className="min-w-0 rounded-sm border border-line">
-              <div className="border-b border-line p-2.5">
-                <Input
-                  ref={search}
-                  type="search"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  onKeyDown={(e) => {
-                    // Enter adds the only match, so a code typed in goes straight in.
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (shown.length === 1) { add(shown[0]); setQ(''); }
-                    }
-                  }}
-                  placeholder="Find an item by name or code"
-                  aria-label="Find an item"
-                />
-              </div>
-              {!products ? (
-                loadError ? <p className="p-4 text-[12px] text-bad">{loadError}</p> : <p className="p-4 text-[12px] text-ink-muted">Loading the shelf…</p>
-              ) : shown.length === 0 ? (
-                <p className="p-4 text-[12px] text-ink-muted">Nothing matches. Try fewer letters, or the item&rsquo;s code.</p>
-              ) : (
-                <ul className="max-h-[300px] divide-y divide-line overflow-y-auto">
-                  {shown.map((p) => {
-                    const l = line(p.id);
-                    const out = Number(p.stock_available) <= 0;
-                    const full = l && l.qty >= Number(p.stock_available);
-                    return (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          disabled={out || full}
-                          onClick={() => add(p)}
-                          className={cn(
-                            'flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors duration-100',
-                            'hover:bg-surface-2 active:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent',
-                            l && 'bg-brand-soft/50'
-                          )}
-                        >
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[12.5px] font-medium text-ink">{p.name}</span>
-                            <span className="block text-[11.5px] text-ink-muted">
-                              {out ? <span className="font-semibold text-bad">out of stock</span> : <span className="tnum">{p.stock_available} {p.unit} left</span>}
-                            </span>
-                          </span>
-                          <span className="tnum shrink-0 text-[12px] font-semibold text-ink">{money(p.price)}</span>
-                          <span
-                            className={cn(
-                              'tnum grid h-6 min-w-6 shrink-0 place-items-center rounded-full px-1.5 text-[11.5px] font-bold',
-                              l ? 'bg-fill text-on-fill' : 'border border-line text-ink-muted'
-                            )}
-                            aria-label={l ? `${l.qty} in the sale` : 'Add'}
-                          >
-                            {l ? l.qty : '+'}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-
-            {/* The basket */}
-            <div className="flex min-w-0 flex-col rounded-sm border border-line">
-              {basket.length === 0 ? (
-                <p className="flex flex-1 items-center justify-center p-6 text-center text-[12px] text-ink-muted">
-                  Tap an item to add it. Tap again for one more.
-                </p>
-              ) : (
-                <ul className="max-h-[300px] flex-1 divide-y divide-line overflow-y-auto">
-                  {basket.map((l) => (
-                    <li key={l.product.id} className="flex items-center gap-2 px-3 py-2">
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[12px] font-medium text-ink">{l.product.name}</span>
-                        <span className="tnum block text-[11.5px] text-ink-muted">{money(l.product.price)} each</span>
-                      </span>
-                      <span className="flex items-center rounded-md border border-line">
-                        <button type="button" aria-label="One fewer" onClick={() => setQty(l.product.id, l.qty - 1)} className="grid size-7 place-items-center text-ink-muted hover:text-ink active:scale-95">−</button>
-                        <input
-                          value={l.qty}
-                          onChange={(e) => setQty(l.product.id, e.target.value)}
-                          inputMode="decimal"
-                          aria-label={`How many ${l.product.name}`}
-                          className="tnum w-9 bg-transparent text-center text-[12.5px] font-semibold text-ink outline-none"
-                        />
-                        <button
-                          type="button"
-                          aria-label="One more"
-                          disabled={l.qty >= Number(l.product.stock_available)}
-                          onClick={() => setQty(l.product.id, l.qty + 1)}
-                          className="grid size-7 place-items-center text-ink-muted hover:text-ink active:scale-95 disabled:opacity-30"
-                        >
-                          +
-                        </button>
-                      </span>
-                      <span className="tnum w-[84px] shrink-0 text-right text-[12px] font-semibold text-ink">
-                        {money(l.qty * Number(l.product.price || 0))}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="flex items-baseline justify-between border-t border-line px-3 py-2.5">
-                <span className="text-[12px] font-semibold text-ink-muted">Total</span>
-                <span className="tnum text-[18px] font-extrabold text-ink">{money(total)}</span>
-              </div>
-            </div>
+          <div className="grid h-[460px] grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-[minmax(0,1fr)_340px]">
+            <PosShelf
+              products={products}
+              basket={basket}
+              onAdd={add}
+              searchRef={search}
+              loading={!products && !loadError}
+              error={!products ? loadError : ''}
+              dense
+            />
+            <PosTicket
+              basket={basket}
+              onQty={setQty}
+              title={known ? `Sale · ${known.fullName}` : 'Sale'}
+              sub={known ? known.phone : form.fullName.trim() ? `New customer · ${form.fullName.trim()}` : 'Name and number above'}
+            />
           </div>
-
           {basket.length > 0 && (
             <Segmented label="How they get it" value={how} onChange={setHow} options={HOW} />
           )}
